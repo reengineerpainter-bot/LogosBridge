@@ -1,0 +1,167 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Global Safety Net (Double Gate)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Shared Globals
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isSignedIn() && request.auth.uid == userId;
+    }
+
+    // Direct verified email requirement
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    // ==========================================
+    // ENTITY VALIDATIONS (The Anti-Update-Gaps)
+    // ==========================================
+
+    function isValidUserProfile(data) {
+      return data.userId is string 
+        && data.userId.size() <= 128 
+        && data.email is string 
+        && data.email.size() <= 200 
+        && data.createdAt is timestamp 
+        && data.updatedAt is timestamp
+        && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100))
+        && (!('theme' in data) || (data.theme is string && data.theme in ['light', 'dark']))
+        && (!('lastReadBook' in data) || (data.lastReadBook is string && data.lastReadBook.size() <= 50))
+        && (!('lastReadChapter' in data) || data.lastReadChapter is int);
+    }
+
+    function isValidBookmark(data) {
+      return data.id is string 
+        && data.id.size() <= 128
+        && data.userId is string 
+        && data.userId.size() <= 128
+        && data.book is string 
+        && data.book.size() <= 50
+        && data.chapter is int 
+        && data.verse is int 
+        && data.color is string 
+        && data.color in ['none', 'yellow', 'cyan', 'green', 'red']
+        && (!('notes' in data) || (data.notes is string && data.notes.size() <= 5000))
+        && data.createdAt is timestamp 
+        && data.updatedAt is timestamp;
+    }
+
+    function isValidQuizScore(data) {
+      return data.id is string 
+        && data.id.size() <= 128
+        && data.userId is string 
+        && data.userId.size() <= 128
+        && data.mode is string 
+        && data.mode in ['vocabulary', 'memorization']
+        && data.score is int 
+        && data.score >= 0 
+        && data.score <= 100
+        && (!('quizBook' in data) || (data.quizBook is string && data.quizBook.size() <= 50))
+        && (!('quizChapter' in data) || data.quizChapter is int)
+        && data.createdAt is timestamp;
+    }
+
+    // ==========================================
+    // PATHS SEGMENTS & SECURITY RULES
+    // ==========================================
+
+    match /users/{userId} {
+      allow get: if isOwner(userId);
+      // No blanket list queries allowed to protect user directories (PII Isolation)
+      allow list: if false;
+
+      allow create: if isOwner(userId) 
+        && isVerifiedUser()
+        && isValidId(userId)
+        && isValidUserProfile(incoming())
+        && incoming().userId == userId
+        && incoming().email == request.auth.token.email
+        && incoming().createdAt == request.time
+        && incoming().updatedAt == request.time;
+
+      allow update: if isOwner(userId)
+        && isVerifiedUser()
+        && isValidId(userId)
+        && isValidUserProfile(incoming())
+        && incoming().userId == existing().userId
+        && incoming().email == existing().email
+        && incoming().createdAt == existing().createdAt
+        && incoming().updatedAt == request.time
+        && incoming().diff(existing()).affectedKeys().hasAny(['displayName', 'theme', 'lastReadBook', 'lastReadChapter', 'updatedAt']);
+
+      allow delete: if isOwner(userId);
+
+      // --- Nested bookmarks collection ---
+      match /bookmarks/{bookmarkId} {
+        allow get: if isOwner(userId);
+        // Explicit list check (The Query Enforcer pattern)
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId)
+          && isVerifiedUser()
+          && isValidId(bookmarkId)
+          && isValidBookmark(incoming())
+          && incoming().userId == userId
+          && incoming().id == bookmarkId
+          && incoming().createdAt == request.time
+          && incoming().updatedAt == request.time;
+
+        allow update: if isOwner(userId)
+          && isVerifiedUser()
+          && isValidId(bookmarkId)
+          && isValidBookmark(incoming())
+          && incoming().userId == existing().userId
+          && incoming().id == existing().id
+          && incoming().createdAt == existing().createdAt
+          && incoming().updatedAt == request.time
+          && incoming().diff(existing()).affectedKeys().hasAny(['color', 'notes', 'updatedAt']);
+
+        allow delete: if isOwner(userId);
+      }
+
+      // --- Nested quizzes collection ---
+      match /quizzes/{quizId} {
+        allow get: if isOwner(userId);
+        allow list: if isOwner(userId);
+
+        allow create: if isOwner(userId)
+          && isVerifiedUser()
+          && isValidId(quizId)
+          && isValidQuizScore(incoming())
+          && incoming().userId == userId
+          && incoming().id == quizId
+          && incoming().createdAt == request.time;
+
+        // Quizzes represent historic logs and are immutable once submitted
+        allow update: if false;
+        allow delete: if false;
+      }
+    }
+
+    // Public cached Bible chapters for fast, reliable UX and zero-lag rendering
+    match /chapters/{chapterId} {
+      allow read: if true;
+      allow write: if false; // Only written via trusted background server integrations
+    }
+  }
+}

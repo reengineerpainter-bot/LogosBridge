@@ -1,0 +1,201 @@
+  3415	                              </div>
+  3416	                              
+  3417	                              {isFocused ? (
+  3418	                                <div 
+  3419	                                  className="mt-1.5 flex items-center overflow-x-auto hide-scrollbar animate-fade-in-up" 
+  3420	                                  onClick={(e) => e.stopPropagation()}
+  3421	                                >
+  3422	                                  <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full border shadow-sm transition-all ${
+  3423	                                    theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#18181b] border-zinc-800'
+  3424	                                  }`}>
+  3425	                                    {/* Minimal Verse Indicator */}
+  3426	                                    <div className={`flex items-center px-1.5 py-0.5 rounded-full shrink-0 ${
+  3427	                                      theme === 'light' ? 'bg-slate-100 text-slate-500' : 'bg-white/5 text-slate-400'
+  3428	                                    }`}>
+  3429	                                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest">v.{v.verseNumber}</span>
+  3430	                                    </div>
+  3431	
+  3432	                                    <div className={`w-[1px] h-3 mx-0.5 shrink-0 ${theme === 'light' ? 'bg-slate-200' : 'bg-zinc-800'}`} />
+  3433	
+  3434	                                    {/* Play Audio Button */}
+  3435	                                    <button
+  3436	                                      onClick={(e) => {
+  3437	                                        e.stopPropagation();
+  3438	                                        if (isReadingThis) {
+  3439	                                          stopSpeaking();
+  3440	                                        } else {
+  3441	                                          playSingleVerse(v.verseNumber, getSpeechTextForVerse(v));
+  3442	                                        }
+  3443	                                      }}
+  3444	                                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
+  3445	                                        isReadingThis
+  3446	                                          ? 'bg-rose-500/15 text-rose-500 animate-pulse'
+  3447	                                          : (theme === 'light' ? 'hover:bg-cyan-50 text-cyan-700' : 'hover:bg-white/10 text-cyan-400')
+  3448	                                      }`}
+  3449	                                      title={isReadingThis ? 'Stop active voice' : 'Play Audio Speech Coaching'}
+  3450	                                    >
+  3451	                                      {isReadingThis ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+  3452	                                    </button>
+  3453	
+  3454	                                    {/* Reflect (Notes Composer toggle) */}
+  3455	                                    <button
+  3456	                                      onClick={(e) => {
+  3457	                                        e.stopPropagation();
+  3458	                                        if (activeDraftVerse === v.verseNumber) {
+  3459	                                          handleCancelNote();
+  3460	                                        } else {
+  3461	                                          startEditingNote(v.verseNumber, verseHighlight?.notes || '');
+  3462	                                        }
+  3463	                                      }}
+  3464	                                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
+  3465	                                        activeDraftVerse === v.verseNumber
+  3466	                                          ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400'
+  3467	                                          : hasNotes
+  3468	                                            ? (theme === 'light' ? 'bg-amber-100 text-amber-800' : 'bg-amber-955/20 text-amber-400')
+  3469	                                            : (theme === 'light' ? 'hover:bg-slate-100 text-slate-600' : 'hover:bg-white/10 text-slate-400')
+  3470	                                      }`}
+  3471	                                      title="Reflect / Note"
+  3472	                                    >
+  3473	                                      <StarryCradleIcon className="w-3.5 h-3.5" active={hasNotes} />
+  3474	                                    </button>
+  3475	
+  3476	                                    {/* Bookmark Index */}
+  3477	                                    <button
+  3478	                                      onClick={(e) => {
+  3479	                                        e.stopPropagation();
+  3480	                                        toggleSaveVerse(v.verseNumber);
+  3481	                                      }}
+  3482	                                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
+  3483	                                        isSaved
+  3484	                                          ? 'bg-emerald-500/15 text-emerald-500'
+  3485	                                          : (theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-white/10 text-slate-400')
+  3486	                                      }`}
+  3487	                                      title="Index"
+  3488	                                    >
+  3489	                                      <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current text-emerald-500' : ''}`} />
+  3490	                                    </button>
+  3491	
+  3492	                                    {/* Copy Verse */}
+  3493	                                    <button
+  3494	                                      onClick={(e) => {
+  3495	                                        e.stopPropagation();
+  3496	                                        const textToCopy = transType === 'plain'
+  3497	                                          ? v.contemporary
+  3498	                                          : transType === 'pers'
+  3499	                                            ? v.nonNativeEnglish
+  3500	                                            : transType === 'kjv'
+  3501	                                              ? (v.kjvText || '')
+  3502	                                              : (v.bsbText || '');
+  3503	                                        const transName = transType === 'plain' ? 'Plain English' : transType === 'pers' ? 'Personalised' : transType === 'kjv' ? 'KJV' : 'BSB';
+  3504	                                        navigator.clipboard.writeText(`[v.${v.verseNumber}] ${textToCopy} (${transName})`);
+  3505	                                      }}
+  3506	                                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
+  3507	                                        theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-white/10 text-slate-400'
+  3508	                                      }`}
+  3509	                                      title="Copy verse text"
+  3510	                                    >
+  3511	                                      <Copy className="w-3.5 h-3.5" />
+  3512	                                    </button>
+  3513	
+  3514	                                    {/* Project button */}
+  3515	                                    <button
+  3516	                                      onClick={(e) => {
+  3517	                                        e.stopPropagation();
+  3518	                                        setProjectionInitialVerseNumber(v.verseNumber);
+  3519	                                        setIsProjectionStudioOpen(true);
+  3520	                                        playWebAudioBeep(640, 'sine', 0.08);
+  3521	                                      }}
+  3522	                                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
+  3523	                                        theme === 'light' ? 'hover:bg-amber-50 text-amber-700' : 'hover:bg-amber-955/20 text-amber-400'
+  3524	                                      }`}
+  3525	                                      title="Project"
+  3526	                                    >
+  3527	                                      <Tv className="w-3.5 h-3.5" />
+  3528	                                    </button>
+  3529	
+  3530	                                    <div className={`w-[1px] h-3 mx-0.5 shrink-0 ${theme === 'light' ? 'bg-slate-200' : 'bg-zinc-800'}`} />
+  3531	
+  3532	                                    {/* Dismiss Close Focus */}
+  3533	                                    <button
+  3534	                                      onClick={(e) => {
+  3535	                                        e.stopPropagation();
+  3536	                                        setFocusedVerse(null);
+  3537	                                      }}
+  3538	                                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
+  3539	                                        theme === 'light' ? 'hover:bg-rose-50 text-rose-500' : 'hover:bg-rose-955/20 text-rose-400'
+  3540	                                      }`}
+  3541	                                      title="Dismiss"
+  3542	                                    >
+  3543	                                      <X className="w-3.5 h-3.5" />
+  3544	                                    </button>
+  3545	                                  </div>
+  3546	                                </div>
+  3547	                              ) : null}
+  3548	
+  3549	                                {/* Speed Control Tuning Slider */}
+  3550	                                {isReadingThis && (
+  3551	                                  <div className="mt-2 flex items-center justify-between bg-slate-100 dark:bg-slate-950/40 p-1.5 rounded-lg border border-slate-205 dark:border-cyan-950/30">
+  3552	                                    <span className="text-[10px] font-mono text-slate-400 dark:text-cyan-650 flex items-center gap-1">
+  3553	                                      ⚙️ Playback Speed:
+  3554	                                    </span>
+  3555	                                    <div className="flex items-center space-x-2">
+  3556	                                      <input
+  3557	                                        type="range"
+  3558	                                        min="0.5"
+  3559	                                        max="1.5"
+  3560	                                        step="0.1"
+  3561	                                        value={playbackSpeed}
+  3562	                                        onChange={(e) => {
+  3563	                                          e.stopPropagation();
+  3564	                                          setPlaybackSpeed(parseFloat(e.target.value));
+  3565	                                        }}
+  3566	                                        className="w-20 h-1 bg-slate-205 dark:bg-cyan-955 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+  3567	                                      />
+  3568	                                      <span className="text-[10.5px] font-mono font-bold text-cyan-600">
+  3569	                                        {playbackSpeed.toFixed(1)}x
+  3570	                                      </span>
+  3571	                                    </div>
+  3572	                                  </div>
+  3573	                                )}
+  3574	
+  3575	                                {/* Compact active note writer nested directly */}
+  3576	                                {activeDraftVerse === v.verseNumber && (
+  3577	                                  <div className={`mt-2 p-2.5 rounded-lg border focus-within:ring-1 focus-within:ring-cyan-500/30 ${
+  3578	                                    theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#080d19] border-cyan-955/80 shadow-inner'
+  3579	                                  }`}>
+  3580	                                    <textarea
+  3581	                                      value={noteDraftText}
+  3582	                                      onChange={(e) => setNoteDraftText(e.target.value)}
+  3583	                                      placeholder="Write down personal theological reflections or spiritual notes..."
+  3584	                                      className={`w-full text-xs p-2 rounded-lg border focus:outline-none ${
+  3585	                                        theme === 'light'
+  3586	                                          ? 'bg-slate-50 text-slate-800 border-slate-200'
+  3587	                                          : 'bg-slate-950 text-slate-100 border-cyan-905/30'
+  3588	                                      }`}
+  3589	                                      rows={2}
+  3590	                                      autoFocus
+  3591	                                    />
+  3592	                                    <div className="mt-2 flex items-center justify-end space-x-2">
+  3593	                                      <button
+  3594	                                        onClick={handleCancelNote}
+  3595	                                        className={`text-[9px] uppercase font-mono tracking-wider font-extrabold px-2.5 py-1 rounded transition-colors cursor-pointer ${
+  3596	                                          theme === 'light' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-slate-900 text-slate-400 hover:bg-slate-850'
+  3597	                                        }`}
+  3598	                                      >
+  3599	                                        Cancel
+  3600	                                      </button>
+  3601	                                      <button
+  3602	                                        onClick={() => handleSaveNote(v.verseNumber)}
+  3603	                                        className="text-[9px] uppercase font-mono tracking-wider font-extrabold px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-colors cursor-pointer"
+  3604	                                      >
+  3605	                                        💾 Save Notes
+  3606	                                      </button>
+  3607	                                    </div>
+  3608	                                  </div>
+  3609	                                )}
+  3610	                              </div>
+  3611	                            ) : activeDraftVerse === v.verseNumber ? (
+  3612	                              <div className={`mt-2 p-2.5 rounded-lg border transition-all ${
+  3613	                                theme === 'light' ? 'bg-white border-cyan-200 shadow-xs' : 'bg-[#080d19] border-cyan-955/80 shadow-md'
+  3614	                              }`} onClick={(e) => e.stopPropagation()}>
+  3615	                                <textarea

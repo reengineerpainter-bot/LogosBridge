@@ -1,0 +1,8 @@
+{
+  "appId": "com.helpsbiblestudy.app",
+  "appName": "Personalized Bible Study",
+  "webDir": "dist",
+  "server": {
+    "androidScheme": "https"
+  }
+}

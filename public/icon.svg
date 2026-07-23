@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="bg-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0b1329" />
+      <stop offset="100%" stop-color="#040712" />
+    </linearGradient>
+    <linearGradient id="accent-grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" />
+      <stop offset="50%" stop-color="#3b82f6" />
+      <stop offset="100%" stop-color="#f59e0b" />
+    </linearGradient>
+    <linearGradient id="glow-grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#22d3ee" stop-opacity="0.3" />
+      <stop offset="100%" stop-color="#22d3ee" stop-opacity="0" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background Card -->
+  <rect width="512" height="512" rx="128" fill="url(#bg-grad)" />
+  <rect width="496" height="496" x="8" y="8" rx="120" fill="none" stroke="url(#accent-grad)" stroke-width="4" stroke-opacity="0.2" />
+
+  <!-- Light Rays / Divine Glow -->
+  <path d="M156 340 L256 120 L356 340 Z" fill="url(#glow-grad)" />
+  <circle cx="256" cy="180" r="80" fill="#22d3ee" opacity="0.08" filter="blur(20px)" />
+
+  <!-- The Open Holy Scripture Book Illustration -->
+  <g transform="translate(128, 220)">
+    <!-- Book Back/Shadow -->
+    <path d="M12 90 C 60 70, 110 95, 116 100 C 122 95, 172 70, 244 90 L 244 190 C 172 170, 122 195, 116 200 C 110 195, 60 170, 12 190 Z" fill="#1e293b" opacity="0.5" />
+    
+    <!-- Left Page -->
+    <path d="M8 80 C 60 60, 110 85, 116 90 L 116 190 C 110 185, 60 160, 8 180 Z" fill="#e2e8f0" />
+    
+    <!-- Right Page -->
+    <path d="M248 80 C 196 60, 146 85, 140 90 L 140 190 C 146 185, 196 160, 248 180 Z" fill="#f1f5f9" />
+    
+    <!-- Spines and Gilded Edges -->
+    <path d="M116 90 C 122 87, 134 87, 140 90 L 140 190 C 134 187, 122 187, 116 190 Z" fill="#94a3b8" />
+    <path d="M116 190 L 128 196 L 140 190 L 140 195 L 128 201 L 116 195 Z" fill="#cbd5e1" />
+    
+    <!-- Page Lines Left -->
+    <path d="M24 105 L 100 89" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" opacity="0.6" />
+    <path d="M24 123 L 100 107" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" opacity="0.6" />
+    <path d="M24 141 L 100 125" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" opacity="0.6" />
+    <path d="M24 159 L 80 148" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" opacity="0.6" />
+
+    <!-- Page Lines Right -->
+    <path d="M156 89 L 232 105" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" opacity="0.6" />
+    <path d="M156 107 L 232 123" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" opacity="0.6" />
+    <path d="M156 125 L 232 141" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" opacity="0.6" />
+    <path d="M176 148 L 232 159" stroke="#94a3b8" stroke-width="3" stroke-linecap="round" opacity="0.6" />
+
+    <!-- Ribbon Marker -->
+    <path d="M124 93 C 124 130, 132 160, 148 215 L 138 217 C 122 162, 118 130, 118 93 Z" fill="#f59e0b" />
+  </g>
+
+  <!-- Glowing Cross Icon above the book -->
+  <g transform="translate(256, 175) scale(0.9)">
+    <!-- Cross Glow Overlay -->
+    <path d="M -10 -55 L 10 -55 L 10 -25 L 40 -25 L 40 -5 L 10 -5 L 10 50 L -10 50 L -10 -5 L -40 -5 L -40 -25 L -10 -25 Z" fill="#22d3ee" opacity="0.25" filter="blur(6px)" />
+    <!-- Core Cross -->
+    <path d="M -6 -50 L 6 -50 L 6 -21 L 35 -21 L 35 -9 L 6 -9 L 6 45 L -6 45 L -6 -9 L -35 -9 L -35 -21 L -6 -21 Z" fill="url(#accent-grad)" />
+  </g>
+</svg>

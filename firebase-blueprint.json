@@ -1,0 +1,183 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User account profile and settings",
+      "type": "object",
+      "properties": {
+        "userId": {
+          "type": "string",
+          "description": "Unique identifier of the user (from Auth)"
+        },
+        "email": {
+          "type": "string",
+          "description": "The user's registered email address"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "The user's display name"
+        },
+        "theme": {
+          "type": "string",
+          "enum": ["light", "dark"],
+          "description": "The user's selected layout theme"
+        },
+        "lastReadBook": {
+          "type": "string",
+          "description": "The book name the user last read (e.g. John)"
+        },
+        "lastReadChapter": {
+          "type": "integer",
+          "description": "The chapter number the user last read (e.g. 1)"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the user profile was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the user profile was last updated"
+        }
+      },
+      "required": ["userId", "email", "createdAt", "updatedAt"]
+    },
+    "Bookmark": {
+      "title": "Bookmark",
+      "description": "A saved/bookmarked bible verse with dynamic highlights and study notes",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the bookmark (usually formatted as book_chapter_verse)"
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who saved the bookmark"
+        },
+        "book": {
+          "type": "string",
+          "description": "The book name (e.g. John)"
+        },
+        "chapter": {
+          "type": "integer",
+          "description": "The chapter number"
+        },
+        "verse": {
+          "type": "integer",
+          "description": "The verse number"
+        },
+        "color": {
+          "type": "string",
+          "enum": ["none", "yellow", "cyan", "green", "red"],
+          "description": "The active highlight color used"
+        },
+        "notes": {
+          "type": "string",
+          "description": "Optional custom study notes added by the user"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the bookmark was created"
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the bookmark was last updated"
+        }
+      },
+      "required": ["id", "userId", "book", "chapter", "verse", "color", "createdAt", "updatedAt"]
+    },
+    "QuizScore": {
+      "title": "QuizScore",
+      "description": "A historic theology quiz or memorization studio result scorecard",
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "description": "Unique identifier of the quiz result"
+        },
+        "userId": {
+          "type": "string",
+          "description": "The ID of the user who completed the quiz"
+        },
+        "mode": {
+          "type": "string",
+          "enum": ["vocabulary", "memorization"],
+          "description": "The test mode taken"
+        },
+        "score": {
+          "type": "integer",
+          "description": "The total score achieved (out of 100 or matching points)"
+        },
+        "quizBook": {
+          "type": "string",
+          "description": "The book name the quiz was scoped on"
+        },
+        "quizChapter": {
+          "type": "integer",
+          "description": "The chapter number the quiz was scoped on"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the quiz score was achieved"
+        }
+      },
+      "required": ["id", "userId", "mode", "score", "createdAt"]
+    },
+    "Chapter": {
+      "title": "Chapter",
+      "description": "A database of all processed, contemporary, and personalized easy English translations to enable ultra-fast load profiles",
+      "type": "object",
+      "properties": {
+        "book": {
+          "type": "string",
+          "description": "The name of the book"
+        },
+        "chapter": {
+          "type": "integer",
+          "description": "The chapter number"
+        },
+        "verses": {
+          "type": "array",
+          "description": "Array of verse details"
+        },
+        "isHighFidelity": {
+          "type": "boolean",
+          "description": "Whether the chapter was fully modernized"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the chapter was stored"
+        },
+        "source": {
+          "type": "string",
+          "description": "The source of the chapter generation"
+        }
+      },
+      "required": ["book", "chapter", "verses", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Stores user state details and interface preferences"
+    },
+    "/users/{userId}/bookmarks/{bookmarkId}": {
+      "schema": "Bookmark",
+      "description": "Stores saved verses with notes for a specific user"
+    },
+    "/users/{userId}/quizzes/{quizId}": {
+      "schema": "QuizScore",
+      "description": "Keeps a digital record of the user's historical quiz achievements"
+    },
+    "/chapters/{chapterId}": {
+      "schema": "Chapter",
+      "description": "Public database of all pregenerated and modernized Bible chapters"
+    }
+  }
+}

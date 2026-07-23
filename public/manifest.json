@@ -1,0 +1,28 @@
+{
+  "short_name": "Bible Study",
+  "name": "Personalised Bible Study",
+  "description": "A contemporary Bible study companion tailored for non-native English speakers.",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "type": "image/svg+xml",
+      "sizes": "any",
+      "purpose": "any font-selected"
+    },
+    {
+      "src": "/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#070b14",
+  "theme_color": "#06b6d4",
+  "display": "standalone",
+  "orientation": "portrait"
+}

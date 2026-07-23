@@ -1,0 +1,20 @@
+const fs = require('fs');
+let content = fs.readFileSync('src/App.tsx', 'utf8');
+const startIdx = content.indexOf('{chapterData.verses.map((v) => {');
+
+let openBrackets = 0;
+let endIdx = -1;
+for (let i = startIdx; i < content.length; i++) {
+    if (content[i] === '{') openBrackets++;
+    else if (content[i] === '}') {
+        openBrackets--;
+        if (openBrackets === 0) {
+            endIdx = i + 1;
+            break;
+        }
+    }
+}
+
+const originalMapBlock = content.substring(startIdx, endIdx);
+fs.writeFileSync('originalMapBlock.txt', originalMapBlock);
+console.log('Saved originalMapBlock.txt');

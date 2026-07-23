@@ -1,0 +1,6 @@
+{
+  "name": "Personalized Bible Study",
+  "description": "Parallel Bible study with KJV/BSB, Greek & Hebrew keys, and audio study tools.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

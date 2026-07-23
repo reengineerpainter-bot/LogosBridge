@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Scripture Projection</title>
+</head>
+<body>
+  <div id="page" class="fixed inset-0 bg-[#09090b] flex flex-col items-center justify-center text-zinc-500 font-sans text-center p-8 select-none border-[12px] border-zinc-950">
+    
+    <!-- Standby Display -->
+    <div id="standby" class="relative z-10 flex flex-col items-center space-y-6">
+      <div class="w-20 h-20 rounded-full border border-zinc-800 bg-zinc-900/50 shadow-2xl flex items-center justify-center backdrop-blur-xl">
+        <svg class="w-8 h-8 text-zinc-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <rect width="20" height="15" x="2" y="3" rx="2"/>
+          <path d="M12 18v4M6 22h12"/>
+        </svg>
+      </div>
+      <div class="space-y-2">
+        <h3 class="text-xl font-medium tracking-[0.2em] text-zinc-300">NDI PROGRAM OUT</h3>
+        <p class="text-[11px] font-sans text-zinc-600 max-w-md mx-auto uppercase tracking-widest leading-relaxed">
+          Output standing by. Awaiting live feed from Projection Studio.
+        </p>
+      </div>
+      <div class="mt-8 flex gap-3 justify-center items-center px-4 py-2 rounded-full border border-zinc-800/60 bg-zinc-900/30">
+        <span class="flex h-2 w-2 relative items-center justify-center">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60"></span>
+          <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]"></span>
+        </span>
+        <span class="text-[10px] text-emerald-500 tracking-[0.25em] uppercase font-bold">Signal Ready</span>
+      </div>
+    </div>
+
+    <!-- Active Presentation Slide -->
+    <div id="inner-container" style="display: none;">
+      <div id="slide" class="w-full flex flex-col overflow-hidden">
+        <!-- Slide Header -->
+        <div id="header" class="flex items-center justify-between font-sans leading-none w-full border-b border-white/10">
+          <span id="label" class="uppercase font-bold tracking-wider"></span>
+          <span id="reference" class="tracking-wide"></span>
+        </div>
+        <!-- Slide Body Text -->
+        <div id="text" class="w-full whitespace-pre-wrap transition-all leading-normal"></div>
+        <!-- Accents Container -->
+        <div id="accents"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <script type="module" src="/src/projection.ts"></script>
+</body>
+</html>

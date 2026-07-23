@@ -1,0 +1,1 @@
+sed -i 's/className={`inline cursor-pointer leading-\[1.8\] tracking-\[0.01em\] transition-all duration-150 ${highlightClasses}/className={`inline relative cursor-pointer leading-[1.8] tracking-[0.01em] transition-all duration-150 ${highlightClasses}/g' src/components/NarrativeStream.tsx

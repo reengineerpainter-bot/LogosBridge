@@ -1,0 +1,201 @@
+   180	                })}
+   181	              </div>
+   182	
+   183	              {focusedInChunk && (
+   184	                <div 
+   185	                  className="mt-1.5 flex items-center justify-center overflow-x-auto hide-scrollbar animate-fade-in-up" 
+   186	                  onClick={(e) => e.stopPropagation()}
+   187	                >
+   188	                  <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full border shadow-sm transition-all ${
+   189	                    theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#18181b] border-zinc-800'
+   190	                  }`}>
+   191	                    {/* Minimal Verse Indicator */}
+   192	                    <div className={`flex items-center px-1.5 py-0.5 rounded-full shrink-0 ${
+   193	                      theme === 'light' ? 'bg-slate-100 text-slate-500' : 'bg-white/5 text-slate-400'
+   194	                    }`}>
+   195	                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest">v.{focusedInChunk.verseNumber}</span>
+   196	                    </div>
+   197	
+   198	                    <div className={`w-[1px] h-3 mx-0.5 shrink-0 ${theme === 'light' ? 'bg-slate-200' : 'bg-zinc-800'}`} />
+   199	
+   200	                    {/* Play Audio Button */}
+   201	                    <button
+   202	                      onClick={(e) => {
+   203	                        e.stopPropagation();
+   204	                        if (currentlyReadingVerse === focusedInChunk.verseNumber) {
+   205	                          stopSpeaking();
+   206	                        } else {
+   207	                          playSingleVerse(focusedInChunk.verseNumber, getSpeechTextForVerse(focusedInChunk));
+   208	                        }
+   209	                      }}
+   210	                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
+   211	                        currentlyReadingVerse === focusedInChunk.verseNumber
+   212	                          ? 'bg-rose-500/15 text-rose-500 animate-pulse'
+   213	                          : (theme === 'light' ? 'hover:bg-cyan-50 text-cyan-700' : 'hover:bg-white/10 text-cyan-400')
+   214	                      }`}
+   215	                      title={currentlyReadingVerse === focusedInChunk.verseNumber ? 'Stop speaking' : 'Listen'}
+   216	                    >
+   217	                      {currentlyReadingVerse === focusedInChunk.verseNumber ? <VolumeX className="w-3.5 h-3.5" /> : <Volume2 className="w-3.5 h-3.5" />}
+   218	                    </button>
+   219	
+   220	                    {/* Theological Note Button */}
+   221	                    <button
+   222	                      onClick={(e) => {
+   223	                        e.stopPropagation();
+   224	                        if (activeDraftVerse === focusedInChunk.verseNumber) {
+   225	                          handleCancelNote();
+   226	                        } else {
+   227	                          startEditingNote(focusedInChunk.verseNumber, verseHighlight?.notes || '');
+   228	                        }
+   229	                      }}
+   230	                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
+   231	                        activeDraftVerse === focusedInChunk.verseNumber
+   232	                          ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400'
+   233	                          : hasNotes
+   234	                            ? (theme === 'light' ? 'bg-amber-100 text-amber-800' : 'bg-amber-955/20 text-amber-400')
+   235	                            : (theme === 'light' ? 'hover:bg-slate-100 text-slate-600' : 'hover:bg-white/10 text-slate-400')
+   236	                      }`}
+   237	                      title="Write or edit theological note reflection"
+   238	                    >
+   239	                      <StarryCradleIcon className="w-3.5 h-3.5" active={hasNotes} />
+   240	                    </button>
+   241	
+   242	                    {/* Bookmark Toggle */}
+   243	                    <button
+   244	                      onClick={(e) => {
+   245	                        e.stopPropagation();
+   246	                        toggleSaveVerse(focusedInChunk.verseNumber);
+   247	                      }}
+   248	                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
+   249	                        isSavedInChunk
+   250	                          ? 'bg-emerald-500/15 text-emerald-500'
+   251	                          : (theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-white/10 text-slate-400')
+   252	                      }`}
+   253	                      title="Bookmark verse"
+   254	                    >
+   255	                      <Bookmark className={`w-3.5 h-3.5 ${isSavedInChunk ? 'fill-current text-emerald-500' : ''}`} />
+   256	                    </button>
+   257	
+   258	                    {/* Copy Verse */}
+   259	                    <button
+   260	                      onClick={(e) => {
+   261	                        e.stopPropagation();
+   262	                        const textToCopy = streamType === 'plain'
+   263	                          ? focusedInChunk.contemporary
+   264	                          : streamType === 'pers'
+   265	                            ? focusedInChunk.nonNativeEnglish
+   266	                            : streamType === 'kjv'
+   267	                              ? (focusedInChunk.kjvText || '')
+   268	                              : (focusedInChunk.bsbText || '');
+   269	                        const transName = streamType === 'plain' ? 'Plain English' : streamType === 'pers' ? 'Personalised' : streamType === 'kjv' ? 'KJV' : 'BSB';
+   270	                        navigator.clipboard.writeText(`[v.${focusedInChunk.verseNumber}] ${textToCopy} (${transName})`);
+   271	                      }}
+   272	                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
+   273	                        theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-white/10 text-slate-400'
+   274	                      }`}
+   275	                      title="Copy verse text"
+   276	                    >
+   277	                      <Copy className="w-3.5 h-3.5" />
+   278	                    </button>
+   279	
+   280	                    {/* Direct Project indicator button */}
+   281	                    {onOpenProjection && (
+   282	                      <button
+   283	                        onClick={(e) => {
+   284	                          e.stopPropagation();
+   285	                          onOpenProjection(focusedInChunk.verseNumber);
+   286	                        }}
+   287	                        className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
+   288	                          theme === 'light' ? 'hover:bg-amber-50 text-amber-700' : 'hover:bg-amber-955/20 text-amber-400'
+   289	                        }`}
+   290	                        title={`Project verse ${focusedInChunk.verseNumber}`}
+   291	                      >
+   292	                        <Tv className="w-3.5 h-3.5" />
+   293	                      </button>
+   294	                    )}
+   295	
+   296	                    <div className={`w-[1px] h-3 mx-0.5 shrink-0 ${theme === 'light' ? 'bg-slate-200' : 'bg-zinc-800'}`} />
+   297	
+   298	                    {/* Close Button */}
+   299	                    <button
+   300	                      onClick={(e) => {
+   301	                        e.stopPropagation();
+   302	                        setFocusedVerse(null);
+   303	                      }}
+   304	                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
+   305	                        theme === 'light' ? 'hover:bg-rose-50 text-rose-500' : 'hover:bg-rose-955/20 text-rose-400'
+   306	                      }`}
+   307	                      title="Dismiss"
+   308	                    >
+   309	                      <X className="w-3.5 h-3.5" />
+   310	                    </button>
+   311	                  </div>
+   312	                </div>
+   313	              )}
+   314	                  {currentlyReadingVerse === focusedInChunk.verseNumber && (
+   315	                    <div className="mt-2 flex items-center justify-between bg-slate-100 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-250 dark:border-cyan-950/30">
+   316	                      <span className="text-[10px] font-mono text-slate-400 dark:text-cyan-650 flex items-center gap-1">
+   317	                        ⚙️ Playback Speed:
+   318	                      </span>
+   319	                      <div className="flex items-center space-x-2">
+   320	                        <input
+   321	                          type="range"
+   322	                          min="0.5"
+   323	                          max="1.5"
+   324	                          step="0.1"
+   325	                          value={playbackSpeed}
+   326	                          onChange={(e) => {
+   327	                            e.stopPropagation();
+   328	                            setPlaybackSpeed(parseFloat(e.target.value));
+   329	                          }}
+   330	                          className="w-20 h-1 bg-slate-205 dark:bg-cyan-955 rounded-lg appearance-none cursor-pointer accent-cyan-500"
+   331	                        />
+   332	                        <span className="text-[10.5px] font-mono font-bold text-cyan-600">
+   333	                          {playbackSpeed.toFixed(1)}x
+   334	                        </span>
+   335	                      </div>
+   336	                    </div>
+   337	                  )}
+   338	
+   339	                  {/* Theological Note Active Draft text area overlay inside the paragraph flow */}
+   340	                  {activeDraftVerse === focusedInChunk.verseNumber && (
+   341	                    <div className={`mt-2.5 p-3 rounded-lg border focus-within:ring-1 focus-within:ring-cyan-500/30 ${
+   342	                      theme === 'light' ? 'bg-white border-slate-200 shadow-xs' : 'bg-[#080d19] border-cyan-950/80 shadow-inner'
+   343	                    }`}>
+   344	                      <textarea
+   345	                        value={noteDraftText}
+   346	                        onChange={(e) => setNoteDraftText(e.target.value)}
+   347	                        placeholder="Write down personal theological reflections or spiritual notes..."
+   348	                        className={`w-full text-xs p-2 rounded-lg border focus:outline-none ${
+   349	                          theme === 'light'
+   350	                            ? 'bg-slate-50 text-slate-800 border-slate-200'
+   351	                            : 'bg-slate-950 text-slate-100 border-cyan-900/30'
+   352	                        }`}
+   353	                        rows={2}
+   354	                        autoFocus
+   355	                      />
+   356	                      <div className="mt-2 flex items-center justify-end space-x-2">
+   357	                        <button
+   358	                          onClick={handleCancelNote}
+   359	                          className={`text-[9px] uppercase font-mono tracking-wider font-extrabold px-2.5 py-1 rounded transition-colors cursor-pointer ${
+   360	                            theme === 'light' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-slate-900 text-slate-400 hover:bg-slate-850'
+   361	                          }`}
+   362	                        >
+   363	                          Cancel
+   364	                        </button>
+   365	                        <button
+   366	                          onClick={() => handleSaveNote(focusedInChunk.verseNumber)}
+   367	                          className="text-[9px] uppercase font-mono tracking-wider font-extrabold px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white shadow-xs transition-colors cursor-pointer"
+   368	                        >
+   369	                          💾 Save Notes
+   370	                        </button>
+   371	                      </div>
+   372	                    </div>
+   373	                  )}
+   374	                </div>
+   375	              )}
+   376	            </div>
+   377	          );
+   378	        })}
+   379	      </div>
+   380	    </div>
