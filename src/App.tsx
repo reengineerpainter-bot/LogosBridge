@@ -388,13 +388,33 @@ export default function App() {
     if (shouldFetch) {
       setDynamicTranslationData({});
       fetch(`/api/translation/${shouldFetch}?book=${encodeURIComponent(selectedBook)}&chapter=${selectedChapter}`)
-        .then(res => res.json())
+        .then(async (res) => {
+           // On Vercel, a missing API might return the index.html page instead of JSON
+           if (!res.ok || res.headers.get('content-type')?.includes('text/html')) {
+               throw new Error('Backend endpoint unavailable or returned HTML');
+           }
+           return res.json();
+        })
         .then(data => {
            if (data.success && data.data && data.data.verses) {
              setDynamicTranslationData(data.data.verses);
+           } else {
+             throw new Error('Invalid JSON format from backend');
            }
         })
-        .catch(err => console.warn('Failed to fetch dynamic translation:', err));
+        .catch(err => {
+           console.warn(`[Fallback] Backend translation fetch failed (${err.message}), fetching directly from public API...`);
+           // Direct client-side fallback to bible-api.com
+           const urlBook = encodeURIComponent(selectedBook.toLowerCase());
+           fetch(`https://bible-api.com/${urlBook}+${selectedChapter}?translation=${shouldFetch}`)
+             .then(res => res.json())
+             .then(data => {
+                if (data && data.verses) {
+                  setDynamicTranslationData(data.verses);
+                }
+             })
+             .catch(e => console.error('[Fallback] Direct public API fetch also failed:', e));
+        });
     }
   }, [translationDisplayMode, interlinearThirdLine, selectedBook, selectedChapter]);
 
