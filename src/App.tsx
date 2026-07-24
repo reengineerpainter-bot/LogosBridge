@@ -56,9 +56,7 @@ import { STATIC_CHAPTERS } from './staticChapters';
 import { ChapterData, Verse, SpecialWord, BibleBook } from './types';
 import { NarrativeStream } from './components/NarrativeStream';
 import { manuscriptData } from './manuscriptData';
-import { generateOfflineChapter } from './utils/offlineGenerator';
 import {
-  Database,
   Trash2,
   CloudLightning,
   AlertTriangle,
@@ -1526,8 +1524,6 @@ export default function App() {
       return;
     }
 
-    const offlineVersion = generateOfflineChapter(book, chapter);
-
     // 2. Try to read from offline cache
     let cachedParsed: any = null;
     let isMockCached = false;
@@ -1542,31 +1538,28 @@ export default function App() {
             (!parsed.isHighFidelity) ||
             (book === 'Genesis' && chapter > 1 && parsed.verses.length <= 5) ||
             (parsed.verses.length <= 3 && !STATIC_CHAPTERS[book]?.[chapter]);
+            
+          // If the cached version is a mockup, immediately discard it to force a real fetch
+          if (isMockCached) {
+            localStorage.removeItem(cacheKey);
+            cachedParsed = null;
+          }
         }
       }
     } catch (e) {
       console.warn('Failed to parse cached chapter:', e);
     }
 
-    // Serve IMMEDIATELY without waiting if high-fidelity. Otherwise, show loading spinner to ensure full verses load.
-    const needsBackgroundUpgrade = !cachedParsed || isMockCached;
+    // Serve IMMEDIATELY without waiting if we found a valid, non-mocked cache.
+    const needsBackgroundUpgrade = !cachedParsed;
 
     if (!needsBackgroundUpgrade) {
       setChapterData(cachedParsed);
       setLoading(false);
     } else {
       setLoading(true);
-      if (cachedParsed) {
-        setChapterData(cachedParsed);
-      } else {
-        setChapterData(offlineVersion);
-        try {
-          localStorage.setItem(cacheKey, JSON.stringify(offlineVersion));
-          updateCachedStats();
-        } catch (e) {
-          console.warn('Failed to cache synthesized fallback chapter:', e);
-        }
-      }
+      // Show empty state while loading
+      setChapterData(null);
     }
 
     if (needsBackgroundUpgrade) {
@@ -1624,10 +1617,10 @@ export default function App() {
           throw new Error(responseData.message || 'Unable to load study manuscript metrics.');
         }
       } catch (err: any) {
-        console.warn('Silent background update failed (using beautiful offline text instead):', err.message);
+        console.warn('Silent background update failed:', err.message);
         // Turn off spinner & set readable content if failed so user experiences zero crash
         if (activeChapterRef.current.book === book && activeChapterRef.current.chapter === chapter) {
-          const currentData = cachedParsed || offlineVersion;
+          const currentData = cachedParsed || { verses: [] };
           setChapterData(currentData);
           setLoading(false);
         }
@@ -1672,7 +1665,6 @@ export default function App() {
         }
       } catch {}
 
-      const offlineVersion = generateOfflineChapter(book, ch);
       const isMockCached = cachedData && (
         cachedData.isSynthesizedFallback ||
         (!cachedData.isHighFidelity) ||
@@ -1680,6 +1672,11 @@ export default function App() {
         (cachedData.verses && cachedData.verses.length <= 3 && !STATIC_CHAPTERS[book]?.[ch]) ||
         (cachedData.verses && cachedData.verses[0] && cachedData.verses[0].kjvText && cachedData.verses[0].kjvText.includes('day of visitation'))
       );
+
+      // Clean old mocked cache data
+      if (isMockCached) {
+        localStorage.removeItem(cacheKey);
+      }
 
       if (isAlreadyCached && !isMockCached) {
         successfulCount++;
@@ -1708,12 +1705,8 @@ export default function App() {
           throw new Error('API issue');
         }
       } catch {
-        // Instant clean local fallback translation if offline/no keys
-        const fallback = generateOfflineChapter(book, ch);
-        try {
-          localStorage.setItem(cacheKey, JSON.stringify(fallback));
-          successfulCount++;
-        } catch {}
+        console.warn(`Failed to fetch and cache ${book} chapter ${ch}`);
+        // Do not increment successfulCount so the progress reflects failures
       }
 
       setDownloadProgress(Math.round((successfulCount / totalChaptersCount) * 100));
