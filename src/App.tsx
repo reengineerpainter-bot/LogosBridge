@@ -387,6 +387,19 @@ export default function App() {
 
     if (shouldFetch) {
       setDynamicTranslationData({});
+      
+      const processVerses = (versesData: any) => {
+         const formattedData: Record<string, string> = {};
+         if (Array.isArray(versesData)) {
+           versesData.forEach((v: any) => {
+             formattedData[String(v.verse)] = v.text;
+           });
+         } else if (typeof versesData === 'object' && versesData !== null) {
+           Object.assign(formattedData, versesData);
+         }
+         setDynamicTranslationData(formattedData);
+      };
+
       fetch(`/api/translation/${shouldFetch}?book=${encodeURIComponent(selectedBook)}&chapter=${selectedChapter}`)
         .then(async (res) => {
            // On Vercel, a missing API might return the index.html page instead of JSON
@@ -397,7 +410,7 @@ export default function App() {
         })
         .then(data => {
            if (data.success && data.data && data.data.verses) {
-             setDynamicTranslationData(data.data.verses);
+             processVerses(data.data.verses);
            } else {
              throw new Error('Invalid JSON format from backend');
            }
@@ -410,7 +423,7 @@ export default function App() {
              .then(res => res.json())
              .then(data => {
                 if (data && data.verses) {
-                  setDynamicTranslationData(data.verses);
+                  processVerses(data.verses);
                 }
              })
              .catch(e => console.error('[Fallback] Direct public API fetch also failed:', e));
