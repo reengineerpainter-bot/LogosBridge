@@ -1421,29 +1421,43 @@ app.get('/api/translation/:translationId', async (req, res) => {
 
   try {
     const dbInstance = getAdminFirestore();
-    if (!dbInstance) {
-      return res.status(500).json({ success: false, error: 'Database not initialized' });
+    if (dbInstance) {
+      const docRef = dbInstance
+        .collection('translations')
+        .doc(translationId)
+        .collection('books')
+        .doc(book)
+        .collection('chapters')
+        .doc(chapter);
+
+      const snap = await docRef.get();
+      if (snap.exists) {
+        return res.json({
+          success: true,
+          source: 'firestore',
+          translationId,
+          data: snap.data()
+        });
+      }
     }
 
-    const docRef = dbInstance
-      .collection('translations')
-      .doc(translationId)
-      .collection('books')
-      .doc(book)
-      .collection('chapters')
-      .doc(chapter);
-
-    const snap = await docRef.get();
-    if (!snap.exists) {
-      return res.status(404).json({ success: false, error: 'Translation chapter not found in database' });
+    // Fallback to bible-api.com if not found in Firestore or if offline mode triggers
+    const urlBook = encodeURIComponent(book.toLowerCase());
+    const fetchUrl = `https://bible-api.com/${urlBook}+${chapter}?translation=${translationId}`;
+    console.log(`[API Fallback] Fetching ${translationId} from bible-api.com for ${book} ${chapter}`);
+    
+    const response = await fetch(fetchUrl);
+    if (response.ok) {
+       const data = await response.json();
+       return res.json({
+         success: true,
+         source: 'bible-api',
+         translationId,
+         data: data
+       });
     }
 
-    return res.json({
-      success: true,
-      source: 'firestore',
-      translationId,
-      data: snap.data()
-    });
+    return res.status(404).json({ success: false, error: 'Translation chapter not found in database or external API' });
   } catch (error: any) {
     console.error('[Translation API Error]', error.message || error);
     return res.status(500).json({ success: false, error: 'Internal Server Error' });

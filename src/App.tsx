@@ -2418,15 +2418,15 @@ export default function App() {
 
                 {isActive && (
                   <div
-                    className={`absolute bottom-full left-1/2 -translate-x-1/2 mb-2 w-64 sm:w-72 p-3 rounded-xl border shadow-2xl z-50 text-left leading-[1.8] tracking-[0.01em] ${
+                    className={`absolute top-full left-1/2 -translate-x-1/2 mt-2 w-64 sm:w-72 p-3 rounded-xl border shadow-2xl z-50 text-left leading-[1.8] tracking-[0.01em] ${
                       theme === 'light'
                         ? 'bg-white border-slate-200 text-slate-800 shadow-slate-300/40'
                         : 'bg-[#0b1225]/95 border-cyan-500/40 text-slate-150 shadow-[#020408]/70'
                     }`}
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* Arrow indicator at the bottom matching theme background */}
-                    <div className={`absolute top-full left-1/2 -translate-x-1/2 -mt-1 w-2 h-2 rotate-45 border-r border-b ${
+                    {/* Arrow indicator at the top matching theme background */}
+                    <div className={`absolute bottom-full left-1/2 -translate-x-1/2 -mb-1 w-2 h-2 rotate-45 border-l border-t ${
                       theme === 'light'
                         ? 'bg-white border-slate-200'
                         : 'bg-[#0b1225] border-cyan-500/40'
