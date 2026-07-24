@@ -354,7 +354,7 @@ export default function App() {
   const [personalizedItalic, setPersonalizedItalic] = useState<boolean>(false);
   const [manuscriptBold, setManuscriptBold] = useState<boolean>(false);
   const [manuscriptItalic, setManuscriptItalic] = useState<boolean>(true);
-  const [isComparisonEnabled, setIsComparisonEnabled] = useState<boolean>(true);
+  const [isComparisonEnabled, setIsComparisonEnabled] = useState<boolean>(false);
   const [referenceDisplayMode, setReferenceDisplayMode] = useState<'both' | 'kjv' | 'bsb'>('both');
   const [translationDisplayMode, setTranslationDisplayMode] = useState<'both' | 'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>(() => {
     const val = localStorage.getItem('personalized_bible_translation_display_mode');
