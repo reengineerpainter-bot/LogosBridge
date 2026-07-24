@@ -41,11 +41,13 @@ import {
   Award,
   Play,
   Square,
-  Type,
   Tv,
   Settings,
+  Library,
   MonitorPlay,
-  Ban
+  Ban,
+  ToggleLeft,
+  ToggleRight
 } from 'lucide-react';
 import { BIBLE_BOOKS } from './bibleMetadata';
 import { STATIC_CHAPTERS } from './staticChapters';
@@ -75,6 +77,7 @@ import {
 import CloudSyncPanel from './components/CloudSyncPanel';
 import ProjectionStudio from './components/ProjectionStudio';
 import ProjectorCleanDisplay from './components/ProjectorCleanDisplay';
+import { openProjectorStandalone } from './utils/windowUtils';
 
 // @ts-ignore
 import logoCosmicBreath from './assets/images/logo_cosmic_breath_1780920337362.png';
@@ -227,7 +230,9 @@ export default function App() {
   const [selectedChapter, setSelectedChapter] = useState<number>(11);
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState<boolean>(false);
+  const [isTransMenuOpen, setIsTransMenuOpen] = useState<boolean>(false);
   const [moreMenuSubpage, setMoreMenuSubpage] = useState<'main' | 'companion' | 'scripture'>('main');
+  const [fullPageMenu, setFullPageMenu] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isMoreMenuOpen) {
@@ -267,6 +272,19 @@ export default function App() {
   const [translationDisplayMode, setTranslationDisplayMode] = useState<'both' | 'plain' | 'personalized' | 'kjv' | 'bsb' | 'plain_kjv' | 'personalized_kjv'>(() => {
     return (localStorage.getItem('personalized_bible_translation_display_mode') as any) || 'plain';
   });
+  const translationPickerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (translationPickerRef.current) {
+      const modes = ['plain', 'personalized', 'kjv', 'bsb'];
+      const index = modes.indexOf(translationDisplayMode);
+      if (index !== -1) {
+        const itemHeight = window.innerWidth >= 768 ? 40 : 32;
+        translationPickerRef.current.scrollTop = index * itemHeight;
+      }
+    }
+  }, [translationDisplayMode]);
+
   const [layoutMode, setLayoutMode] = useState<'formal' | 'paragraph'>(() => {
     return (localStorage.getItem('personalized_bible_layout_mode') as 'formal' | 'paragraph') || 'paragraph';
   });
@@ -488,16 +506,6 @@ export default function App() {
     };
   }, []);
 
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const electronAPI = (window as any).electronAPI;
-      if (electronAPI && electronAPI.sendSlideUpdate) {
-        console.log('[Control Window] Sending slide update to Electron:', liveScreenState);
-        electronAPI.sendSlideUpdate(liveScreenState);
-      }
-    }
-  }, [liveScreenState]);
-
   const handleClearLiveScreen = () => {
     try {
       localStorage.removeItem('live_projection_state');
@@ -545,6 +553,59 @@ export default function App() {
   const [bookSearchQuery, setBookSearchQuery] = useState<string>('');
   const bookDropdownRef = useRef<HTMLDivElement>(null);
   const chapterDropdownRef = useRef<HTMLDivElement>(null);
+
+  // Swipe Gestures
+  const [touchStart, setTouchStart] = useState<{x: number, y: number} | null>(null);
+  const [touchEnd, setTouchEnd] = useState<{x: number, y: number} | null>(null);
+  
+  const minSwipeDistance = 50;
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd({ x: e.targetTouches[0].clientX, y: e.targetTouches[0].clientY });
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distanceX = touchStart.x - touchEnd.x;
+    const distanceY = touchStart.y - touchEnd.y;
+    const isLeftSwipe = distanceX > minSwipeDistance;
+    const isRightSwipe = distanceX < -minSwipeDistance;
+    
+    // Only process horizontal swipes
+    if (Math.abs(distanceX) > Math.abs(distanceY)) {
+      if (isLeftSwipe) {
+        // Next chapter
+        const currentBookObj = booksList.find(b => b.name === selectedBook);
+        if (currentBookObj && selectedChapter < currentBookObj.chapters) {
+          setSelectedChapter(prev => prev + 1);
+        } else if (currentBookObj) {
+          const bookIndex = booksList.findIndex(b => b.name === selectedBook);
+          if (bookIndex !== -1 && bookIndex < booksList.length - 1) {
+            setSelectedBook(booksList[bookIndex + 1].name);
+            setSelectedChapter(1);
+          }
+        }
+      }
+      if (isRightSwipe) {
+        // Prev chapter
+        if (selectedChapter > 1) {
+          setSelectedChapter(prev => prev - 1);
+        } else {
+          const bookIndex = booksList.findIndex(b => b.name === selectedBook);
+          if (bookIndex > 0) {
+            const prevBook = booksList[bookIndex - 1];
+            setSelectedBook(prevBook.name);
+            setSelectedChapter(prevBook.chapters);
+          }
+        }
+      }
+    }
+  };
 
   // Chapter loading states
   const [chapterDataState, setChapterData] = useState<ChapterData | null>(null);
@@ -812,42 +873,23 @@ export default function App() {
     playWebAudioBeep(330, 'triangle', 0.1);
   };
 
-  const pendingTargetVerseRef = useRef<number | null>(null);
-
-  useEffect(() => {
-    if (chapterData && pendingTargetVerseRef.current !== null) {
-      const verseNum = pendingTargetVerseRef.current;
-      pendingTargetVerseRef.current = null;
-      const matched = chapterData.verses?.find((v: any) => v.verseNumber === verseNum);
-      if (matched) {
-        setFocusedVerse(matched);
-        setProjectionInitialVerseNumber(verseNum);
-        setTimeout(() => {
-          const el = document.getElementById(`verse-row-${verseNum}`);
-          if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          }
-        }, 200);
-      }
-    }
-  }, [chapterData]);
-
   const navigateToSidebarVerse = (bookName: string, chapterNum: number, verseNum: number) => {
-    pendingTargetVerseRef.current = verseNum;
-    setProjectionInitialVerseNumber(verseNum);
     if (selectedBook === bookName && selectedChapter === chapterNum) {
-      const matchedVerse = chapterData?.verses?.find((v: any) => v.verseNumber === verseNum);
-      if (matchedVerse) {
-        setFocusedVerse(matchedVerse);
-        pendingTargetVerseRef.current = null;
-      }
       const el = document.getElementById(`verse-row-${verseNum}`);
       if (el) {
         el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        const matchedVerse = chapterData?.verses?.find(v => v.verseNumber === verseNum);
+        if (matchedVerse) setFocusedVerse(matchedVerse);
       }
     } else {
       setSelectedBook(bookName);
       setSelectedChapter(chapterNum);
+      setTimeout(() => {
+        const el = document.getElementById(`verse-row-${verseNum}`);
+        if (el) {
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+      }, 700);
     }
     if (window.innerWidth < 1024) {
       setIsStudySidebarOpen(false);
@@ -1004,7 +1046,7 @@ export default function App() {
         setIsSidePanelHidden(false);
       } else if (scrollY > lastScrollY && Math.abs(scrollY - lastScrollY) >= 5) {
         // Scrolling down
-        setIsHeaderHidden(true);
+        setIsHeaderHidden(false); // Changed to false to prevent auto-hide
         setIsSidePanelHidden(true);
       } else if (scrollY < lastScrollY && Math.abs(scrollY - lastScrollY) >= 5) {
         // Scrolling up
@@ -1047,10 +1089,16 @@ export default function App() {
   // Filter books based on search query
   const filteredBooks = useMemo(() => {
     if (!bookSearchQuery.trim()) return booksList;
+    const queryLetters = bookSearchQuery.replace(/[0-9]/g, '').trim().toLowerCase();
+    if (!queryLetters) return booksList;
     return booksList.filter((b) =>
-      b.name.toLowerCase().includes(bookSearchQuery.toLowerCase())
+      b.name.toLowerCase().includes(queryLetters)
     );
   }, [booksList, bookSearchQuery]);
+
+  
+
+  
 
   // Find currently selected book object
   const currentBookObj = useMemo(() => {
@@ -1598,21 +1646,6 @@ export default function App() {
       setActiveWordId(null);
       setSelectedWord(null);
 
-      // Close Book dropdown if clicked outside
-      if (
-        bookDropdownRef.current &&
-        !bookDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsBookDropdownOpen(false);
-      }
-
-      // Close Chapter dropdown if clicked outside
-      if (
-        chapterDropdownRef.current &&
-        !chapterDropdownRef.current.contains(event.target as Node)
-      ) {
-        setIsChapterDropdownOpen(false);
-      }
     };
     document.addEventListener('click', handleDocumentClick);
     return () => document.removeEventListener('click', handleDocumentClick);
@@ -2290,7 +2323,7 @@ export default function App() {
                         }`}>
                           {match.language} Core ({match.originalValue})
                         </span>
-                        <h4 className={`text-xs font-sans font-extrabold ${
+                        <h4 className={`text-sm font-sans font-extrabold ${
                           theme === 'light' ? 'text-slate-950' : 'text-white'
                         }`}>
                           {match.word}
@@ -2309,7 +2342,7 @@ export default function App() {
                       </button>
                     </div>
 
-                    <p className={`text-[11px] leading-[1.8] tracking-[0.01em] font-sans font-medium ${
+                    <p className={`text-[15px] leading-[1.8] tracking-[0.01em] font-sans font-medium ${
                       theme === 'light' ? 'text-slate-650 text-slate-600' : 'text-slate-300'
                     }`}>
                       {match.explanation}
@@ -2339,12 +2372,12 @@ export default function App() {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className={`w-full ${theme === 'light' ? 'bg-white/95 backdrop-blur-md border-zinc-200 shadow-sm' : 'bg-zinc-950/95 backdrop-blur-md border-zinc-800 shadow-xl'} border-b px-4 md:px-6 py-2 md:py-3 z-40 sticky top-0 transition-all duration-300 transform ${isHeaderHidden ? '-translate-y-full opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}
+            className={`w-full ${theme === 'light' ? 'bg-white/95 backdrop-blur-md border-zinc-200 shadow-sm' : 'bg-zinc-950/95 backdrop-blur-md border-zinc-800 shadow-xl'} border-b px-2 md:px-4 py-1 z-40 sticky top-0 transition-transform duration-500 ease-in-out`}
           >
             <div className="max-w-7xl mx-auto flex flex-row items-center justify-between gap-3">
               
               {/* CENTER SELECTORS FOR SELECTING BOOKS */}
-              <div className="flex flex-wrap items-center gap-3">
+              <div className="flex flex-wrap items-center gap-2">
                 {/* Book Thumbnail with Progress Ring */}
                 <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
                   <svg viewBox="0 0 36 36" className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
@@ -2376,723 +2409,23 @@ export default function App() {
                   />
                 </div>
                 
-                {/* Searchable Custom Dropdown to filter 66 Bible books */}
-                <div 
-                  className="relative"
-                  ref={bookDropdownRef}
-                >
+                {/* Unified Book & Chapter Selector */}
+                <div>
                   <button
-                    id="book-select-dropdown-btn"
-                    onClick={() => setIsBookDropdownOpen(!isBookDropdownOpen)}
-                    className={`flex items-center space-x-2 ${theme === 'light' ? 'bg-white border-zinc-200 text-zinc-800 hover:border-zinc-300 hover:bg-zinc-50 shadow-[0_2px_10px_rgb(0,0,0,0.02)]' : 'bg-zinc-900 border-zinc-800 text-zinc-100 hover:border-zinc-700 shadow-lg'} px-4 py-2 rounded-lg text-sm transition-all cursor-pointer font-serif min-w-[140px] justify-between w-full font-semibold`}
+                    id="nav-modal-btn"
+                    onClick={() => {
+                      setIsBookDropdownOpen(true);
+                      setIsChapterDropdownOpen(false); // Using this to represent the "book" vs "chapter" step
+                    }}
+                    className={`flex items-center space-x-2 ${theme === 'light' ? 'bg-white border-zinc-200 text-zinc-800 hover:border-zinc-300 hover:bg-zinc-50 shadow-[0_2px_10px_rgb(0,0,0,0.02)]' : 'bg-zinc-900 border-zinc-800 text-zinc-100 hover:border-zinc-700 shadow-lg'} px-4 py-2 rounded-lg text-sm md:text-base transition-all cursor-pointer font-serif justify-between font-bold`}
                   >
-                    <span>{selectedBook}</span>
+                    <span>{selectedBook} {selectedChapter}</span>
                     <ChevronLeft className={`w-4 h-4 -rotate-90 ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`} />
                   </button>
 
-                  {/* Book Dropdown Panel */}
-                  <AnimatePresence>
-                    {isBookDropdownOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 4, scale: 0.99 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 4, scale: 0.99 }}
-                        transition={{ duration: 0.1, ease: 'easeOut' }}
-                        className={`absolute left-0 top-full mt-2.5 md:mt-3.5 w-[90vw] max-w-md md:w-[540px] md:max-w-none ${theme === 'light' ? 'bg-white border-zinc-200 text-zinc-800 shadow-2xl' : 'bg-zinc-950 border-zinc-800 text-zinc-100 shadow-[0_20px_40px_rgba(0,0,0,0.4)]'} border rounded-xl p-0 z-50 overflow-hidden flex flex-col max-h-[60vh] md:max-h-[70vh]`}
-                      >
-                        <div className={`shrink-0 ${theme === 'light' ? 'bg-zinc-50 border-zinc-200' : 'bg-zinc-900 border-zinc-800'} p-2 border-b flex items-center`}>
-                          <Search className={`w-4 h-4 ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'} ml-1 mr-2`} />
-                          <input
-                            type="text"
-                            placeholder="Find a book (e.g. Genesis)..."
-                            value={bookSearchQuery}
-                            onChange={(e) => setBookSearchQuery(e.target.value)}
-                            className={`${theme === 'light' ? 'bg-white border-zinc-200 text-zinc-800 placeholder-zinc-400' : 'bg-zinc-950 border-zinc-800 text-zinc-100 placeholder-zinc-600'} text-xs px-2.5 py-1.5 rounded-md w-full border shadow-sm focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all font-sans`}
-                          />
-                          {bookSearchQuery && (
-                            <button
-                              onClick={() => setBookSearchQuery('')}
-                              className="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 ml-1 mr-1"
-                            >
-                              <X className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-                        </div>
-                        {/* Testament Filter Groups */}
-                        <div className="overflow-y-auto p-2 md:p-3 space-y-4">
-                          <div className="flex flex-col md:flex-row md:gap-4 space-y-4 md:space-y-0">
-                            <div className="flex-1">
-                              <div className={`sticky top-0 z-10 ${theme === 'light' ? 'bg-white/95' : 'bg-zinc-950/95'} backdrop-blur-sm pb-1 mb-1.5 border-b ${theme === 'light' ? 'border-zinc-100' : 'border-zinc-800/60'}`}>
-                                <p className={`text-[9px] font-sans font-bold uppercase tracking-widest ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                                  Old Testament
-                                </p>
-                              </div>
-                              <div className="grid grid-cols-2 gap-0.5">
-                                {filteredBooks
-                                  .filter((b) => b.testament === 'Old')
-                                  .map((book) => (
-                                    <button
-                                      id={`select-book-${book.name}`}
-                                      key={book.name}
-                                      onClick={() => {
-                                        setSelectedBook(book.name);
-                                        setSelectedChapter(1);
-                                        setIsBookDropdownOpen(false);
-                                        setBookSearchQuery('');
-                                      }}
-                                      className={`text-left text-[11px] px-2 py-1 rounded-md transition-all font-sans flex items-center justify-between ${
-                                        theme === 'light'
-                                          ? 'hover:bg-zinc-100 text-zinc-700 hover:text-zinc-900'
-                                          : 'hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100'
-                                      } ${
-                                        selectedBook === book.name
-                                          ? (theme === 'light' ? 'bg-cyan-50 text-cyan-700 font-semibold shadow-sm border border-cyan-100' : 'bg-cyan-900/30 text-cyan-400 font-semibold shadow-sm border border-cyan-800/50')
-                                          : 'border border-transparent'
-                                      }`}
-                                    >
-                                      <span className="truncate">{book.name}</span>
-                                      {selectedBook === book.name && (
-                                        <Check className="w-3 h-3 shrink-0 ml-1" />
-                                      )}
-                                    </button>
-                                  ))}
-                              </div>
-                            </div>
-                            <div className="flex-1">
-                              <div className={`sticky top-0 z-10 ${theme === 'light' ? 'bg-white/95' : 'bg-zinc-950/95'} backdrop-blur-sm pb-1 mb-1.5 border-b ${theme === 'light' ? 'border-zinc-100' : 'border-zinc-800/60'}`}>
-                                <p className={`text-[9px] font-sans font-bold uppercase tracking-widest ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                                  New Testament
-                                </p>
-                              </div>
-                              <div className="grid grid-cols-2 gap-0.5">
-                                {filteredBooks
-                                  .filter((b) => b.testament === 'New')
-                                  .map((book) => (
-                                    <button
-                                      id={`select-book-${book.name}`}
-                                      key={book.name}
-                                      onClick={() => {
-                                        setSelectedBook(book.name);
-                                        setSelectedChapter(1);
-                                        setIsBookDropdownOpen(false);
-                                        setBookSearchQuery('');
-                                      }}
-                                      className={`text-left text-[11px] px-2 py-1 rounded-md transition-all font-sans flex items-center justify-between ${
-                                        theme === 'light'
-                                          ? 'hover:bg-zinc-100 text-zinc-700 hover:text-zinc-900'
-                                          : 'hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100'
-                                      } ${
-                                        selectedBook === book.name
-                                          ? (theme === 'light' ? 'bg-cyan-50 text-cyan-700 font-semibold shadow-sm border border-cyan-100' : 'bg-cyan-900/30 text-cyan-400 font-semibold shadow-sm border border-cyan-800/50')
-                                          : 'border border-transparent'
-                                      }`}
-                                    >
-                                      <span className="truncate">{book.name}</span>
-                                      {selectedBook === book.name && (
-                                        <Check className="w-3 h-3 shrink-0 ml-1" />
-                                      )}
-                                    </button>
-                                  ))}
-                              </div>
-                            </div>
-                          </div>
-                          {filteredBooks.length === 0 && (
-                            <div className="text-center text-[11px] text-zinc-500 py-4 font-sans">
-                              No biblical books matched.
-                            </div>
-                          )}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
                 </div>
 
-                {/* Chapter Selector Dropdown */}
-                <div 
-                  className="relative flex items-center space-x-2"
-                  ref={chapterDropdownRef}
-                >
-                  <span className={`text-[10px] font-sans tracking-widest uppercase font-semibold ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>CH</span>
-                  <button
-                    id="chapter-dropdown-btn"
-                    onClick={() => setIsChapterDropdownOpen(!isChapterDropdownOpen)}
-                    className={`flex items-center space-x-1.5 ${theme === 'light' ? 'bg-white border-zinc-200 text-zinc-800 hover:border-zinc-300 hover:bg-zinc-50 shadow-[0_2px_10px_rgb(0,0,0,0.02)]' : 'bg-zinc-900 border-zinc-800 text-zinc-100 hover:border-zinc-700 shadow-lg'} px-3 py-2 rounded-lg text-sm transition-all cursor-pointer font-serif font-semibold justify-between min-w-[65px]`}
-                  >
-                    <span>{selectedChapter}</span>
-                    <ChevronLeft className={`w-3.5 h-3.5 -rotate-90 ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`} />
-                  </button>
-
-                  <AnimatePresence>
-                    {isChapterDropdownOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 4, scale: 0.99 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: 4, scale: 0.99 }}
-                        transition={{ duration: 0.1, ease: 'easeOut' }}
-                        className={`absolute left-0 top-full mt-2.5 md:mt-3.5 w-64 md:w-80 ${theme === 'light' ? 'bg-white border-zinc-200 text-zinc-800 shadow-2xl' : 'bg-zinc-950 border-zinc-800 text-zinc-100 shadow-[0_20px_40px_rgba(0,0,0,0.4)]'} border rounded-xl p-0 z-50 flex flex-col max-h-[60vh] overflow-hidden`}
-                      >
-                        <div className={`sticky top-0 z-10 ${theme === 'light' ? 'bg-zinc-50 border-zinc-200' : 'bg-zinc-900 border-zinc-800'} p-2 border-b flex items-center justify-between shrink-0`}>
-                          <p className={`text-[9px] font-sans font-bold uppercase tracking-widest ${theme === 'light' ? 'text-zinc-500' : 'text-zinc-400'} ml-1`}>
-                            Select Chapter
-                          </p>
-                          <span className={`text-[9px] font-mono ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'} mr-1`}>
-                            {currentBookObj.chapters} total
-                          </span>
-                        </div>
-                        <div className="overflow-y-auto p-2">
-                          <div className="grid grid-cols-5 md:grid-cols-6 gap-0.5">
-                            {Array.from(
-                              { length: currentBookObj.chapters },
-                              (_, i) => i + 1
-                            ).map((ch) => (
-                              <button
-                                key={ch}
-                                onClick={() => {
-                                  setSelectedChapter(ch);
-                                  setStudyResponse(null);
-                                  setStudyQuery('');
-                                  setIsChapterDropdownOpen(false);
-                                }}
-                                className={`text-center text-[12px] py-1.5 rounded-md transition-all font-sans ${
-                                  theme === 'light'
-                                    ? 'hover:bg-zinc-100 text-zinc-700 hover:text-zinc-900'
-                                    : 'hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100'
-                                } ${
-                                  selectedChapter === ch
-                                    ? (theme === 'light' ? 'bg-cyan-50 text-cyan-700 font-semibold shadow-sm border border-cyan-100' : 'bg-cyan-900/30 text-cyan-400 font-semibold shadow-sm border border-cyan-800/50')
-                                    : 'border border-transparent'
-                                }`}
-                              >
-                                {ch}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
-                <div className="flex items-center space-x-2.5 ml-auto md:ml-0 relative">
-                  {/* Church Screen Projection Trigger Button */}
-                  <button
-                    onClick={() => {
-                      setIsProjectionStudioOpen(true);
-                      setIsMoreMenuOpen(false);
-                      playWebAudioBeep(520, 'sine', 0.08);
-                    }}
-                    className={`flex items-center gap-1.5 px-3 py-2 rounded-lg transition-all cursor-pointer text-xs font-sans font-medium border shadow-[0_2px_10px_rgb(0,0,0,0.02)] ${
-                      theme === 'light'
-                        ? 'bg-zinc-50 hover:bg-zinc-100 border-zinc-200 text-zinc-800'
-                        : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800 text-zinc-200 shadow-lg'
-                    }`}
-                    title="Open Church Screen/Projector Projection & Broadcast Lower-Third Studio"
-                    id="projection-studio-trigger-btn"
-                  >
-                    <span className="relative flex h-2 w-2 shrink-0">
-                      <span className={`absolute inline-flex h-full w-full rounded-full opacity-75 ${liveScreenState ? 'bg-zinc-400 animate-ping' : 'bg-zinc-300 dark:bg-zinc-600'}`}></span>
-                      <span className={`relative inline-flex rounded-full h-2 w-2 ${liveScreenState ? 'bg-zinc-900 dark:bg-zinc-100' : 'bg-zinc-400 dark:bg-zinc-500'}`}></span>
-                    </span>
-                    <span className="text-[11px] sm:text-xs">Live Screen</span>
-                  </button>
-
-                  {/* Single More Options Button */}
-                  <button
-                    id="more-options-menu-btn"
-                    onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
-                    className={`p-2 rounded-lg transition-all cursor-pointer flex items-center justify-center shadow-[0_2px_10px_rgb(0,0,0,0.02)] ${
-                      theme === 'light'
-                        ? 'bg-white border border-zinc-200 text-zinc-800 hover:bg-zinc-50'
-                        : 'bg-zinc-900 border border-zinc-800 text-zinc-200 hover:bg-zinc-800 shadow-lg'
-                    }`}
-                    title="More Study Suite Options"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-
-                  {/* Dropdown list container matching absolute spec */}
-                  <AnimatePresence>
-                    {isMoreMenuOpen && (
-                      <>
-                        <motion.div
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          onClick={(e) => { e.stopPropagation(); setIsMoreMenuOpen(false); }}
-                          className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[90]"
-                        />
-                        <motion.div
-                          id="more-options-menu-dropdown"
-                          initial={{ opacity: 0, x: '100%' }}
-                          animate={{ opacity: 1, x: 0 }}
-                          exit={{ opacity: 0, x: '100%' }}
-                          transition={{ type: 'spring', damping: 25, stiffness: 220 }}
-                          className={`fixed right-0 top-0 h-[100dvh] w-80 max-w-[85vw] overflow-y-auto ${
-                            theme === 'light' 
-                              ? 'bg-[#fcfdfe] border-l border-zinc-200 text-zinc-800 shadow-2xl' 
-                              : 'bg-zinc-950 border-l border-zinc-800 text-zinc-100 shadow-2xl'
-                          } p-6 z-[100] flex flex-col space-y-5 font-sans`}
-                        >
-                          <div className="flex items-center justify-between pb-3 border-b border-zinc-200 dark:border-zinc-800">
-                            <span className="font-sans font-bold text-sm tracking-wide">Menu</span>
-                            <button onClick={(e) => { e.stopPropagation(); setIsMoreMenuOpen(false); }} className="p-1.5 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-800">
-                              <X className="w-5 h-5" />
-                            </button>
-                          </div>
-                          {moreMenuSubpage === 'main' ? (
-                            <>
-                              {/* FEATURE LISTS - RENDERED AS SIMPLE MINIMALIST CLICKABLE TEXTS AS MANDATED */}
-                              <div className={`text-[10px] font-sans tracking-widest uppercase font-bold pb-2 border-b ${theme === 'light' ? 'text-zinc-400 border-zinc-100' : 'text-zinc-500 border-zinc-800'}`}>
-                                Study Suite Menu
-                              </div>
-
-                              {/* Interactive Clickable option texts - standard links, completely styling-clean & borderless */}
-                              <div className="flex flex-col space-y-3 text-xs font-medium mt-1">
-                                
-                                {/* Translation Display Mode */}
-                                <div className="space-y-2 pb-2">
-                                  <div className={`text-[10px] font-sans font-bold uppercase ${theme === 'light' ? 'text-zinc-500' : 'text-zinc-400'}`}>View Mode</div>
-                                  <select
-                                    value={translationDisplayMode}
-                                    onChange={(e) => {
-                                      const val = e.target.value as any;
-                                      setTranslationDisplayMode(val);
-                                      localStorage.setItem('personalized_bible_translation_display_mode', val);
-                                      playWebAudioBeep(480, 'sine', 0.04);
-                                    }}
-                                    className={`w-full text-xs font-sans font-semibold border rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-cyan-500 ${
-                                      theme === 'light' 
-                                        ? 'bg-zinc-50 border-zinc-200 text-zinc-800' 
-                                        : 'bg-zinc-900 border-zinc-800 text-zinc-300'
-                                    }`}
-                                  >
-                                    <option value="both">Both Streams Side-by-Side</option>
-                                    <option value="plain">Plain English Narrative</option>
-                                    <option value="personalized">Personalised Prayer</option>
-                                    <option value="plain_kjv">Plain English / KJV Side-by-Side</option>
-                                    <option value="personalized_kjv">Personalised Prayer / KJV Side-by-Side</option>
-                                    <option value="kjv">King James (KJV) Only</option>
-                                    <option value="bsb">Berean Standard (BSB) Only</option>
-                                  </select>
-                                </div>
-                                
-                                {/* Ref Manuscript Toggle */}
-                                <div className="space-y-2 pb-2">
-                                  <div className={`text-[10px] font-sans font-bold uppercase ${theme === 'light' ? 'text-zinc-500' : 'text-zinc-400'}`}>REF Manuscripts</div>
-                                  <div
-                                    onClick={() => {
-                                      setIsComparisonEnabled(!isComparisonEnabled);
-                                    }}
-                                    className={`cursor-pointer transition-colors py-2 px-3 border rounded-lg flex items-center justify-between ${theme === 'light' ? 'bg-zinc-50 hover:bg-zinc-100 border-zinc-200' : 'bg-zinc-900 hover:bg-zinc-800 border-zinc-800'}`}
-                                  >
-                                    <span className="text-xs font-semibold">Toggle REF Manuscripts</span>
-                                    <span className={`font-sans text-[10px] font-bold uppercase ${isComparisonEnabled ? (theme === 'light' ? 'text-zinc-800' : 'text-zinc-200') : (theme === 'light' ? 'text-zinc-400' : 'text-zinc-500')}`}>
-                                      {isComparisonEnabled ? 'ON' : 'OFF'}
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Layout Mode Toggle */}
-                                <div className="space-y-2 pb-2">
-                                  <div className={`text-[10px] font-sans font-bold uppercase ${theme === 'light' ? 'text-zinc-500' : 'text-zinc-400'}`}>Layout Mode</div>
-                                  <select
-                                    value={layoutMode}
-                                    onChange={(e) => {
-                                      const mode = e.target.value as 'formal' | 'paragraph';
-                                      setLayoutMode(mode);
-                                      localStorage.setItem('personalized_bible_layout_mode', mode);
-                                      playWebAudioBeep(520, 'sine', 0.04);
-                                    }}
-                                    className={`w-full text-xs font-sans font-semibold border rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-cyan-500 ${
-                                      theme === 'light' 
-                                        ? 'bg-zinc-50 border-zinc-200 text-zinc-800' 
-                                        : 'bg-zinc-900 border-zinc-800 text-zinc-300'
-                                    }`}
-                                  >
-                                    <option value="paragraph">Paragraph Mode</option>
-                                    <option value="formal">Formal / Verse-by-Verse Mode</option>
-                                  </select>
-                                </div>
-                                
-{/* Light/Dark Mode Switcher */}
-                                <div
-                                  onClick={() => {
-                                    setTheme(theme === 'light' ? 'dark' : 'light');
-                                  }}
-                                  className={`cursor-pointer transition-colors py-1 flex items-center justify-between ${theme === 'light' ? 'hover:text-zinc-600' : 'hover:text-zinc-300'}`}
-                                >
-                                  <span>Celestial Theme</span>
-                                  <span className={`font-sans text-[10px] font-bold uppercase ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                                    {theme === 'light' ? '🌞 Light' : '🌙 Dark'}
-                                  </span>
-                                </div>
-
-
-
-                                {/* Study Companion Desk Navigation Item (New Subpage Link!) */}
-                                <div
-                                  onClick={() => {
-                                    setMoreMenuSubpage('companion');
-                                  }}
-                                  className={`cursor-pointer transition-colors py-1 flex items-center justify-between font-semibold group ${theme === 'light' ? 'text-zinc-700 hover:text-zinc-900' : 'text-zinc-300 hover:text-zinc-100'}`}
-                                >
-                                  <span className="flex items-center gap-1.5">
-                                    <Award className={`w-3.5 h-3.5 ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`} /> Study Companion Desk
-                                  </span>
-                                  <span className={`font-sans text-[10px] font-bold uppercase flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                                    Expand ➔
-                                  </span>
-                                </div>
-
-                                {/* Scripture Formatting Navigation Item (New Subpage Link!) */}
-                                <div
-                                  onClick={() => {
-                                    setMoreMenuSubpage('scripture');
-                                  }}
-                                  className={`cursor-pointer transition-colors py-1 flex items-center justify-between font-semibold group ${theme === 'light' ? 'text-zinc-700 hover:text-zinc-900' : 'text-zinc-300 hover:text-zinc-100'}`}
-                                >
-                                  <span className="flex items-center gap-1.5">
-                                    <Type className="w-3.5 h-3.5 text-cyan-500" /> Scripture Formatting
-                                  </span>
-                                  <span className="font-mono text-[10px] font-bold text-cyan-500 uppercase flex items-center gap-0.5 group-hover:translate-x-0.5 transition-transform">
-                                    Customize ➔
-                                  </span>
-                                </div>
-
-                                {/* Study Guide trigger */}
-                                <div
-                                  onClick={() => {
-                                    setWelcomeStep(0);
-                                    setIsWelcomeOpen(true);
-                                    setIsMoreMenuOpen(false);
-                                  }}
-                                  className="cursor-pointer hover:text-cyan-500 transition-colors py-1 flex items-center justify-between"
-                                >
-                                  <span>Study Walkthrough Guide</span>
-                                  <span className="font-mono text-[10px] font-bold text-amber-500 uppercase">
-                                    Start 🌟
-                                  </span>
-                                </div>
-
-                                {/* Open Scholar Cloud Sync Trigger */}
-                                <div
-                                  onClick={() => {
-                                    setIsCloudSyncOpen(true);
-                                    setIsMoreMenuOpen(false);
-                                  }}
-                                  className="cursor-pointer hover:text-cyan-500 transition-colors py-1 flex items-center justify-between"
-                                >
-                                  <span>Scholar Cloud Sync Portal</span>
-                                  <span className={`font-mono text-[10px] font-bold uppercase ${firebaseUser ? 'text-emerald-500' : 'text-cyan-500'}`}>
-                                    {firebaseUser ? 'Synced ☁️' : 'Connect'}
-                                  </span>
-                                </div>
-
-                                {/* Hide Navigation bar option */}
-                                <div
-                                  onClick={() => {
-                                    setIsHeaderCollapsed(true);
-                                    setIsMoreMenuOpen(false);
-                                  }}
-                                  className="cursor-pointer hover:text-cyan-500 transition-colors py-1 flex items-center justify-between"
-                                >
-                                  <span>Hide Top Navigation Bar</span>
-                                  <span className="font-mono text-[10px] text-slate-500 uppercase">
-                                    Collapse
-                                  </span>
-                                </div>
-
-                              </div>
-                            </>
-                          ) : moreMenuSubpage === 'companion' ? (
-                            <>
-                              {/* Companion Desk Subpage Header with prominent back arrow & label */}
-                              <div className="flex items-center justify-between pb-1.5 border-b border-cyan-500/10 mb-1">
-                                <button
-                                  onClick={() => setMoreMenuSubpage('main')}
-                                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/25 text-cyan-500 cursor-pointer transition-all text-[11px] font-bold uppercase font-mono"
-                                  title="Back to Main Menu"
-                                >
-                                  <ArrowLeft className="w-3.5 h-3.5 text-cyan-500" />
-                                  <span>Back</span>
-                                </button>
-                                <div className="text-[10px] font-mono tracking-widest uppercase text-cyan-600 dark:text-cyan-500 font-extrabold flex items-center gap-1">
-                                  <Award className="w-3 h-3 text-cyan-500" /> Companion Desk
-                                </div>
-                              </div>
-
-                              {/* Companion Desk Subpage Options List */}
-                              <div className="flex flex-col space-y-2 text-xs font-medium">
-                                <p className="text-[10px] text-slate-500 dark:text-slate-400 italic leading-snug pb-1">
-                                  "The Bible that talks with you" study companion aids.
-                                </p>
-
-                                {/* Trigger church projection studio */}
-                                <div
-                                  onClick={() => {
-                                    setIsProjectionStudioOpen(true);
-                                    setIsMoreMenuOpen(false);
-                                    playWebAudioBeep(520, 'sine', 0.08);
-                                  }}
-                                  className="cursor-pointer hover:text-cyan-500 transition-colors py-1.5 flex items-center justify-between bg-amber-500/5 dark:bg-amber-500/10 px-2.5 rounded-lg border border-amber-500/20 hover:border-amber-500 text-amber-700 dark:text-amber-400 font-bold"
-                                >
-                                  <span className="flex items-center gap-1.5">
-                                    <Tv className="w-3.5 h-3.5" /> Screen Projection Mode
-                                  </span>
-                                  <span className="font-mono text-[10px] font-bold uppercase">
-                                    Open 📺 ➔
-                                  </span>
-                                </div>
-
-                                {/* Trigger companion bookmarks */}
-                                <div
-                                  onClick={() => {
-                                    setIsStudySidebarOpen(true);
-                                    setActiveSidebarTab('bookmarks');
-                                    setIsMoreMenuOpen(false);
-                                  }}
-                                  className="cursor-pointer hover:text-cyan-500 transition-colors py-1.5 flex items-center justify-between bg-cyan-500/5 dark:bg-cyan-950/15 px-2.5 rounded-lg border border-transparent hover:border-cyan-500/10"
-                                >
-                                  <span className="font-bold text-slate-700 dark:text-cyan-300">Bookmarks Workspace</span>
-                                  <span className="font-mono text-[10px] font-bold text-cyan-500 uppercase">
-                                    {savedVerses.length} Saved ➔
-                                  </span>
-                                </div>
-
-                                {/* Trigger audio control desk */}
-                                <div
-                                  onClick={() => {
-                                    setIsStudySidebarOpen(true);
-                                    setActiveSidebarTab('audio');
-                                    setIsMoreMenuOpen(false);
-                                  }}
-                                  className="cursor-pointer hover:text-cyan-500 transition-colors py-1.5 flex items-center justify-between bg-cyan-500/5 dark:bg-cyan-950/15 px-2.5 rounded-lg border border-transparent hover:border-cyan-500/10"
-                                >
-                                  <span className="font-bold text-slate-700 dark:text-cyan-300">Audio Speech Desk</span>
-                                  <span className="font-mono text-[10px] font-bold text-cyan-500 uppercase">
-                                    Open 🎤 ➔
-                                  </span>
-                                </div>
-
-                                {/* Toggle sidebar drawer open/close */}
-                                <div
-                                  onClick={() => {
-                                    setIsStudySidebarOpen(!isStudySidebarOpen);
-                                  }}
-                                  className="cursor-pointer hover:text-cyan-500 transition-colors py-1 flex items-center justify-between"
-                                >
-                                  <span>Toggle Workspace Window</span>
-                                  <span className={`font-mono text-[10px] font-bold uppercase ${isStudySidebarOpen ? 'text-emerald-500' : 'text-slate-500'}`}>
-                                    {isStudySidebarOpen ? 'Active' : 'Closed'}
-                                  </span>
-                                </div>
-
-                                {/* Vocal playback speed slider range */}
-                                <div className="border-t border-cyan-500/10 my-1 pt-1.5" />
-                                <div className="flex flex-col space-y-1.5">
-                                  <div className="flex items-center justify-between">
-                                    <span className="font-sans text-xs text-slate-655 dark:text-slate-405">Playback Speech Speed</span>
-                                    <span className="font-mono text-[10px] text-cyan-500 font-extrabold bg-cyan-500/10 px-1.5 py-0.5 rounded">
-                                      {playbackSpeed.toFixed(1)}x
-                                    </span>
-                                  </div>
-                                  <input
-                                    type="range"
-                                    min="0.5"
-                                    max="1.5"
-                                    step="0.1"
-                                    value={playbackSpeed}
-                                    onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className="w-full h-1 bg-slate-200 dark:bg-cyan-950 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-                                  />
-                                </div>
-                              </div>
-                            </>
-                          ) : (
-                            <>
-                              {/* Scripture Formatting Subpage Header with prominent back arrow & label */}
-                              <div className="flex items-center justify-between pb-1.5 border-b border-cyan-500/10 mb-1">
-                                <button
-                                  onClick={() => {
-                                    setMoreMenuSubpage('main');
-                                    playWebAudioBeep(520, 'sine', 0.05);
-                                  }}
-                                  className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-cyan-500/10 hover:bg-cyan-500/25 text-cyan-500 cursor-pointer transition-all text-xs font-bold uppercase font-mono"
-                                  title="Back to Main Menu"
-                                >
-                                  <ArrowLeft className="w-3.5 h-3.5 text-cyan-500" />
-                                  <span>Back</span>
-                                </button>
-                                <div className="text-[10px] font-mono tracking-widest uppercase text-cyan-600 dark:text-cyan-500 font-extrabold flex items-center gap-1">
-                                  <Type className="w-3.5 h-3.5 text-cyan-500" /> Formatting
-                                </div>
-                              </div>
-
-                              {/* Custom options grouped in a beautiful flex list */}
-                              <div className="flex flex-col space-y-2 text-xs font-medium pt-1">
-                                
-                                {/* Scripture Font Size */}
-                                <div className="flex items-center justify-between py-1 border-b border-cyan-500/5">
-                                  <span>Scripture Font Size</span>
-                                  <div className="flex items-center gap-2 select-none" onClick={(e) => e.stopPropagation()}>
-                                    <span 
-                                      onClick={() => {
-                                        if (scriptureFontSizeSetting === 'lg') setScriptureFontSizeSetting('base');
-                                        else if (scriptureFontSizeSetting === 'base') setScriptureFontSizeSetting('sm');
-                                        else if (scriptureFontSizeSetting === 'sm') setScriptureFontSizeSetting('xs');
-                                        playWebAudioBeep(450, 'sine', 0.03);
-                                      }}
-                                      className="cursor-pointer px-1.5 hover:text-cyan-500 font-bold font-mono text-[13px]"
-                                      title="Reduce font size"
-                                    >
-                                      A-
-                                    </span>
-                                    <span className="text-[10px] font-mono text-cyan-500 font-bold uppercase px-1.5 py-0.5 bg-cyan-500/10 rounded">
-                                      {scriptureFontSizeSetting.toUpperCase()}
-                                    </span>
-                                    <span 
-                                      onClick={() => {
-                                        if (scriptureFontSizeSetting === 'xs') setScriptureFontSizeSetting('sm');
-                                        else if (scriptureFontSizeSetting === 'sm') setScriptureFontSizeSetting('base');
-                                        else if (scriptureFontSizeSetting === 'base') setScriptureFontSizeSetting('lg');
-                                        playWebAudioBeep(450, 'sine', 0.03);
-                                      }}
-                                      className="cursor-pointer px-1.5 hover:text-cyan-500 font-bold font-mono text-[13px]"
-                                      title="Increase font size"
-                                    >
-                                      A+
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Manuscript Version Selection */}
-                                <div className="flex items-center justify-between py-1 border-b border-cyan-500/5">
-                                  <span>Manuscript Version Selection</span>
-                                  <span 
-                                    onClick={() => {
-                                      const nextMode = referenceDisplayMode === 'both' ? 'kjv' : referenceDisplayMode === 'kjv' ? 'bsb' : 'both';
-                                      setReferenceDisplayMode(nextMode);
-                                      playWebAudioBeep(480, 'sine', 0.03);
-                                    }}
-                                    className="cursor-pointer text-cyan-500 font-mono text-[11px] font-bold uppercase hover:underline"
-                                  >
-                                    {referenceDisplayMode.toUpperCase()}
-                                  </span>
-                                </div>
-
-                                {/* Plain English Translation styling */}
-                                <div className="flex items-center justify-between py-1 border-b border-cyan-500/5">
-                                  <span>Plain English Formatting</span>
-                                  <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                                    <span 
-                                      onClick={() => { setPlainBold(!plainBold); playWebAudioBeep(460, 'sine', 0.03); }}
-                                      className={`cursor-pointer hover:text-cyan-500 transition-all ${plainBold ? 'text-cyan-500 font-black' : 'opacity-60 text-slate-400'}`}
-                                    >
-                                      B
-                                    </span>
-                                    <span 
-                                      onClick={() => { setPlainItalic(!plainItalic); playWebAudioBeep(460, 'sine', 0.03); }}
-                                      className={`cursor-pointer hover:text-cyan-500 transition-all italic ${plainItalic ? 'text-cyan-500 font-bold' : 'opacity-60 text-slate-400'}`}
-                                    >
-                                      I
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Personalized version styling */}
-                                <div className="flex items-center justify-between py-1 border-b border-cyan-500/5">
-                                  <span>Personalised Formatting</span>
-                                  <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                                    <span 
-                                      onClick={() => { setPersonalizedBold(!personalizedBold); playWebAudioBeep(460, 'sine', 0.03); }}
-                                      className={`cursor-pointer hover:text-cyan-500 transition-all ${personalizedBold ? 'text-cyan-500 font-black' : 'opacity-60 text-slate-400'}`}
-                                    >
-                                      B
-                                    </span>
-                                    <span 
-                                      onClick={() => { setPersonalizedItalic(!personalizedItalic); playWebAudioBeep(460, 'sine', 0.03); }}
-                                      className={`cursor-pointer hover:text-cyan-500 transition-all italic ${personalizedItalic ? 'text-cyan-500 font-bold' : 'opacity-60 text-slate-400'}`}
-                                    >
-                                      I
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* Reference Manuscript text styling */}
-                                <div className="flex items-center justify-between py-1 border-b border-cyan-500/5">
-                                  <span>Manuscript Ref (KJV/BSB)</span>
-                                  <div className="flex items-center gap-3" onClick={(e) => e.stopPropagation()}>
-                                    <span 
-                                      onClick={() => { setManuscriptBold(!manuscriptBold); playWebAudioBeep(460, 'sine', 0.03); }}
-                                      className={`cursor-pointer hover:text-cyan-500 transition-all ${manuscriptBold ? 'text-cyan-500 font-black' : 'opacity-60 text-slate-400'}`}
-                                    >
-                                      B
-                                    </span>
-                                    <span 
-                                      onClick={() => { setManuscriptItalic(!manuscriptItalic); playWebAudioBeep(460, 'sine', 0.03); }}
-                                      className={`cursor-pointer hover:text-cyan-500 transition-all italic ${manuscriptItalic ? 'text-cyan-500 font-bold' : 'opacity-60 text-slate-400'}`}
-                                    >
-                                      I
-                                    </span>
-                                  </div>
-                                </div>
-
-                                {/* SCRIPTURE TYPEFACE selector - newly built */}
-                                <div className="flex flex-col space-y-1 py-1 border-b border-cyan-500/5 pb-2">
-                                  <span className="text-slate-600 dark:text-slate-400 font-mono text-[10px] uppercase font-bold tracking-wider">Select Scripture Typeface</span>
-                                  <div className="grid grid-cols-3 gap-1" onClick={(e) => e.stopPropagation()}>
-                                    {(['serif', 'sans', 'mono'] as const).map((font) => (
-                                      <button
-                                        key={font}
-                                        onClick={() => {
-                                          setScriptureTypefaceSetting(font);
-                                          playWebAudioBeep(500, 'sine', 0.03);
-                                        }}
-                                        className={`py-1 text-[10px] uppercase font-mono border rounded cursor-pointer transition-all ${
-                                          scriptureTypefaceSetting === font
-                                            ? 'bg-cyan-500/10 border-cyan-500 text-cyan-500 font-bold shadow-xs'
-                                            : 'border-transparent text-slate-450 hover:bg-slate-500/5'
-                                        }`}
-                                      >
-                                        {font === 'serif' ? 'Serif' : font === 'sans' ? 'Sans' : 'Mono'}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-
-                                {/* SCRIPTURE TEXTSTYLE/LINE-HEIGHT selector - newly built */}
-                                <div className="flex flex-col space-y-1 py-1">
-                                  <span className="text-slate-600 dark:text-slate-400 font-mono text-[10px] uppercase font-bold tracking-wider">Select Scripture Font Style</span>
-                                  <div className="grid grid-cols-2 gap-1.5" onClick={(e) => e.stopPropagation()}>
-                                    {(['normal', 'elegant', 'compact', 'classic'] as const).map((styleOpt) => (
-                                      <button
-                                        key={styleOpt}
-                                        onClick={() => {
-                                          setScriptureTextStyleSetting(styleOpt);
-                                          playWebAudioBeep(520, 'sine', 0.03);
-                                        }}
-                                        className={`py-1 px-1 text-[10px] uppercase font-mono border rounded cursor-pointer transition-all ${
-                                          scriptureTextStyleSetting === styleOpt
-                                            ? 'bg-cyan-500/10 border-cyan-500 text-cyan-500 font-bold shadow-xs'
-                                            : 'border-transparent text-slate-450 hover:bg-slate-500/5'
-                                        }`}
-                                        title={`${styleOpt === 'normal' ? 'Standard tracking & leading' : styleOpt === 'elegant' ? 'Immersive high-line separation font-light' : styleOpt === 'compact' ? 'Condensed reading' : 'High track classical'}`}
-                                      >
-                                        {styleOpt === 'normal' ? 'Normal' : styleOpt === 'elegant' ? 'Elegant 🕊️' : styleOpt === 'compact' ? 'Compact' : 'Classic 👑'}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </div>
-
-                              </div>
-                            </>
-                          )}
-
-                      </motion.div>
-                      </>
-                    )}
-                  </AnimatePresence>
-                </div>
+                
               </div>
 
             </div>
@@ -3101,12 +2434,15 @@ export default function App() {
       </AnimatePresence>
 
       {/* FLOAT POP TRIGGERS WHEN HEADER COLLAPSED */}
+      <AnimatePresence>
       {isHeaderCollapsed && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          className={`fixed top-3 left-4 z-40 flex items-center space-x-3 backdrop-blur-md p-2 rounded-lg shadow-md transition-all duration-300 transform ${
-            isHeaderHidden ? '-translate-y-20 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+          exit={{ opacity: 0, y: -20 }}
+          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+          className={`fixed top-3 left-4 z-40 flex items-center space-x-3 backdrop-blur-md p-2 rounded-lg shadow-md ${
+            isHeaderHidden ? 'pointer-events-none' : ''
           } ${
             theme === 'light' ? 'bg-white border border-slate-200 text-slate-800' : 'bg-[#0a0f1d]/90 border border-cyan-500/30'
           }`}
@@ -3114,13 +2450,13 @@ export default function App() {
           <button
             id="expand-header-btn"
             onClick={() => setIsHeaderCollapsed(false)}
-            className={`flex items-center space-x-1.5 text-xs font-mono ${theme === 'light' ? 'text-cyan-700 hover:text-cyan-800' : 'text-cyan-400 hover:text-cyan-300'}`}
+            className={`flex items-center space-x-1.5 text-sm font-mono ${theme === 'light' ? 'text-cyan-700 hover:text-cyan-800' : 'text-cyan-400 hover:text-cyan-300'}`}
           >
             <Menu className="w-4 h-4 font-bold" />
             <span className="uppercase font-semibold tracking-wider">SHOW NAV MENU</span>
           </button>
           <div className={`h-4 w-[1px] ${theme === 'light' ? 'bg-slate-200' : 'bg-cyan-950'}`} />
-          <span className={`text-xs font-display font-medium px-1 font-mono ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
+          <span className={`text-sm font-display font-medium px-1 font-mono ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
             {selectedBook} {selectedChapter}
           </span>
           {/* Collapsed Theme Switcher */}
@@ -3148,7 +2484,7 @@ export default function App() {
               className={`p-1.5 rounded transition cursor-pointer ${
                 theme === 'light' ? 'bg-cyan-50 hover:bg-cyan-100 text-cyan-750' : 'bg-cyan-950/40 hover:bg-cyan-950 text-cyan-400'
               }`}
-              title="Open Voice Speech Coach Desk"
+              title="Open Audio Settings"
             >
               <Volume2 className="w-3.5 h-3.5 text-cyan-500 animate-pulse" />
             </button>
@@ -3162,16 +2498,376 @@ export default function App() {
           </div>
         </motion.div>
       )}
+      </AnimatePresence>
+
+      {/* FLOATING AUDIO PLAY FAB & TRANSLATION TOGGLE */}
+      <div className={`fixed bottom-[60px] md:bottom-[64px] left-1 md:left-2 z-[90] flex items-center gap-2 transition-all duration-500 ease-in-out ${isSidePanelHidden ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100'}`}>
+          {!(translationDisplayMode === 'both' || translationDisplayMode === 'plain_kjv' || translationDisplayMode === 'personalized_kjv') && (
+            <button
+            onClick={() => {
+              if (isPlayingAudio) {
+                stopSpeaking();
+              } else {
+                playTranslationStream(
+                  translationDisplayMode === 'kjv' ? 'kjv' :
+                  translationDisplayMode === 'bsb' ? 'bsb' :
+                  translationDisplayMode === 'personalized' ? 'pers' : 'plain'
+                );
+              }
+            }}
+            className={`w-8 h-8 md:w-9 md:h-9 rounded-full shadow-lg border flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer shrink-0 ${
+              theme === 'light'
+                ? 'bg-zinc-800 border-zinc-700 text-white shadow-md md:bg-cyan-500 md:border-cyan-400 md:shadow-[0_8px_20px_rgba(6,182,212,0.3)]'
+                : 'bg-white border-zinc-200 text-zinc-900 shadow-md md:bg-cyan-600 md:border-cyan-500 md:shadow-[0_8px_20px_rgba(8,145,178,0.4)]'
+            }`}
+            title={isPlayingAudio ? "Stop Audio" : "Play Chapter Audio"}
+          >
+            {isPlayingAudio ? (
+              <Square className="w-4 h-4 md:w-5 md:h-5 fill-current animate-pulse" />
+            ) : (
+              <Play className="w-4 h-4 md:w-5 md:h-5 fill-current ml-0.5 md:ml-1" />
+            )}
+          </button>
+          )}
+
+          {!(translationDisplayMode === 'both' || translationDisplayMode === 'plain_kjv' || translationDisplayMode === 'personalized_kjv') && (
+            <div 
+              ref={translationPickerRef}
+              className={`relative h-8 md:h-10 w-[140px] md:w-[180px] rounded-full shadow-[0_8px_20px_rgba(0,0,0,0.12)] border overflow-y-auto snap-y snap-mandatory hide-scrollbar ${
+                theme === 'light'
+                  ? 'bg-white/95 backdrop-blur-xl border-zinc-200/80'
+                  : 'bg-zinc-900/95 backdrop-blur-xl border-zinc-700/80'
+              }`}
+              onScroll={(e) => {
+                const el = e.currentTarget;
+                const itemHeight = window.innerWidth >= 768 ? 40 : 32;
+                const index = Math.round(el.scrollTop / itemHeight);
+                const modes = ['plain', 'personalized', 'kjv', 'bsb'];
+                if (modes[index] && translationDisplayMode !== modes[index]) {
+                  setTranslationDisplayMode(modes[index]);
+                  localStorage.setItem('personalized_bible_translation_display_mode', modes[index]);
+                }
+              }}
+            >
+              {/* Fade overlays for the picker wheel effect */}
+              <div className="absolute inset-x-0 top-0 h-1.5 pointer-events-none rounded-t-full z-10" style={{ background: theme === 'light' ? 'linear-gradient(to bottom, rgba(255,255,255,0.9), transparent)' : 'linear-gradient(to bottom, rgba(24,24,27,0.9), transparent)' }}></div>
+              <div className="absolute inset-x-0 bottom-0 h-1.5 pointer-events-none rounded-b-full z-10" style={{ background: theme === 'light' ? 'linear-gradient(to top, rgba(255,255,255,0.9), transparent)' : 'linear-gradient(to top, rgba(24,24,27,0.9), transparent)' }}></div>
+              
+              <div className="flex flex-col">
+                {[
+                  { id: 'plain', label: 'Plain English' },
+                  { id: 'personalized', label: 'Personalised Prayer' },
+                  { id: 'kjv', label: 'King James Version' },
+                  { id: 'bsb', label: 'Berean Standard' }
+                ].map((mode) => (
+                  <button
+                    key={mode.id}
+                    onClick={(e) => {
+                      setTranslationDisplayMode(mode.id);
+                      localStorage.setItem('personalized_bible_translation_display_mode', mode.id);
+                      playWebAudioBeep(480, 'sine', 0.04);
+                      e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }}
+                    className={`h-8 md:h-10 w-full snap-center shrink-0 flex items-center justify-center text-sm md:text-[15px] font-bold font-sans tracking-wide transition-all ${
+                      translationDisplayMode === mode.id
+                        ? (theme === 'light' ? 'text-zinc-800 md:text-cyan-700' : 'text-zinc-100 md:text-cyan-400')
+                        : (theme === 'light' ? 'text-slate-400' : 'text-slate-500')
+                    }`}
+                  >
+                    {mode.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+        )}
+      </div>
+
+
+      
+
+
+      
+      {/* FLOATING PILL BOTTOM NAVIGATION BAR */}
+      <div className={`fixed bottom-2 left-4 right-4 z-[1050] flex items-center justify-around px-2 py-1 rounded-[2rem] shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out ${
+        isSidePanelHidden ? 'translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+      } ${
+        theme === 'light'
+          ? 'bg-white/95 border border-slate-200 shadow-[0_8px_30px_rgba(0,0,0,0.12)]'
+          : 'bg-[#1c1c1e]/95 border border-[#2d2d2d] shadow-[0_8px_30px_rgba(0,0,0,0.6)]'
+      } `}>
+          
+        <button
+          onClick={() => {
+              setFullPageMenu(null);
+              setIsProjectionStudioOpen(false);
+          }}
+          className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
+        >
+          <div className={`p-1 rounded-full transition-colors ${!fullPageMenu && !isProjectionStudioOpen ? (theme === 'light' ? 'bg-cyan-100 text-cyan-600' : 'bg-cyan-900/50 text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>
+             <BookOpen className="w-[20px] h-[20px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen ? 2.5 : 2} />
+          </div>
+          <span className={`text-[10px] font-bold tracking-wide mt-0.5 ${!fullPageMenu && !isProjectionStudioOpen ? (theme === 'light' ? 'text-cyan-600' : 'text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>Read</span>
+        </button>
+
+        <button
+          onClick={() => {
+              setFullPageMenu(null);
+              setIsProjectionStudioOpen(true);
+              playWebAudioBeep(520, 'sine', 0.08);
+          }}
+          className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
+        >
+          <div className={`p-1 rounded-full transition-colors ${isProjectionStudioOpen ? (theme === 'light' ? 'bg-cyan-100 text-cyan-600' : 'bg-cyan-900/50 text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>
+             <MonitorPlay className="w-[20px] h-[20px]" strokeWidth={isProjectionStudioOpen ? 2.5 : 2} />
+          </div>
+          <span className={`text-[10px] font-bold tracking-wide mt-0.5 ${isProjectionStudioOpen ? (theme === 'light' ? 'text-cyan-600' : 'text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>LiveScreen</span>
+        </button>
+
+        <button
+          onClick={() => {
+              setIsProjectionStudioOpen(false);
+              setFullPageMenu('companion');
+          }}
+          className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
+        >
+          <div className={`p-1 rounded-full transition-colors ${fullPageMenu === 'companion' ? (theme === 'light' ? 'bg-cyan-100 text-cyan-600' : 'bg-cyan-900/50 text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>
+             <Library className="w-[20px] h-[20px]" strokeWidth={fullPageMenu === 'companion' ? 2.5 : 2} />
+          </div>
+          <span className={`text-[10px] font-bold tracking-wide mt-0.5 ${fullPageMenu === 'companion' ? (theme === 'light' ? 'text-cyan-600' : 'text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>Companion</span>
+        </button>
+
+        <button
+          onClick={() => {
+              setIsProjectionStudioOpen(false);
+              setFullPageMenu('settings');
+          }}
+          className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
+        >
+          <div className={`p-1 rounded-full transition-colors ${fullPageMenu === 'settings' ? (theme === 'light' ? 'bg-cyan-100 text-cyan-600' : 'bg-cyan-900/50 text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>
+             <Settings className="w-[20px] h-[20px]" strokeWidth={fullPageMenu === 'settings' ? 2.5 : 2} />
+          </div>
+          <span className={`text-[10px] font-bold tracking-wide mt-0.5 ${fullPageMenu === 'settings' ? (theme === 'light' ? 'text-cyan-600' : 'text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>Settings</span>
+        </button>
+      </div>
+
+      {/* FULL PAGE MENU MODAL */}
+      <AnimatePresence>
+        {fullPageMenu && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 30, scale: 0.95 }}
+            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+            className={`fixed inset-0 z-[1000] flex flex-col h-[100dvh] ${theme === 'light' ? 'bg-[#fcfcfc]' : 'bg-[#0a0d16]'}`}
+          >
+            {/* Modal Header */}
+            <div className={`flex items-center justify-between p-4 md:p-6 border-b ${theme === 'light' ? 'border-slate-200/80 bg-white/50' : 'border-zinc-800/80 bg-[#0c111c]/50'} backdrop-blur-md sticky top-0 z-10`}>
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setFullPageMenu(null)}
+                  className={`flex items-center justify-center w-10 h-10 rounded-full transition-all ${theme === 'light' ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' : 'bg-slate-800 hover:bg-slate-700 text-slate-300'}`}
+                >
+                  <ArrowLeft className="w-5 h-5" />
+                </button>
+                <h2 className="text-xl font-bold font-display tracking-tight capitalize">
+                  {fullPageMenu === 'companion' ? 'Study Companion' : 'App Settings'}
+                </h2>
+              </div>
+            </div>
+
+            {/* Modal Body */}
+            <div className="flex-1 overflow-y-auto p-4 md:p-8 flex justify-center pb-32 md:pb-32">
+              <div className="w-full max-w-2xl flex flex-col space-y-6">
+                
+                {fullPageMenu === 'settings' && (
+                  <>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Translation Display Mode */}
+                      <div className={`flex flex-col space-y-2 p-4 rounded-2xl shadow-sm border ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#121622] border-cyan-950/30'}`}>
+                        <div className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-1">View Mode</div>
+                        <select
+                          value={['plain', 'personalized', 'kjv', 'bsb'].includes(translationDisplayMode) ? 'single' : translationDisplayMode}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            if (val === 'single') {
+                              setTranslationDisplayMode('plain');
+                              localStorage.setItem('personalized_bible_translation_display_mode', 'plain');
+                            } else {
+                              setTranslationDisplayMode(val);
+                              localStorage.setItem('personalized_bible_translation_display_mode', val);
+                            }
+                          }}
+                          className={`w-full text-sm font-medium border-0 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+                            theme === 'light' ? 'bg-slate-50 text-slate-800' : 'bg-slate-900/50 text-slate-200'
+                          }`}
+                        >
+                          <option value="single">Single Stream</option>
+                          <option value="both">Dual-Stream</option>
+                          <option value="plain_kjv">PET KJV</option>
+                          <option value="personalized_kjv">PPV KJV</option>
+                        </select>
+                      </div>
+
+                      {/* Layout Mode Toggle */}
+                      <div className={`flex flex-col space-y-2 p-4 rounded-2xl shadow-sm border ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#121622] border-cyan-950/30'}`}>
+                        <div className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-1">Layout Mode</div>
+                        <select
+                          value={layoutMode}
+                          onChange={(e) => {
+                            const mode = e.target.value;
+                            setLayoutMode(mode);
+                            localStorage.setItem('personalized_bible_layout_mode', mode);
+                          }}
+                          className={`w-full text-sm font-medium border-0 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
+                            theme === 'light' ? 'bg-slate-50 text-slate-800' : 'bg-slate-900/50 text-slate-200'
+                          }`}
+                        >
+                          <option value="paragraph">Paragraph</option>
+                          <option value="formal">Formal</option>
+                        </select>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Ref Manuscript Toggle */}
+                      <div className={`flex flex-col space-y-2 p-4 rounded-2xl shadow-sm border ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#121622] border-cyan-950/30'}`}>
+                        <div className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-1">Reference View</div>
+                        <div
+                          onClick={() => setIsComparisonEnabled(!isComparisonEnabled)}
+                          className={`cursor-pointer transition-all px-4 py-3 rounded-xl flex items-center justify-between font-bold hover:scale-[1.02] active:scale-[0.98] ${theme === 'light' ? 'bg-slate-50 text-slate-800' : 'bg-slate-900/50 text-slate-100'}`}
+                        >
+                          <span className="text-sm">Manuscript Context</span>
+                          {isComparisonEnabled ? <ToggleRight className="w-6 h-6 text-cyan-500" /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}
+                        </div>
+                      </div>
+
+                      {/* Light/Dark Mode Switcher */}
+                      <div className={`flex flex-col space-y-2 p-4 rounded-2xl shadow-sm border ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#121622] border-cyan-950/30'}`}>
+                        <div className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-1">Theme</div>
+                        <div
+                          onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
+                          className={`cursor-pointer transition-all px-4 py-3 rounded-xl flex items-center justify-between font-bold hover:scale-[1.02] active:scale-[0.98] ${theme === 'light' ? 'bg-slate-50 text-slate-800' : 'bg-slate-900/50 text-slate-100'}`}
+                        >
+                          <span className="text-sm">Dark Mode</span>
+                          {theme === 'dark' ? <ToggleRight className="w-6 h-6 text-indigo-400" /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 mt-2">
+                        {/* Open Scholar Cloud Sync Trigger */}
+                        <div
+                          onClick={() => {
+                            setFullPageMenu(null);
+                            setIsCloudSyncOpen(true);
+                          }}
+                          className={`cursor-pointer transition-all px-5 py-4 rounded-2xl flex items-center justify-between font-bold border shadow-sm hover:scale-[1.01] active:scale-[0.99] ${theme === 'light' ? 'bg-white border-slate-200 text-slate-800' : 'bg-[#121622] border-cyan-950/30 text-slate-100'}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center">
+                              <Cloud className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm">Cloud Connect</span>
+                              <span className="text-sm text-slate-500 font-normal">Sync notes and bookmarks across devices</span>
+                            </div>
+                          </div>
+                          <span className={`font-mono text-sm font-bold uppercase ${firebaseUser ? 'text-emerald-500' : 'text-slate-400'}`}>
+                            {firebaseUser ? 'Connected' : '➔'}
+                          </span>
+                        </div>
+
+                        {/* Study Guide trigger */}
+                        <div
+                          onClick={() => {
+                            setFullPageMenu(null);
+                            setWelcomeStep(0);
+                            setIsWelcomeOpen(true);
+                          }}
+                          className={`cursor-pointer transition-all px-5 py-4 rounded-2xl flex items-center justify-between font-bold border shadow-sm hover:scale-[1.01] active:scale-[0.99] ${theme === 'light' ? 'bg-white border-slate-200 text-slate-800' : 'bg-[#121622] border-amber-900/30 text-slate-100'}`}
+                        >
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
+                              <Compass className="w-4 h-4 text-amber-600 dark:text-amber-500" />
+                            </div>
+                            <div className="flex flex-col">
+                              <span className="text-sm">Walkthrough Guide</span>
+                              <span className="text-sm text-slate-500 font-normal">Replay the introductory tutorial</span>
+                            </div>
+                          </div>
+                          <span className="font-mono text-sm font-bold text-amber-500 uppercase">🌟</span>
+                        </div>
+                    </div>
+                  </>
+                )}
+
+                {fullPageMenu === 'companion' && (
+                  <div className="flex flex-col space-y-4">
+                    <p className="text-sm text-slate-500 italic mb-4">
+                      "The Bible that talks with you" study companion aids.
+                    </p>
+                    
+                    <button
+                      onClick={() => {
+                        setFullPageMenu(null);
+                        setScannerInputText('Could you explain what is happening theologically in this chapter, specifically looking at how the core covenants are addressed?');
+                        if (!isSidePanelHidden) { setIsSidePanelHidden(true); }
+                      }}
+                      className={`text-left p-4 rounded-2xl shadow-sm border transition-all hover:scale-[1.01] active:scale-[0.99] ${theme === 'light' ? 'bg-white hover:bg-slate-50 border-slate-200' : 'bg-[#121622] hover:bg-[#161a27] border-indigo-900/30'}`}
+                    >
+                      <div className="flex items-center gap-3 mb-1">
+                        <MessageSquare className="w-4 h-4 text-indigo-500" />
+                        <span className="font-bold text-indigo-600 dark:text-indigo-400">Theological Analysis</span>
+                      </div>
+                      <span className="text-sm text-slate-500 font-medium">Ask for a deep theological breakdown of the current chapter.</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setFullPageMenu(null);
+                        setScannerInputText('Could you generate 5 reflective study questions based on this text for my personal journaling?');
+                        if (!isSidePanelHidden) { setIsSidePanelHidden(true); }
+                      }}
+                      className={`text-left p-4 rounded-2xl shadow-sm border transition-all hover:scale-[1.01] active:scale-[0.99] ${theme === 'light' ? 'bg-white hover:bg-slate-50 border-slate-200' : 'bg-[#121622] hover:bg-[#161a27] border-cyan-900/30'}`}
+                    >
+                      <div className="flex items-center gap-3 mb-1">
+                        <BookOpen className="w-4 h-4 text-cyan-500" />
+                        <span className="font-bold text-cyan-600 dark:text-cyan-400">Study Questions</span>
+                      </div>
+                      <span className="text-sm text-slate-500 font-medium">Generate journaling prompts and reflection questions.</span>
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setFullPageMenu(null);
+                        setScannerInputText('Could you provide a brief historical and cultural context for the events occurring in this text?');
+                        if (!isSidePanelHidden) { setIsSidePanelHidden(true); }
+                      }}
+                      className={`text-left p-4 rounded-2xl shadow-sm border transition-all hover:scale-[1.01] active:scale-[0.99] ${theme === 'light' ? 'bg-white hover:bg-slate-50 border-slate-200' : 'bg-[#121622] hover:bg-[#161a27] border-amber-900/30'}`}
+                    >
+                      <div className="flex items-center gap-3 mb-1">
+                        <Globe className="w-4 h-4 text-amber-500" />
+                        <span className="font-bold text-amber-600 dark:text-amber-500">Cultural Context</span>
+                      </div>
+                      <span className="text-sm text-slate-500 font-medium">Understand the historical background of the passage.</span>
+                    </button>
+                  </div>
+                )}
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* FLOATING MIDDLE NAV: TRIANGLE IN CIRCLE SLIDE OPTIONS */}
       {/* PREVIOUS CHAPTER FLOATER */}
-      <div className={`fixed left-1 md:left-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-300 transform ${
+      <div className={`fixed left-1 md:left-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${
         isSidePanelHidden ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100'
       }`}>
         <button
           id="floating-nav-prev-chapter-btn"
           onClick={handlePrevChapter}
-          className={`w-9 h-9 md:w-10 md:h-10 rounded-full border flex items-center justify-center shadow-md md:shadow-lg transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
+          className={`w-8 h-8 rounded-full border flex items-center justify-center shadow-md md:shadow-lg transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
             theme === 'light'
               ? 'bg-white/95 backdrop-blur-md border-slate-200 text-slate-700 hover:bg-cyan-500 hover:border-cyan-500 hover:text-white'
               : 'bg-[#0a0f1d]/90 backdrop-blur-md border-cyan-500/20 text-cyan-400 hover:text-[#070b14] hover:bg-cyan-500 hover:border-cyan-500'
@@ -3180,18 +2876,18 @@ export default function App() {
           disabled={!prevChapterLabel}
         >
           {/* Animated slider triangle icon */}
-          <ChevronLeft className="w-4 h-4 md:w-5 md:h-5 transition-transform duration-300 group-hover:-translate-x-0.5" />
+          <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:-translate-x-0.5" />
         </button>
       </div>
 
       {/* NEXT CHAPTER FLOATER */}
-      <div className={`fixed right-1 md:right-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-300 transform ${
+      <div className={`fixed right-1 md:right-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${
         isSidePanelHidden ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100'
       }`}>
         <button
           id="floating-nav-next-chapter-btn"
           onClick={handleNextChapter}
-          className={`w-9 h-9 md:w-10 md:h-10 rounded-full border flex items-center justify-center shadow-md md:shadow-lg transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
+          className={`w-8 h-8 rounded-full border flex items-center justify-center shadow-md md:shadow-lg transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
             theme === 'light'
               ? 'bg-white/95 backdrop-blur-md border-slate-200 text-slate-700 hover:bg-cyan-500 hover:border-cyan-500 hover:text-white'
               : 'bg-[#0a0f1d]/90 backdrop-blur-md border-cyan-500/20 text-cyan-400 hover:text-[#070b14] hover:bg-cyan-500 hover:border-cyan-500'
@@ -3200,12 +2896,17 @@ export default function App() {
           disabled={!nextChapterLabel}
         >
           {/* Animated slider triangle icon */}
-          <ChevronRight className="w-4 h-4 md:w-5 md:h-5 transition-transform duration-300 group-hover:translate-x-0.5" />
+          <ChevronRight className="w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:translate-x-0.5" />
         </button>
       </div>
 
       {/* MAIN CONTAINER PANEL */}
-      <main className="flex-1 w-full max-w-7xl mx-auto px-4 py-6 md:px-10 pb-20 mt-4">
+      <main 
+        className="flex-1 w-full max-w-7xl mx-auto px-2 md:px-6 py-2 md:py-4 pb-20 mt-1 overflow-x-hidden touch-pan-y"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         
         {/* API ERROR / FALLBACK EXPLANATION banner */}
         {apiError && (() => {
@@ -3235,12 +2936,12 @@ export default function App() {
                     {isHighDemandOrQuota
                       ? '⚡ Google AI Engine Experiencing Temporary Capacity Limits'
                       : isMissingKey
-                      ? '🔑 Setup Required: Dynamic Translation Offline'
+                      ? '🔑 Setup Required: Offline Audio'
                       : '🔴 Manuscript Synchronization Interruption'}
                   </h4>
 
                   {/* Dynamic Description Message */}
-                  <p className="text-xs leading-[1.8] tracking-[0.01em] opacity-95">
+                  <p className="text-sm leading-[1.8] tracking-[0.01em] opacity-95">
                     {isHighDemandOrQuota
                       ? 'The Google Gemini Translation model is currently running at quota capacities or rate limits for free tier keys. Free keys have a limit of 15-20 requests daily. Spikes in demand are temporary! To study any other book or chapter right now, enjoy our high-fidelity, offline-ready sync generation below, or browse our preloaded master chapters.'
                       : isMissingKey
@@ -3254,7 +2955,7 @@ export default function App() {
                     {!isMissingKey && (
                       <button
                         onClick={() => loadChapter(selectedBook, selectedChapter)}
-                        className={`px-3 py-1 rounded text-xs transition border cursor-pointer font-bold flex items-center gap-1.5 ${
+                        className={`px-3 py-1 rounded text-sm transition border cursor-pointer font-bold flex items-center gap-1.5 ${
                           theme === 'light'
                             ? 'bg-cyan-600 hover:bg-cyan-700 text-white border-cyan-600 shadow-sm shadow-cyan-100'
                             : 'bg-cyan-950/80 border-cyan-500/45 text-cyan-300 hover:bg-cyan-950 hover:border-cyan-400'
@@ -3265,14 +2966,14 @@ export default function App() {
                       </button>
                     )}
 
-                    <span className="text-[10px] font-mono opacity-60">Instant Master Chapters:</span>
+                    <span className="text-sm font-mono opacity-60">Instant Master Chapters:</span>
 
                   <button
                     onClick={() => {
                       setSelectedBook('John');
                       setSelectedChapter(1);
                     }}
-                    className={`px-2.5 py-1 rounded text-xs transition border cursor-pointer ${
+                    className={`px-2.5 py-1 rounded text-sm transition border cursor-pointer ${
                       theme === 'light'
                         ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                         : 'bg-slate-900 border-cyan-950/40 text-cyan-400 hover:border-cyan-500/40'
@@ -3285,7 +2986,7 @@ export default function App() {
                       setSelectedBook('Genesis');
                       setSelectedChapter(1);
                     }}
-                    className={`px-2.5 py-1 rounded text-xs transition border cursor-pointer ${
+                    className={`px-2.5 py-1 rounded text-sm transition border cursor-pointer ${
                       theme === 'light'
                         ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                         : 'bg-slate-900 border-cyan-950/40 text-cyan-400 hover:border-cyan-500/40'
@@ -3298,7 +2999,7 @@ export default function App() {
                       setSelectedBook('Psalms');
                       setSelectedChapter(23);
                     }}
-                    className={`px-2.5 py-1 rounded text-xs transition border cursor-pointer ${
+                    className={`px-2.5 py-1 rounded text-sm transition border cursor-pointer ${
                       theme === 'light'
                         ? 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50'
                         : 'bg-slate-900 border-cyan-950/40 text-cyan-400 hover:border-cyan-500/40'
@@ -3321,7 +3022,7 @@ export default function App() {
               <h3 className={`font-serif text-2xl italic ${theme === 'light' ? 'text-zinc-900' : 'text-zinc-100'}`}>
                 Preparing Manuscript
               </h3>
-              <p className={`text-[10px] font-sans tracking-widest uppercase font-semibold ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>
+              <p className={`text-sm font-sans tracking-widest uppercase font-semibold ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>
                 Aligning Ancient Codices
               </p>
             </div>
@@ -3344,14 +3045,14 @@ export default function App() {
               {/* Row 1: Title, Fetch state */}
               <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-2">
                 <div className="space-y-1">
-                  <span className={`text-[9px] font-sans uppercase tracking-widest font-bold flex items-center gap-1.5 ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                  <span className={`text-sm px-1 py-1 font-sans uppercase tracking-widest font-bold flex items-center gap-1.5 ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>
                     <Compass className="w-3 h-3" /> Covenant
                   </span>
                   <h2 className={`text-xl md:text-2xl font-serif font-medium tracking-tight ${theme === 'light' ? 'text-zinc-900' : 'text-zinc-50'} flex items-baseline flex-wrap gap-x-3 gap-y-1`}>
                     <span>{chapterData.book}</span>
                     <span className={`text-base md:text-lg font-mono font-bold ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>Ch. {chapterData.chapter}</span>
                     {isBackgroundFetching && (
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[9px] font-sans font-semibold tracking-wider uppercase border animate-pulse sm:ml-2 transform -translate-y-0.5 ${theme === 'light' ? 'bg-zinc-100 border-zinc-200 text-zinc-500' : 'bg-zinc-800 border-zinc-700 text-zinc-400'}`}>
+                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-sm px-1 py-1 font-sans font-semibold tracking-wider uppercase border animate-pulse sm:ml-2 transform -translate-y-0.5 ${theme === 'light' ? 'bg-zinc-100 border-zinc-200 text-zinc-500' : 'bg-zinc-800 border-zinc-700 text-zinc-400'}`}>
                         <RefreshCw className="w-2.5 h-2.5 animate-spin" />
                         Refining
                       </span>
@@ -3424,6 +3125,8 @@ export default function App() {
                         playbackSpeed={playbackSpeed}
                         setPlaybackSpeed={setPlaybackSpeed}
                         isHeaderHidden={isHeaderHidden}
+                        isComparisonEnabled={isComparisonEnabled}
+                        referenceDisplayMode={referenceDisplayMode}
                         activeDraftVerse={activeDraftVerse}
                         noteDraftText={noteDraftText}
                         setNoteDraftText={setNoteDraftText}
@@ -3493,7 +3196,7 @@ export default function App() {
                         </div>
                         
                         {/* Micro notice representing focused verse helper */}
-                        <div className={`mt-6 text-center text-[10.5px] font-mono text-slate-400 dark:text-cyan-600/60 border-t pt-4 ${theme === 'light' ? 'border-slate-100' : 'border-cyan-950/25'}`}>
+                        <div className={`mt-6 text-center text-sm font-mono text-slate-400 dark:text-cyan-600/60 border-t pt-4 ${theme === 'light' ? 'border-slate-100' : 'border-cyan-950/25'}`}>
                           💡 Double-click on any verse section above in the paragraph to activate bookmarks, voice reading, lexicons, and personal notes inside the Deep Study Panel below!
                         </div>
                       </div>
@@ -3525,16 +3228,14 @@ export default function App() {
                           const renderRefs = () => {
                               if (!isComparisonEnabled) return null;
                               return (
-                                  <div className="mb-2 opacity-75 text-[0.85em] leading-snug flex flex-col gap-1.5 border-b border-slate-200/40 dark:border-zinc-800/40 pb-2 w-full">
+                                  <div className={`my-3 p-3.5 rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col gap-2.5 w-full transition-all ${theme === 'light' ? 'bg-slate-50/70 border border-slate-100' : 'bg-[#121622]/40 border border-cyan-950/20'}`}>
                                       {(referenceDisplayMode === 'both' || referenceDisplayMode === 'kjv') && (
-                                          <div className="font-serif italic text-amber-700/90 dark:text-amber-500/80">
-                                              <span className="font-sans font-bold text-[8px] uppercase tracking-wider opacity-60 mr-1.5">KJV</span>
+                                          <div className={`font-serif text-[0.85em] leading-relaxed ${theme === 'light' ? 'text-slate-500' : 'text-slate-400/90'}`}>
                                               {renderInteractiveText(v.kjvText || '', v.specialWords, `kjv-${v.verseNumber}`)}
                                           </div>
                                       )}
                                       {(referenceDisplayMode === 'both' || referenceDisplayMode === 'bsb') && (
-                                          <div className="font-serif text-emerald-700/90 dark:text-emerald-500/80">
-                                              <span className="font-sans font-bold text-[8px] uppercase tracking-wider opacity-60 mr-1.5">BSB</span>
+                                          <div className={`font-serif text-[0.85em] leading-relaxed ${theme === 'light' ? 'text-slate-500' : 'text-slate-400/90'}`}>
                                               {renderInteractiveText(v.bsbText || '', v.specialWords, `bsb-${v.verseNumber}`)}
                                           </div>
                                       )}
@@ -3544,19 +3245,19 @@ export default function App() {
 
                           if (transType === 'plain') {
                               title = 'PET';
-                              fontClasses = `${plainBold ? 'font-bold' : 'font-normal'} ${plainItalic ? 'italic' : 'not-italic'}`;
+                              fontClasses = `${plainBold ? 'font-extrabold' : 'font-medium'} ${plainItalic ? 'italic' : 'not-italic'}`;
                               textContent = <div className="flex flex-col w-full">{renderRefs()}<div>{v.contemporary}</div></div>;
                           } else if (transType === 'pers') {
                               title = 'PPV';
-                              fontClasses = `${personalizedBold ? 'font-bold' : 'font-semibold'} ${personalizedItalic ? 'italic' : 'not-italic'}`;
+                              fontClasses = `${personalizedBold ? 'font-extrabold' : 'font-bold'} ${personalizedItalic ? 'italic' : 'not-italic'}`;
                               textContent = <div className="flex flex-col w-full">{renderRefs()}<div>{v.nonNativeEnglish}</div></div>;
                           } else if (transType === 'kjv') {
                               title = 'Reference (KJV)';
-                              fontClasses = `${manuscriptBold ? 'font-bold' : 'font-semibold'} ${manuscriptItalic ? 'italic' : 'not-italic'}`;
+                              fontClasses = `${manuscriptBold ? 'font-extrabold' : 'font-bold'} ${manuscriptItalic ? 'italic' : 'not-italic'}`;
                               textContent = renderInteractiveText(v.kjvText || '', v.specialWords, `kjv-${v.verseNumber}`);
                           } else if (transType === 'bsb') {
                               title = 'Berean Standard Bible';
-                              fontClasses = `${manuscriptBold ? 'font-bold' : 'font-semibold'} ${manuscriptItalic ? 'italic' : 'not-italic'}`;
+                              fontClasses = `${manuscriptBold ? 'font-extrabold' : 'font-bold'} ${manuscriptItalic ? 'italic' : 'not-italic'}`;
                               textContent = renderInteractiveText(v.bsbText || '', v.specialWords, `bsb-${v.verseNumber}`);
                           }
 
@@ -3576,15 +3277,17 @@ export default function App() {
                                 }
                               }}
                               onTouchStart={() => handleVerseRowTap(v, transType)}
-                              className={`flex flex-row py-2 px-3 gap-3 mb-1 transition-all duration-150 cursor-pointer relative ${highlightClasses} ${
+                              className={`flex flex-row py-3 px-4 rounded-xl gap-3 mb-3 transition-all duration-200 cursor-pointer relative shadow-sm ${highlightClasses} ${
+                                theme === 'light' ? 'bg-white border border-slate-100' : 'bg-[#0a0d16] border border-cyan-950/20'
+                              } ${
                                 hoveredVerse === v.verseNumber && !hasNotes && !isFocused
-                                  ? (theme === 'light' ? 'bg-slate-50/40' : 'bg-cyan-950/5')
+                                  ? (theme === 'light' ? 'shadow-md scale-[1.01] bg-white' : 'shadow-md scale-[1.01] bg-[#0c111c]')
                                   : ''
-                              } ${isReadingThis ? 'ring-1.5 ring-cyan-500/40 shadow-xs animate-pulse-slow rounded-md' : ''}`}
+                              } ${isReadingThis ? 'ring-2 ring-cyan-500/40 shadow-md animate-pulse-slow' : ''}`}
                             >
                               {/* Left Gutter: Verse Number & Thematic Reflection Icon */}
                               <div className="flex flex-col items-center shrink-0 w-6 pt-[3px]">
-                                <span className={`text-[11px] font-sans font-bold select-none transition-all ${
+                                <span className={`text-[15px] font-sans font-bold select-none transition-all ${
                                   isReadingThis
                                     ? 'text-cyan-500 dark:text-cyan-400'
                                     : (theme === 'light' 
@@ -3621,7 +3324,7 @@ export default function App() {
                                     <div className={`flex items-center px-1.5 py-0.5 rounded-full shrink-0 ${
                                       theme === 'light' ? 'bg-slate-100 text-slate-500' : 'bg-white/5 text-slate-400'
                                     }`}>
-                                      <span className="text-[9px] font-mono font-bold uppercase tracking-widest">v.{v.verseNumber}</span>
+                                      <span className="text-sm px-1 py-1 font-mono font-bold uppercase tracking-widest">v.{v.verseNumber}</span>
                                     </div>
 
                                     <div className={`w-[1px] h-3 mx-0.5 shrink-0 ${theme === 'light' ? 'bg-slate-200' : 'bg-zinc-800'}`} />
@@ -3723,7 +3426,7 @@ export default function App() {
                                 {/* Speed Control Tuning Slider */}
                                 {isReadingThis && (
                                   <div className="mt-2 flex items-center justify-between bg-slate-100 dark:bg-slate-950/40 p-1.5 rounded-lg border border-slate-205 dark:border-cyan-950/30">
-                                    <span className="text-[10px] font-mono text-slate-400 dark:text-cyan-650 flex items-center gap-1">
+                                    <span className="text-sm font-mono text-slate-400 dark:text-cyan-650 flex items-center gap-1">
                                       ⚙️ Playback Speed:
                                     </span>
                                     <div className="flex items-center space-x-2">
@@ -3739,7 +3442,7 @@ export default function App() {
                                         }}
                                         className="w-20 h-1 bg-slate-205 dark:bg-cyan-955 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                                       />
-                                      <span className="text-[10.5px] font-mono font-bold text-cyan-600">
+                                      <span className="text-sm font-mono font-bold text-cyan-600">
                                         {playbackSpeed.toFixed(1)}x
                                       </span>
                                     </div>
@@ -3748,13 +3451,13 @@ export default function App() {
 
                               </div>
                             ) : hasNotes ? (
-                              <div className={`mt-2.5 p-3.5 rounded-xl border text-xs leading-[1.8] tracking-[0.01em] transition-all relative ${
+                              <div className={`mt-2.5 p-3.5 rounded-xl border text-sm leading-[1.8] tracking-[0.01em] transition-all relative ${
                                 theme === 'light' 
                                   ? 'bg-amber-100/10 border-amber-200/50 text-slate-800 shadow-sm' 
                                   : 'bg-[#1e150c]/20 border-amber-900/35 text-amber-100/95 shadow-sm'
                               }`} onClick={(e) => e.stopPropagation()}>
                                 <div className="flex items-center justify-between mb-1.5 border-b pb-1 border-dashed border-amber-500/10">
-                                  <div className={`text-[9px] font-mono uppercase tracking-widest font-extrabold flex items-center gap-1.5 ${
+                                  <div className={`text-sm px-1 py-1 font-mono uppercase tracking-widest font-extrabold flex items-center gap-1.5 ${
                                     theme === 'light' ? 'text-amber-700/85' : 'text-amber-500/80'
                                   }`}>
                                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500/70" />
@@ -3776,7 +3479,7 @@ export default function App() {
                                         }}
                                         className="w-12 h-0.5 bg-slate-205 dark:bg-cyan-950 rounded appearance-none cursor-pointer accent-cyan-500"
                                       />
-                                      <span className="text-[9px] font-mono font-bold text-cyan-600 dark:text-cyan-400">
+                                      <span className="text-sm px-1 py-1 font-mono font-bold text-cyan-600 dark:text-cyan-400">
                                         {playbackSpeed.toFixed(1)}x
                                       </span>
                                     </div>
@@ -3787,7 +3490,7 @@ export default function App() {
                                         e.stopPropagation();
                                         toggleSaveVerse(v.verseNumber);
                                       }}
-                                      className={`text-[10px] font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors ${
+                                      className={`text-sm font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors ${
                                         isSaved 
                                           ? 'text-emerald-555 hover:text-emerald-400' 
                                           : (theme === 'light' ? 'text-slate-500 hover:text-slate-700' : 'text-slate-400 hover:text-slate-200')
@@ -3829,7 +3532,7 @@ export default function App() {
                               <div className="mt-2" onClick={(e) => e.stopPropagation()}>
                                 <button
                                   onClick={() => startEditingNote(v.verseNumber, '')}
-                                  className={`text-[10px] font-mono font-bold px-2.5 py-1.5 rounded-lg border border-dashed transition-all flex items-center gap-1 cursor-pointer ${
+                                  className={`text-sm font-mono font-bold px-2.5 py-1.5 rounded-lg border border-dashed transition-all flex items-center gap-1 cursor-pointer ${
                                     theme === 'light'
                                       ? 'border-slate-200 text-slate-500 bg-slate-50/50 hover:bg-slate-100 hover:text-slate-800'
                                       : 'border-cyan-950/40 text-cyan-600 bg-slate-950/10 hover:bg-slate-950/40 hover:text-cyan-400'
@@ -3846,29 +3549,10 @@ export default function App() {
 
                       const renderTableColHeader = (title: string, type: 'plain' | 'pers' | 'kjv' | 'bsb') => (
                         <div className={`flex items-center justify-between mb-2 pb-1 px-1 border-b border-slate-200/50 dark:border-zinc-800/50 transition-all duration-300 ease-in-out`}>
-                          <h5 className="text-[10px] font-mono uppercase tracking-widest font-extrabold text-slate-400 dark:text-cyan-600">
+                          <h5 className="text-sm font-mono uppercase tracking-widest font-extrabold text-slate-400 dark:text-cyan-600">
                             {title}
                           </h5>
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              if (isPlayingAudio && activeAudioStream === type) {
-                                stopSpeaking();
-                              } else {
-                                playTranslationStream(type);
-                              }
-                            }}
-                            className={`flex items-center justify-center w-8 h-8 rounded-full shadow-lg ${
-                              (isPlayingAudio && activeAudioStream === type) 
-                                ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-rose-500/30 ring-2 ring-rose-500/20' 
-                                : theme === 'light' 
-                                  ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:from-cyan-400 hover:to-blue-500 ring-2 ring-cyan-500/20' 
-                                  : 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white shadow-cyan-900/50 hover:shadow-cyan-600/50 hover:from-cyan-500 hover:to-blue-600 ring-2 ring-cyan-500/30'
-                            } transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95`}
-                            title={(isPlayingAudio && activeAudioStream === type) ? "Stop Audio" : "Play Audio"}
-                          >
-                            {(isPlayingAudio && activeAudioStream === type) ? <Square className="w-3.5 h-3.5 fill-current animate-pulse" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
-                          </button>
+                          
                         </div>
                       );
 
@@ -3877,28 +3561,28 @@ export default function App() {
                           <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 h-[calc(100vh-160px)]">
                             {(translationDisplayMode === 'kjv' || translationDisplayMode === 'plain_kjv' || translationDisplayMode === 'personalized_kjv') && (
                               <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-amber-50/30' : 'bg-amber-950/10'} p-2 relative`}>
-                                {renderTableColHeader("📜 KJV", 'kjv')}
+                                
                                 {chapterData.verses.map(v => renderVerseCard(v, 'kjv'))}
                               </div>
                             )}
 
                             {((translationDisplayMode === 'bsb')) && (
                               <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-emerald-50/30' : 'bg-emerald-950/10'} p-2 relative`}>
-                                {renderTableColHeader("🛡️ BSB", 'bsb')}
+                                
                                 {chapterData.verses.map(v => renderVerseCard(v, 'bsb'))}
                               </div>
                             )}
 
                             {(translationDisplayMode === 'plain' || translationDisplayMode === 'both' || translationDisplayMode === 'plain_kjv') && (
                               <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative`}>
-                                {renderTableColHeader("PET", 'plain')}
+                                
                                 {chapterData.verses.map(v => renderVerseCard(v, 'plain'))}
                               </div>
                             )}
 
                             {(translationDisplayMode === 'personalized' || translationDisplayMode === 'both' || translationDisplayMode === 'personalized_kjv') && (
                               <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative`}>
-                                {renderTableColHeader("PPV", 'pers')}
+                                
                                 {chapterData.verses.map(v => renderVerseCard(v, 'pers'))}
                               </div>
                             )}
@@ -3939,7 +3623,7 @@ export default function App() {
       <footer className={`w-full mt-auto border-t p-4 text-center select-none ${
         theme === 'light' ? 'bg-white border-slate-200/85 text-slate-500 shadow-inner' : 'bg-[#04060d] border-cyan-950/30 text-slate-600'
       }`}>
-        <p className="text-[10px] font-mono uppercase tracking-widest leading-[1.8] tracking-[0.01em] font-semibold">
+        <p className="text-sm font-mono uppercase tracking-widest leading-[1.8] tracking-[0.01em] font-semibold">
           Translation Scholar Sanctuary • Side-by-Side English Edition • Powered by Gemini
         </p>
       </footer>
@@ -3952,7 +3636,7 @@ export default function App() {
               initial={{ scale: 0.95, opacity: 0, y: 15 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              transition={{ type: 'spring', damping: 28, stiffness: 220 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className="w-full max-w-xl bg-gradient-to-b from-white via-amber-100/10 to-cyan-50/10 border border-amber-200/50 rounded-[2rem] p-6 md:p-10 shadow-2xl relative overflow-hidden flex flex-col items-center text-center font-sans"
             >
               {/* Premium Celestial Design Ornaments */}
@@ -3963,7 +3647,7 @@ export default function App() {
 
               {/* Welcome Badge */}
               <div className="mb-4">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-[10px] font-mono font-bold tracking-wider bg-cyan-500/10 text-cyan-800 border border-cyan-200/35 shadow-xs">
+                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-mono font-bold tracking-wider bg-cyan-500/10 text-cyan-800 border border-cyan-200/35 shadow-xs">
                   <span className="relative flex h-1.5 w-1.5 mr-2">
                     <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-500"></span>
                   </span>
@@ -3994,8 +3678,8 @@ export default function App() {
                 LogosBridge <span className="text-cyan-600 font-serif italic">(LB)</span>
               </h1>
               
-              <h2 className="text-[10px] sm:text-xs font-bold tracking-[0.22em] text-cyan-600 font-mono mt-1 uppercase">
-                THE PERSONALISED STUDY BIBLE
+              <h2 className="text-sm sm:text-sm font-bold tracking-[0.22em] text-cyan-600 font-mono mt-1 uppercase">
+                LOGOSBRIDGE
               </h2>
 
               <hr className="w-12 border-t border-amber-200/70 my-5" />
@@ -4004,7 +3688,7 @@ export default function App() {
               <div className="w-full bg-gradient-to-r from-teal-500/5 via-cyan-500/5 to-amber-500/5 border border-cyan-500/10 rounded-2xl p-5 md:p-6 my-1 transition-all duration-300 hover:border-cyan-500/20 shadow-xs relative overflow-hidden">
                 <div className="absolute top-1/2 left-2 -translate-y-1/2 w-1 h-6 bg-teal-400 rounded-full" />
                 
-                <p className="text-[9px] font-mono tracking-widest text-slate-400 uppercase font-bold mb-1.5">
+                <p className="text-sm px-1 py-1 font-mono tracking-widest text-slate-400 uppercase font-bold mb-1.5">
                   ✦ Living Codex Companion ✦
                 </p>
                 
@@ -4035,7 +3719,7 @@ export default function App() {
                     setIsWelcomeOpen(false);
                     playWebAudioBeep(580, 'sine', 0.05);
                   }}
-                  className="w-full py-3 px-5 rounded-xl font-mono text-xs font-bold text-white bg-slate-900 border border-slate-950 transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 cursor-pointer flex items-center justify-center gap-2 group animate-pulse"
+                  className="w-full py-3 px-5 rounded-xl font-mono text-sm font-bold text-white bg-slate-900 border border-slate-950 transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 cursor-pointer flex items-center justify-center gap-2 group animate-pulse"
                   id="welcome-jump-btn"
                 >
                   JUMP TO STUDY DESK
@@ -4048,7 +3732,7 @@ export default function App() {
                     setIsWelcomeOpen(false);
                     playWebAudioBeep(520, 'sine', 0.03);
                   }}
-                  className="w-full sm:w-auto py-2.5 px-4 rounded-xl font-mono text-xs font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200 cursor-pointer"
+                  className="w-full sm:w-auto py-2.5 px-4 rounded-xl font-mono text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200 cursor-pointer"
                   id="welcome-skip-btn"
                 >
                   Skip
@@ -4061,7 +3745,7 @@ export default function App() {
               initial={{ scale: 0.94, opacity: 0, y: 20 }}
               animate={{ scale: 1, opacity: 1, y: 0 }}
               exit={{ scale: 0.94, opacity: 0, y: 20 }}
-              transition={{ type: 'spring', damping: 26, stiffness: 210 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className={`w-full max-w-2xl border rounded-3xl overflow-hidden shadow-2xl relative flex flex-col max-h-[95vh] md:max-h-[88vh] transition-all duration-500 ${
                 welcomeStyles[selectedWelcomeStyle].mainBg
               }`}
@@ -4104,7 +3788,7 @@ export default function App() {
                   <div className={`w-2.5 h-2.5 rounded-full ${
                     welcomeStyles[selectedWelcomeStyle].dotBg
                   }`} />
-                  <span className={`text-[10px] font-mono tracking-[0.15em] uppercase font-bold ${
+                  <span className={`text-sm font-mono tracking-[0.15em] uppercase font-bold ${
                     welcomeStyles[selectedWelcomeStyle].dotText
                   }`}>
                     Scholar Orientation Desk • STEP {welcomeStep + 1} OF 5
@@ -4166,7 +3850,7 @@ export default function App() {
                           }`}>
                             Shalom! Bridging Scripture with Simple English
                           </h2>
-                          <p className={`text-[11px] font-mono mt-0.5 ${
+                          <p className={`text-[15px] font-mono mt-0.5 ${
                             welcomeStyles[selectedWelcomeStyle].subText
                           }`}>
                             Designed for English Learners, Translation Scholars & Modern Readers
@@ -4174,7 +3858,7 @@ export default function App() {
                         </div>
                       </div>
 
-                      <p className={`text-xs sm:text-sm leading-[1.8] tracking-[0.01em] ${
+                      <p className={`text-sm sm:text-sm leading-[1.8] tracking-[0.01em] ${
                         welcomeStyles[selectedWelcomeStyle].descText
                       }`}>
                         Classical English translations (like King James Version KJV) are gorgeous, but contain old vocabulary and convoluted syntax. This workspace processes 400-year-old expressions into simple, contemporary vocabulary in parallel—giving you instant theological comprehension.
@@ -4185,14 +3869,14 @@ export default function App() {
                         welcomeStyles[selectedWelcomeStyle].boxBg
                       }`}>
                         <div className="flex items-center justify-between mb-2">
-                          <h3 className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
+                          <h3 className={`text-sm font-mono font-bold uppercase tracking-wider ${
                             welcomeStyles[selectedWelcomeStyle].subText
                           }`}>
                             Interactive Classics Translator Preset
                           </h3>
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-semibold">LIVE TRIAL</span>
+                          <span className="text-sm px-1 py-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-semibold">LIVE TRIAL</span>
                         </div>
-                        <p className="text-[11px] leading-[1.8] tracking-[0.01em] opacity-70 mb-3">
+                        <p className="text-[15px] leading-[1.8] tracking-[0.01em] opacity-70 mb-3">
                           Tap any classical idiom below to see how our customized <strong>Personalized translation model</strong> refactors the scripture instantly:
                         </p>
 
@@ -4206,7 +3890,7 @@ export default function App() {
                             <button
                               key={idx}
                               onClick={() => setWelcomeIdiomIndex(idx)}
-                              className={`p-2.5 rounded-xl text-left border text-xs transition-all duration-200 cursor-pointer ${
+                              className={`p-2.5 rounded-xl text-left border text-sm transition-all duration-200 cursor-pointer ${
                                 welcomeIdiomIndex === idx
                                   ? welcomeStyles[selectedWelcomeStyle].itemActiveBg
                                   : welcomeStyles[selectedWelcomeStyle].itemInactiveBg
@@ -4216,7 +3900,7 @@ export default function App() {
                                 <span className="truncate">{idiom.classic}</span>
                                 {welcomeIdiomIndex === idx && <Check className="w-3 h-3 text-emerald-500 shrink-0" />}
                               </div>
-                              <div className={`text-[10.5px] mt-0.5 opacity-90 font-mono ${
+                              <div className={`text-sm mt-0.5 opacity-90 font-mono ${
                                 welcomeIdiomIndex === idx ? 'text-emerald-500 font-semibold' : 'opacity-60'
                               }`}>
                                 ➔ {idiom.simple}
@@ -4243,7 +3927,7 @@ export default function App() {
                         }`}>
                           Elevate Your Visual Atmosphere
                         </h2>
-                        <p className={`text-xs mt-1 leading-[1.8] tracking-[0.01em] ${
+                        <p className={`text-sm mt-1 leading-[1.8] tracking-[0.01em] ${
                           welcomeStyles[selectedWelcomeStyle].descText
                         }`}>
                           Select your desired reading environment. Notice how the underlying interface shifts theme behind this panel instantly!
@@ -4259,7 +3943,7 @@ export default function App() {
                             setTheme('light');
                             setAppLogo('cosmic');
                           }}
-                          className={`p-4 rounded-2xl border text-left transition-all duration-300 transform hover:scale-[1.02] cursor-pointer flex flex-col justify-between h-36 ${
+                          className={`p-4 rounded-2xl border text-left transition-all duration-500 ease-in-out hover:scale-[1.02] cursor-pointer flex flex-col justify-between h-36 ${
                             selectedWelcomeStyle === 'royal'
                               ? 'bg-indigo-50/80 border-indigo-400 ring-2 ring-indigo-400/20'
                               : 'bg-stone-50/20 border-stone-200 hover:border-stone-300 hover:bg-stone-100/40'
@@ -4269,11 +3953,11 @@ export default function App() {
                             <div className="flex items-center justify-between">
                               <span className="text-xl">💜</span>
                               {selectedWelcomeStyle === 'royal' && (
-                                <span className="text-[9px] font-bold uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-indigo-600 text-white">ACTIVE</span>
+                                <span className="text-sm px-1 py-1 font-bold uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-indigo-600 text-white">ACTIVE</span>
                               )}
                             </div>
-                            <h4 className="text-xs font-bold text-indigo-950 mt-3.5 uppercase tracking-wide">Royal Lavandula</h4>
-                            <p className="text-[10px] text-indigo-900/70 mt-1 leading-snug">Soft pale violet with majestic purple velvet highlights.</p>
+                            <h4 className="text-sm font-bold text-indigo-950 mt-3.5 uppercase tracking-wide">Royal Lavandula</h4>
+                            <p className="text-sm text-indigo-900/70 mt-1 leading-snug">Soft pale violet with majestic purple velvet highlights.</p>
                           </div>
                           <span className="text-[9.5px] font-mono font-bold text-indigo-800">LIGHT • ROYAL</span>
                         </button>
@@ -4285,7 +3969,7 @@ export default function App() {
                             setTheme('light');
                             setAppLogo('grace');
                           }}
-                          className={`p-4 rounded-2xl border text-left transition-all duration-300 transform hover:scale-[1.02] cursor-pointer flex flex-col justify-between h-36 ${
+                          className={`p-4 rounded-2xl border text-left transition-all duration-500 ease-in-out hover:scale-[1.02] cursor-pointer flex flex-col justify-between h-36 ${
                             selectedWelcomeStyle === 'minimal'
                               ? 'bg-slate-100/80 border-slate-300 ring-2 ring-slate-400/25'
                               : 'bg-stone-50/20 border-stone-200 hover:border-stone-300 hover:bg-stone-100/40'
@@ -4295,11 +3979,11 @@ export default function App() {
                             <div className="flex items-center justify-between">
                               <span className="text-xl">📁</span>
                               {selectedWelcomeStyle === 'minimal' && (
-                                <span className="text-[9px] font-bold uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-slate-800 text-white">ACTIVE</span>
+                                <span className="text-sm px-1 py-1 font-bold uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-slate-800 text-white">ACTIVE</span>
                               )}
                             </div>
-                            <h4 className="text-xs font-bold text-slate-800 mt-3.5 uppercase tracking-wide">Pristine Minimal</h4>
-                            <p className="text-[10px] text-slate-600 mt-1 leading-snug">Crisp modern light gray surface highlighting readability.</p>
+                            <h4 className="text-sm font-bold text-slate-800 mt-3.5 uppercase tracking-wide">Pristine Minimal</h4>
+                            <p className="text-sm text-slate-600 mt-1 leading-snug">Crisp modern light gray surface highlighting readability.</p>
                           </div>
                           <span className="text-[9.5px] font-mono font-bold text-slate-600">LIGHT • MINIMAL</span>
                         </button>
@@ -4309,7 +3993,7 @@ export default function App() {
                       <div className={`p-4 rounded-2xl border ${
                         welcomeStyles[selectedWelcomeStyle].boxBg
                       }`}>
-                        <span className={`text-[10px] font-mono tracking-wider font-extrabold uppercase block mb-2.5 ${
+                        <span className={`text-sm font-mono tracking-wider font-extrabold uppercase block mb-2.5 ${
                           welcomeStyles[selectedWelcomeStyle].subText
                         }`}>
                           ✨ SELECT VISUAL AURA COLOR ACCENT (Blue & Ash Options Included):
@@ -4339,8 +4023,8 @@ export default function App() {
                                 {auraColor === aura.id && <span className="text-[8px] px-1 py-0.2 rounded bg-cyan-500 text-white font-mono font-extrabold">SET</span>}
                               </div>
                               <div className="mt-2.5">
-                                <div className={`text-[10.5px] font-bold leading-tight ${auraColor === aura.id ? 'text-cyan-400' : 'text-slate-350'}`}>{aura.name}</div>
-                                <div className="text-[9px] opacity-50 font-mono italic">{aura.desc}</div>
+                                <div className={`text-sm font-bold leading-tight ${auraColor === aura.id ? 'text-cyan-400' : 'text-slate-350'}`}>{aura.name}</div>
+                                <div className="text-sm px-1 py-1 opacity-50 font-mono italic">{aura.desc}</div>
                               </div>
                             </button>
                           ))}
@@ -4353,31 +4037,31 @@ export default function App() {
                       }`}>
                         <div className="flex items-center justify-between border-b pb-1.5 mb-2 border-stone-200/40 dark:border-slate-800/40">
                           <span className="text-[9.5px] font-mono uppercase font-bold tracking-wider opacity-60">Mini Visual Representation Mock</span>
-                          <span className="text-[9px] font-mono text-emerald-500 font-semibold uppercase animate-pulse">● Live Render</span>
+                          <span className="text-sm px-1 py-1 font-mono text-emerald-500 font-semibold uppercase animate-pulse">● Live Render</span>
                         </div>
                         
                         {/* Simulated verse layout dynamic styling */}
                         <div className="space-y-1 select-none">
                           <div className="flex items-start gap-2.5">
-                            <span className={`text-[10px] font-mono leading-none py-1 px-1.5 rounded-md font-bold text-center ${
+                            <span className={`text-sm font-mono leading-none py-1 px-1.5 rounded-md font-bold text-center ${
                               welcomeStyles[selectedWelcomeStyle].mockVerseBadge
                             }`}>
                               Gen 1:1
                             </span>
                             <div className="space-y-1 flex-1">
-                              <p className={`text-[11px] leading-[1.8] tracking-[0.01em] ${
+                              <p className={`text-[15px] leading-[1.8] tracking-[0.01em] ${
                                 welcomeStyles[selectedWelcomeStyle].mockVerseHeading
                               }`}>
                                 In the <span className="underline decoration-cyan-400/40 underline-offset-3 cursor-help">beginning</span> God created the heaven...
                               </p>
-                              <p className="text-[10px] opacity-60 italic">
+                              <p className="text-sm opacity-60 italic">
                                 Original: In the commencement of all finite creation, the Almighty initiated...
                               </p>
                             </div>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    </motion.div>
+                      </motion.div>
                   )}
 
                   {welcomeStep === 2 && (
@@ -4395,7 +4079,7 @@ export default function App() {
                         }`}>
                           Scholarly Reflection Actions
                         </h2>
-                        <p className={`text-xs mt-1 leading-[1.8] tracking-[0.01em] ${
+                        <p className={`text-sm mt-1 leading-[1.8] tracking-[0.01em] ${
                           welcomeStyles[selectedWelcomeStyle].descText
                         }`}>
                           We abide by high-quality typography constraints. The verse number indicators remain clean and stationary, while active thematic study buttons appear directly underneath them!
@@ -4407,12 +4091,12 @@ export default function App() {
                         welcomeStyles[selectedWelcomeStyle].boxBg
                       }`}>
                         <div className="flex items-center justify-between mb-3">
-                          <span className={`text-[10px] font-mono font-bold uppercase tracking-wider ${
+                          <span className={`text-sm font-mono font-bold uppercase tracking-wider ${
                             welcomeStyles[selectedWelcomeStyle].subText
                           }`}>
                             Live Interactive Interface Guide
                           </span>
-                          <span className="text-[9px] px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-500 font-mono font-extrabold animate-pulse">TRY TAP ACTION</span>
+                          <span className="text-sm px-1 py-1 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-500 font-mono font-extrabold animate-pulse">TRY TAP ACTION</span>
                         </div>
 
                         <div className="flex flex-col sm:flex-row gap-4 items-center">
@@ -4420,7 +4104,7 @@ export default function App() {
                           <div className={`p-4 rounded-xl border flex flex-col items-center justify-center min-w-[100px] h-32 ${
                             welcomeStyles[selectedWelcomeStyle].mockVerseBg
                           }`}>
-                            <span className="text-[9px] font-mono tracking-wider opacity-50 mb-1 uppercase">Verse Id</span>
+                            <span className="text-sm px-1 py-1 font-mono tracking-wider opacity-50 mb-1 uppercase">Verse Id</span>
                             {/* Stationary Verse Indicator number */}
                             <div className={`text-[13px] font-sans font-extrabold select-none h-8 flex items-center justify-center`}>
                               1
@@ -4450,20 +4134,20 @@ export default function App() {
 
                           {/* Right: Explanatory text description */}
                           <div className="flex-1 space-y-2">
-                            <h4 className={`text-xs font-bold uppercase tracking-wide flex items-center gap-1.5 ${
+                            <h4 className={`text-sm font-bold uppercase tracking-wide flex items-center gap-1.5 ${
                               welcomeStyles[selectedWelcomeStyle].headingText
                             }`}>
                               {welcomeIdiomIndex === 1 ? '🌟 Theological Study Note Active' : '⚙️ Verse Options & Reflection Menu'}
                             </h4>
-                            <p className="text-[11.5px] leading-[1.8] tracking-[0.01em] opacity-85">
+                            <p className="text-base leading-[1.8] tracking-[0.01em] opacity-85">
                               {welcomeIdiomIndex === 1
                                 ? "Excellent! Tapping the standard options menu icon directly beneath the verse number opens the unified theological diary so you can draft scholarly reflections and key word highlights."
                                 : "Tap the options menu icon on the left. The options icon is situated neatly underneath the stable verse index for clean visual layout and quick diary drafting."
                               }
                             </p>
                             <div className="pt-1 select-none">
-                              <span className="text-[9px] font-mono bg-cyan-700/10 text-cyan-500 dark:text-cyan-400 px-2 py-0.5 rounded border border-cyan-500/15">
-                                ⚡ Allows Easy Navigation, Audits & Dynamic Speed Presets
+                              <span className="text-sm px-1 py-1 font-mono bg-cyan-700/10 text-cyan-500 dark:text-cyan-400 px-2 py-0.5 rounded border border-cyan-500/15">
+                                ⚡ Allows Easy Navigation & Speed Presets
                               </span>
                             </div>
                           </div>
@@ -4475,15 +4159,15 @@ export default function App() {
                         <div className="flex gap-2 text-left">
                           <span className="text-sm">📝</span>
                           <div>
-                            <h4 className="text-xs font-bold uppercase tracking-wider">Theological Study Journals</h4>
-                            <p className="text-[10.5px] opacity-75 mt-0.5 leading-[1.8] tracking-[0.01em]">Highlight scriptures, transcribe reflections, and sync translation presets side-by-side.</p>
+                            <h4 className="text-sm font-bold uppercase tracking-wider">Theological Study Journals</h4>
+                            <p className="text-sm opacity-75 mt-0.5 leading-[1.8] tracking-[0.01em]">Highlight scriptures, transcribe reflections, and sync translation presets side-by-side.</p>
                           </div>
                         </div>
                         <div className="flex gap-2 text-left">
                           <span className="text-sm">🎚️</span>
                           <div>
-                            <h4 className="text-xs font-bold uppercase tracking-wider">Speed Control Inside Notes</h4>
-                            <p className="text-[10.5px] opacity-75 mt-0.5 leading-[1.8] tracking-[0.01em]">Adjust your vocal read speed levels directly from study notebooks (ranges from 0.5x to 1.5x) inside active study cards.</p>
+                            <h4 className="text-sm font-bold uppercase tracking-wider">Speed Control Inside Notes</h4>
+                            <p className="text-sm opacity-75 mt-0.5 leading-[1.8] tracking-[0.01em]">Adjust your vocal read speed levels directly from study notebooks (ranges from 0.5x to 1.5x) inside active study cards.</p>
                           </div>
                         </div>
                       </div>
@@ -4517,10 +4201,10 @@ export default function App() {
                         welcomeStyles[selectedWelcomeStyle].boxBg
                       }`}>
                         <div className="flex items-center justify-between mb-3.5">
-                          <label className="text-xs font-mono font-bold uppercase tracking-wide flex items-center gap-1.5">
+                          <label className="text-sm font-mono font-bold uppercase tracking-wide flex items-center gap-1.5">
                             🎙️ ADJUST VOCAL STUDY SPEED
                           </label>
-                          <span className={`text-xs font-mono font-black border px-2 py-0.5 rounded-lg ${
+                          <span className={`text-sm font-mono font-black border px-2 py-0.5 rounded-lg ${
                             welcomeStyles[selectedWelcomeStyle].speedBadge
                           }`}>
                             {welcomePreviewSpeed.toFixed(1)}x Speed
@@ -4538,7 +4222,7 @@ export default function App() {
                                   window.speechSynthesis.cancel();
                                 }
                               }}
-                              className={`p-2 rounded-xl text-center text-xs font-mono font-bold transition-all duration-200 border cursor-pointer ${
+                              className={`p-2 rounded-xl text-center text-sm font-mono font-bold transition-all duration-200 border cursor-pointer ${
                                 welcomePreviewSpeed === speedVal
                                   ? welcomeStyles[selectedWelcomeStyle].speedBtnActive
                                   : welcomeStyles[selectedWelcomeStyle].speedBtnInactive
@@ -4567,7 +4251,7 @@ export default function App() {
                                 console.error("Synthesis trigger issue: ", e);
                               }
                             }}
-                            className={`p-3 rounded-2xl text-xs font-mono font-bold cursor-pointer transition-transform duration-100 transform hover:scale-[1.01] active:scale-[0.99] flex-1 flex items-center justify-center gap-1.5 ${
+                            className={`p-3 rounded-2xl text-sm font-mono font-bold cursor-pointer transition-transform duration-100 transform hover:scale-[1.01] active:scale-[0.99] flex-1 flex items-center justify-center gap-1.5 ${
                               welcomeStyles[selectedWelcomeStyle].speakBtn
                             }`}
                           >
@@ -4581,7 +4265,7 @@ export default function App() {
                                 window.speechSynthesis.cancel();
                               }
                             }}
-                            className={`p-3 rounded-2xl text-xs font-mono font-bold cursor-pointer hover:bg-red-500/10 hover:text-red-400 border transition-all duration-200 ${
+                            className={`p-3 rounded-2xl text-sm font-mono font-bold cursor-pointer hover:bg-red-500/10 hover:text-red-400 border transition-all duration-200 ${
                               welcomeStyles[selectedWelcomeStyle].stopBtn
                             }`}
                           >
@@ -4595,15 +4279,15 @@ export default function App() {
                         <div className="flex gap-2.5 items-start">
                           <span className="text-sm">📝</span>
                           <div>
-                            <h4 className="text-xs font-bold uppercase tracking-wide">Theological Study Journals</h4>
-                            <p className="text-[11px] opacity-70 leading-[1.8] tracking-[0.01em] mt-0.5">Highlight, write scholarly reflections, and save translation indices in local storage securely.</p>
+                            <h4 className="text-sm font-bold uppercase tracking-wide">Theological Study Journals</h4>
+                            <p className="text-[15px] opacity-70 leading-[1.8] tracking-[0.01em] mt-0.5">Highlight, write scholarly reflections, and save translation indices in local storage securely.</p>
                           </div>
                         </div>
                         <div className="flex gap-2.5 items-start">
                           <span className="text-sm">📚</span>
                           <div>
-                            <h4 className="text-xs font-bold uppercase tracking-wide">Parallel Root Codexes</h4>
-                            <p className="text-[11px] opacity-70 leading-[1.8] tracking-[0.01em] mt-0.5">Compare Hebrew or Greek base words on a word-by-word structure instantly by hovering/tapping.</p>
+                            <h4 className="text-sm font-bold uppercase tracking-wide">Parallel Root Codexes</h4>
+                            <p className="text-[15px] opacity-70 leading-[1.8] tracking-[0.01em] mt-0.5">Compare Hebrew or Greek base words on a word-by-word structure instantly by hovering/tapping.</p>
                           </div>
                         </div>
                       </div>
@@ -4629,13 +4313,13 @@ export default function App() {
                         Your Intellectual Sanctuary Awaits!
                       </h2>
 
-                      <p className={`text-xs sm:text-sm max-w-md mx-auto leading-[1.8] tracking-[0.01em] ${
+                      <p className={`text-sm sm:text-sm max-w-md mx-auto leading-[1.8] tracking-[0.01em] ${
                         welcomeStyles[selectedWelcomeStyle].descText
                       }`}>
                         Configuration complete. You have established a clean and legible study sanctuary. You can re-open this helper modal at any time using the <strong>🌟 SHALOM STUDY GUIDE</strong> top header button.
                       </p>
 
-                      <p className="text-[11px] font-mono text-emerald-500 uppercase tracking-widest font-bold">
+                      <p className="text-[15px] font-mono text-emerald-500 uppercase tracking-widest font-bold">
                         Let us commence the study of the Scrolls.
                       </p>
                     </motion.div>
@@ -4677,7 +4361,7 @@ export default function App() {
                           window.speechSynthesis.cancel();
                         }
                       }}
-                      className={`px-3 py-1.5 rounded-lg border text-xs font-mono font-bold hover:scale-[1.01] transition-transform duration-100 cursor-pointer ${
+                      className={`px-3 py-1.5 rounded-lg border text-sm font-mono font-bold hover:scale-[1.01] transition-transform duration-100 cursor-pointer ${
                         welcomeStyles[selectedWelcomeStyle].backBtn
                       }`}
                     >
@@ -4693,7 +4377,7 @@ export default function App() {
                           window.speechSynthesis.cancel();
                         }
                       }}
-                      className={`px-4 py-1.5 rounded-lg text-xs font-mono font-bold hover:scale-[1.01] transition-transform duration-100 cursor-pointer flex items-center gap-1 ${
+                      className={`px-4 py-1.5 rounded-lg text-sm font-mono font-bold hover:scale-[1.01] transition-transform duration-100 cursor-pointer flex items-center gap-1 ${
                         welcomeStyles[selectedWelcomeStyle].nextBtn
                       }`}
                     >
@@ -4708,7 +4392,7 @@ export default function App() {
                           window.speechSynthesis.cancel();
                         }
                       }}
-                      className={`px-5 py-1.5 rounded-lg text-xs font-mono font-bold animate-pulse hover:scale-[1.01] transition-transform duration-100 cursor-pointer ${
+                      className={`px-5 py-1.5 rounded-lg text-sm font-mono font-bold animate-pulse hover:scale-[1.01] transition-transform duration-100 cursor-pointer ${
                         welcomeStyles[selectedWelcomeStyle].nextBtn
                       }`}
                     >
@@ -4752,7 +4436,7 @@ export default function App() {
                   <h3 className={`text-lg font-display font-bold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
                     📱 Install Personalized Bible App
                   </h3>
-                  <p className="text-xs text-slate-500 mt-0.5">
+                  <p className="text-sm text-slate-500 mt-0.5">
                     Read, search, and study original biblical manuscripts offline directly on your device.
                   </p>
                 </div>
@@ -4778,19 +4462,19 @@ export default function App() {
                   <BookOpen className="w-6 h-6 animate-pulse" />
                 </div>
                 <div className="flex-1">
-                  <div className="flex items-center space-x-1.5 font-mono text-[9px] uppercase tracking-widest font-bold">
+                  <div className="flex items-center space-x-1.5 font-mono text-sm px-1 py-1 uppercase tracking-widest font-bold">
                     <span className={theme === 'light' ? 'text-cyan-805' : 'text-cyan-400'}>Universal PWA Edition</span>
                     <span className={`w-1 h-1 rounded-full ${theme === 'light' ? 'bg-cyan-500' : 'bg-cyan-400'}`} />
                     <span className="text-slate-450">iOS & Android</span>
                   </div>
                   <h4 className={`text-sm font-sans font-extrabold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
-                    Personalised Bible Study
+                    LogosBridge
                   </h4>
                 </div>
               </div>
 
               {/* Operating System Platform Selector Tabs */}
-              <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-950/70 rounded-xl mb-4 text-xs font-mono font-bold">
+              <div className="grid grid-cols-3 gap-1 p-1 bg-slate-100 dark:bg-slate-950/70 rounded-xl mb-4 text-sm font-mono font-bold">
                 <button
                   onClick={() => setActiveInstallTab('ios')}
                   className={`py-2 rounded-lg flex items-center justify-center space-x-1.5 transition cursor-pointer ${
@@ -4827,7 +4511,7 @@ export default function App() {
               </div>
 
               {/* Active Tab Step Walkthrough Pane */}
-              <div className={`p-4 rounded-xl border mb-5 text-xs text-left leading-[1.8] tracking-[0.01em] ${
+              <div className={`p-4 rounded-xl border mb-5 text-sm text-left leading-[1.8] tracking-[0.01em] ${
                 theme === 'light' ? 'bg-slate-50 border-slate-150 text-slate-700' : 'bg-[#040810]/70 border-cyan-950/20 text-slate-300'
               }`}>
                 {activeInstallTab === 'ios' && (
@@ -4899,13 +4583,13 @@ export default function App() {
 
               {/* Copy URL Panel for sharing on phone */}
               <div className="space-y-2">
-                <span className="text-[10px] font-mono text-slate-500 font-bold uppercase block">
+                <span className="text-sm font-mono text-slate-500 font-bold uppercase block">
                   Copy URL to share / open on your Mobile device
                 </span>
                 <div className={`p-2 rounded-xl border flex items-center justify-between ${
                   theme === 'light' ? 'bg-slate-100 border-slate-200' : 'bg-slate-950 border-cyan-950'
                 }`}>
-                  <span className="text-[11px] font-mono text-slate-400 truncate select-all flex-1 pr-3 pl-1.5 leading-none">
+                  <span className="text-[15px] font-mono text-slate-400 truncate select-all flex-1 pr-3 pl-1.5 leading-none">
                     {window.location.origin}
                   </span>
                   <button
@@ -4914,7 +4598,7 @@ export default function App() {
                       setCopyFeedback(true);
                       setTimeout(() => setCopyFeedback(false), 2000);
                     }}
-                    className={`px-3 py-1.5 rounded-lg font-mono text-[10px] font-bold uppercase tracking-wider flex items-center space-x-1 transition cursor-pointer shrink-0 ${
+                    className={`px-3 py-1.5 rounded-lg font-mono text-sm font-bold uppercase tracking-wider flex items-center space-x-1 transition cursor-pointer shrink-0 ${
                       copyFeedback
                         ? 'bg-amber-500 text-[#070b14]'
                         : theme === 'light' ? 'bg-slate-200 hover:bg-slate-250 text-slate-800' : 'bg-cyan-950 text-cyan-300 hover:bg-cyan-900'
@@ -4930,7 +4614,7 @@ export default function App() {
               <div className="mt-6 flex justify-end">
                 <button
                   onClick={() => setIsInstallModalOpen(false)}
-                  className={`px-4 py-2 font-bold rounded-xl text-xs transition duration-150 uppercase tracking-widest shadow-md cursor-pointer ${
+                  className={`px-4 py-2 font-bold rounded-xl text-sm transition duration-150 uppercase tracking-widest shadow-md cursor-pointer ${
                     theme === 'light'
                       ? 'bg-cyan-600 hover:bg-cyan-700 text-white shadow-cyan-100'
                       : 'bg-cyan-900/40 text-cyan-300 hover:bg-cyan-500 hover:text-black border border-cyan-950 shadow-cyan-950'
@@ -4979,7 +4663,7 @@ export default function App() {
                     <Database className="w-5 h-5 text-amber-500" />
                     <span>Offline Bible Sync & Book Downloader</span>
                   </h3>
-                  <p className="text-xs text-slate-500 mt-1">
+                  <p className="text-sm text-slate-500 mt-1">
                     Download and cache any of the 66 scrolls of the Bible one-by-one into local storage for immediate offline studying.
                   </p>
                 </div>
@@ -5006,7 +4690,7 @@ export default function App() {
                 theme === 'light' ? 'bg-amber-50/20 border-amber-100' : 'bg-[#181109]/30 border-[#472202]/30'
               }`}>
                 <div className="space-y-1 text-left">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-bold block">
+                  <span className="text-sm font-mono uppercase tracking-wider text-slate-500 font-bold block">
                     BOOKS FULLY READY
                   </span>
                   <div className="flex items-baseline space-x-1.5">
@@ -5016,26 +4700,26 @@ export default function App() {
                         return bookObj && cachedCount === bookObj.chapters;
                       }).length}
                     </span>
-                    <span className="text-xs text-slate-400">/ 66 books offline</span>
+                    <span className="text-sm text-slate-400">/ 66 books offline</span>
                   </div>
                 </div>
 
                 <div className="space-y-1 text-left">
-                  <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-bold block">
+                  <span className="text-sm font-mono uppercase tracking-wider text-slate-500 font-bold block">
                     TOTAL CACHED CHAPTERS
                   </span>
                   <div className="flex items-baseline space-x-1.5">
                     <span className={`text-2xl font-display font-extrabold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
                       {Object.values(cachedChapters).reduce((acc: number, curr: number) => acc + curr, 0)}
                     </span>
-                    <span className="text-xs text-slate-400">/ 1189 chapters cached</span>
+                    <span className="text-sm text-slate-400">/ 1189 chapters cached</span>
                   </div>
                 </div>
 
                 <div className="flex items-center lg:justify-end">
                   <button
                     onClick={handleClearAllCaches}
-                    className={`px-3 py-1.5 text-[10px] font-mono font-bold uppercase tracking-wider rounded-lg border flex items-center gap-1.5 transition cursor-pointer ${
+                    className={`px-3 py-1.5 text-sm font-mono font-bold uppercase tracking-wider rounded-lg border flex items-center gap-1.5 transition cursor-pointer ${
                       theme === 'light'
                         ? 'bg-rose-50 border-rose-200 text-rose-700 hover:bg-rose-100'
                         : 'bg-rose-950/20 border-rose-900/40 text-rose-400 hover:bg-rose-950/50'
@@ -5049,7 +4733,7 @@ export default function App() {
 
               {/* ACTIVE SYNCING LOG PANEL (Show only when syncing) */}
               {downloadingBook && (
-                <div className={`p-4 rounded-xl border mb-4 text-xs font-mono shrink-0 relative overflow-hidden ${
+                <div className={`p-4 rounded-xl border mb-4 text-sm font-mono shrink-0 relative overflow-hidden ${
                   theme === 'light' ? 'bg-slate-50 border-slate-200 text-slate-700' : 'bg-slate-950/85 border-cyan-950/55 text-slate-200'
                 }`}>
                   <div className="flex items-center justify-between mb-2">
@@ -5068,7 +4752,7 @@ export default function App() {
                     />
                   </div>
 
-                  <div className="max-h-20 overflow-y-auto space-y-1 text-[10px] text-slate-400 text-left">
+                  <div className="max-h-20 overflow-y-auto space-y-1 text-sm text-slate-400 text-left">
                     {downloadStatusLog.slice(-4).map((log, idx) => (
                       <div key={idx} className="flex items-center gap-1.5">
                         <span className="text-cyan-500">⮚</span>
@@ -5082,7 +4766,7 @@ export default function App() {
                       onClick={() => {
                         cancelDownloadRef.current = true;
                       }}
-                      className="px-2.5 py-1 text-[9px] uppercase tracking-wider font-extrabold bg-rose-600 hover:bg-rose-700 text-white rounded cursor-pointer transition"
+                      className="px-2.5 py-1 text-sm px-1 py-1 uppercase tracking-wider font-extrabold bg-rose-600 hover:bg-rose-700 text-white rounded cursor-pointer transition"
                     >
                       Cancel Synchronization
                     </button>
@@ -5098,7 +4782,7 @@ export default function App() {
                   placeholder="Type to filter books (e.g., Genesis, Romans)..."
                   value={bookSearchQuery}
                   onChange={(e) => setBookSearchQuery(e.target.value)}
-                  className={`w-full text-xs font-mono px-3 py-2 rounded-lg border focus:outline-none ${
+                  className={`w-full text-sm font-mono px-3 py-2 rounded-lg border focus:outline-none ${
                     theme === 'light'
                       ? 'bg-slate-50 border-slate-200 text-slate-800 focus:border-cyan-500'
                       : 'bg-slate-950 border-cyan-950 text-slate-200 focus:border-cyan-500'
@@ -5107,7 +4791,7 @@ export default function App() {
                 {bookSearchQuery && (
                   <button 
                     onClick={() => setBookSearchQuery('')}
-                    className="text-[10px] font-mono px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 transition"
+                    className="text-sm font-mono px-2 py-1 bg-slate-800 hover:bg-slate-700 rounded text-slate-400 transition"
                   >
                     Clear
                   </button>
@@ -5135,13 +4819,13 @@ export default function App() {
                       >
                         <div className="truncate space-y-1">
                           <div className="flex items-center gap-1.5">
-                            <span className={`text-xs font-display font-extrabold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
+                            <span className={`text-base md:text-lg font-display font-extrabold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
                               {bookObj.name}
                             </span>
-                            <span className="text-[9px] font-mono text-slate-400">({bookObj.chapters} Ch)</span>
+                            <span className="text-sm px-1 py-1 font-mono text-slate-400">({bookObj.chapters} Ch)</span>
                           </div>
 
-                          <div className="flex items-center gap-1.5 text-[10px]">
+                          <div className="flex items-center gap-1.5 text-sm">
                             {isFullyCached ? (
                               <span className="text-emerald-500 font-bold font-mono">✓ Online & Offline Ready</span>
                             ) : isPartiallyCached ? (
@@ -5170,11 +4854,11 @@ export default function App() {
                           )}
 
                           {isFullyCached ? (
-                            <span className="text-[10px] font-bold uppercase text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded font-mono select-none">
+                            <span className="text-sm font-bold uppercase text-emerald-500 bg-emerald-500/10 px-2 py-1 rounded font-mono select-none">
                               Offline
                             </span>
                           ) : isCurrentDownloading ? (
-                            <div className="flex items-center gap-1 bg-amber-500/10 text-amber-500 font-mono text-[9px] px-2 py-1 rounded font-bold uppercase animate-pulse">
+                            <div className="flex items-center gap-1 bg-amber-500/10 text-amber-500 font-mono text-sm px-1 py-1 px-2 py-1 rounded font-bold uppercase animate-pulse">
                               <RefreshCw className="w-3 h-3 animate-spin" />
                               <span>{downloadProgress}%</span>
                             </div>
@@ -5182,7 +4866,7 @@ export default function App() {
                             <button
                               onClick={() => handleDownloadBook(bookObj.name)}
                               disabled={!!downloadingBook}
-                              className={`px-3 py-1 text-[10px] font-mono font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5 cursor-pointer transition ${
+                              className={`px-3 py-1 text-sm font-mono font-bold uppercase tracking-wider rounded-lg flex items-center gap-1.5 cursor-pointer transition ${
                                 theme === 'light'
                                   ? 'bg-cyan-600 hover:bg-cyan-700 text-white shadow-sm'
                                   : 'bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-800/40 text-cyan-300'
@@ -5204,7 +4888,7 @@ export default function App() {
                 <button
                   onClick={() => setIsOfflineSyncOpen(false)}
                   disabled={!!downloadingBook}
-                  className={`px-4 py-2 font-bold rounded-xl text-xs uppercase tracking-widest transition shadow-md cursor-pointer ${
+                  className={`px-4 py-2 font-bold rounded-xl text-sm uppercase tracking-widest transition shadow-md cursor-pointer ${
                     theme === 'light'
                       ? 'bg-slate-600 hover:bg-slate-700 text-white'
                       : 'bg-slate-900 border border-cyan-950 text-slate-300 hover:bg-slate-950'
@@ -5244,12 +4928,12 @@ export default function App() {
               {/* Header */}
               <div className="flex items-start justify-between pb-3.5 border-b border-cyan-500/10 mb-4 shrink-0">
                 <div>
-                  <span className={`text-[10px] font-mono uppercase tracking-widest font-extrabold px-2 py-0.5 rounded ${
+                  <span className={`text-sm font-mono uppercase tracking-widest font-extrabold px-2 py-0.5 rounded ${
                     theme === 'light' ? 'bg-cyan-50 text-cyan-700' : 'bg-cyan-950/40 text-cyan-400'
                   }`}>
                     🎓 Theological Quiz Companion
                   </span>
-                  <h3 className={`text-lg font-display font-bold mt-1 ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
+                  <h3 className={`text-lg font-display font-bold mt-0.5 ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
                     Scripture Scholars Match &amp; Memory
                   </h3>
                 </div>
@@ -5266,7 +4950,7 @@ export default function App() {
               </div>
 
               {/* Game Mode Selector Sub-tab inside dialogue */}
-              <div className="grid grid-cols-2 gap-1 p-1 bg-slate-150/40 dark:bg-slate-950/60 rounded-xl mb-4 shrink-0 text-xs font-mono font-bold border dark:border-cyan-950/35">
+              <div className="grid grid-cols-2 gap-1 p-1 bg-slate-150/40 dark:bg-slate-950/60 rounded-xl mb-4 shrink-0 text-sm font-mono font-bold border dark:border-cyan-950/35">
                 <button
                   onClick={() => {
                     startVocabularyQuiz();
@@ -5278,7 +4962,7 @@ export default function App() {
                       : theme === 'light' ? 'text-slate-600 hover:text-slate-900' : 'text-slate-400 hover:text-cyan-300'
                   }`}
                 >
-                  <span>🀄 Greek &amp; Hebrew Matcher</span>
+                  <span>🀄 Greek &amp; Hebrew Dictionary</span>
                 </button>
                 <button
                   onClick={() => {
@@ -5297,7 +4981,7 @@ export default function App() {
               </div>
 
               {/* Score Display bar */}
-              <div className={`p-2.5 rounded-xl border mb-4 flex items-center justify-between shrink-0 font-mono text-[11px] font-bold ${
+              <div className={`p-2.5 rounded-xl border mb-4 flex items-center justify-between shrink-0 font-mono text-[15px] font-bold ${
                 theme === 'light' ? 'bg-slate-50 border-slate-150 text-slate-600' : 'bg-cyan-950/20 border-cyan-950/45 text-cyan-400'
               }`}>
                 <span>📖 CHAPTER STUDY SESSION QUIZ</span>
@@ -5315,14 +4999,14 @@ export default function App() {
                 {/* 1. VOCABULARY CONNECTION MATCH MODE UI */}
                 {quizMode === 'vocabulary' && (
                   <div className="space-y-5 py-1">
-                    <p className={`text-xs text-center italic font-sans ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
+                    <p className={`text-sm text-center italic font-sans ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
                       Select an original root word in the left grid, then tap its corrected theological translation in the right grid!
                     </p>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                       {/* Left: Root terms */}
                       <div className="space-y-2">
-                        <span className="text-[9px] font-mono tracking-widest text-slate-400 uppercase font-extrabold block mb-1">Root Manuscripts Words</span>
+                        <span className="text-sm px-1 py-1 font-mono tracking-widest text-slate-400 uppercase font-extrabold block mb-1">Root Manuscripts Words</span>
                         <div className="grid grid-cols-1 gap-2">
                           {quizWords.map((qw, idx) => {
                             const isMatched = matchedPairs.includes(idx);
@@ -5336,7 +5020,7 @@ export default function App() {
                                   handleWordSelect(idx);
                                   playWebAudioBeep(520, 'sine', 0.08);
                                 }}
-                                className={`w-full p-3 text-left rounded-xl border transition-all text-xs font-mono flex items-center justify-between font-bold ${
+                                className={`w-full p-3 text-left rounded-xl border transition-all text-sm font-mono flex items-center justify-between font-bold ${
                                   isMatched
                                     ? 'bg-emerald-500/10 border-emerald-500/40 text-emerald-500 line-through opacity-70 cursor-not-allowed'
                                     : isSelected
@@ -5347,7 +5031,7 @@ export default function App() {
                                 }`}
                               >
                                 <span>{qw.original}</span>
-                                {isMatched && <span className="text-emerald-500 text-[10px]">✓ Matched</span>}
+                                {isMatched && <span className="text-emerald-500 text-sm">✓ Matched</span>}
                               </button>
                             );
                           })}
@@ -5356,7 +5040,7 @@ export default function App() {
 
                       {/* Right: Literal definitions and explanations */}
                       <div className="space-y-2">
-                        <span className="text-[9px] font-mono tracking-widest text-slate-400 uppercase font-extrabold block mb-1">Theological Meanings</span>
+                        <span className="text-sm px-1 py-1 font-mono tracking-widest text-slate-400 uppercase font-extrabold block mb-1">Theological Meanings</span>
                         <div className="grid grid-cols-1 gap-2">
                           {quizMeanings.map((meaningText, idx) => {
                             const matchingWordIdx = quizWords.findIndex(w => w.meaning === meaningText);
@@ -5371,7 +5055,7 @@ export default function App() {
                                   handleMeaningSelect(idx);
                                   playWebAudioBeep(550, 'sine', 0.08);
                                 }}
-                                className={`w-full p-3 text-left rounded-xl border leading-snug transition-all text-xs font-sans ${
+                                className={`w-full p-3 text-left rounded-xl border leading-snug transition-all text-sm font-sans ${
                                   isMatched
                                     ? 'bg-emerald-500/5 border-emerald-500/20 text-slate-500 line-through cursor-not-allowed'
                                     : isSelected
@@ -5424,7 +5108,7 @@ export default function App() {
                                 }}
                                 disabled={memorizationCorrectCount !== null && isAnsweredCorrectly}
                                 placeholder={`(Blank ${blankedIndices.indexOf(idx) + 1})`}
-                                className={`px-2 py-0.5 rounded border focus:ring-1 focus:ring-cyan-500 text-xs font-mono focus:outline-none w-24 text-center transition-all ${
+                                className={`px-2 py-0.5 rounded border focus:ring-1 focus:ring-cyan-500 text-sm font-mono focus:outline-none w-24 text-center transition-all ${
                                   memorizationCorrectCount !== null
                                     ? isAnsweredCorrectly
                                       ? 'bg-emerald-500/20 border-emerald-500/50 text-emerald-500 font-bold'
@@ -5440,12 +5124,12 @@ export default function App() {
                     </div>
 
                     {memorizationCorrectCount !== null && (
-                      <div className={`p-3 rounded-xl border leading-[1.8] tracking-[0.01em] text-xs transition font-sans ${
+                      <div className={`p-3 rounded-xl border leading-[1.8] tracking-[0.01em] text-sm transition font-sans ${
                         memorizationCorrectCount === blankedIndices.length
                           ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-600 dark:text-emerald-400'
                           : 'bg-slate-500/5 border-slate-600/20 text-slate-500 dark:text-slate-355'
                       }`}>
-                        <span className="font-mono text-[9px] uppercase tracking-wider font-extrabold block mb-0.5">
+                        <span className="font-mono text-sm px-1 py-1 uppercase tracking-wider font-extrabold block mb-0.5">
                           ✓ MASTER KEY MANUSCRIPT PHRASE:
                         </span>
                         "{quizVerse.nonNativeEnglish}"
@@ -5458,7 +5142,7 @@ export default function App() {
                           onClick={() => {
                             checkMemorizationAnswers();
                           }}
-                          className={`px-4 py-2 rounded-xl text-xs font-sans font-bold shadow transition cursor-pointer ${
+                          className={`px-4 py-2 rounded-xl text-sm font-sans font-bold shadow transition cursor-pointer ${
                             theme === 'light' ? 'bg-cyan-600 hover:bg-cyan-700 text-white' : 'bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900'
                           }`}
                         >
@@ -5470,7 +5154,7 @@ export default function App() {
                             startMemorizationQuiz(quizVerse);
                             playWebAudioBeep(620, 'sine', 0.1);
                           }}
-                          className={`px-4 py-2 rounded-xl text-xs font-sans font-bold shadow transition cursor-pointer ${
+                          className={`px-4 py-2 rounded-xl text-sm font-sans font-bold shadow transition cursor-pointer ${
                             theme === 'light' ? 'bg-amber-500 hover:bg-amber-600 text-white' : 'bg-amber-950/60 text-amber-400 border border-amber-900/40 hover:bg-amber-950'
                           }`}
                         >
@@ -5484,7 +5168,7 @@ export default function App() {
               </div>
 
               {/* Status Feedback bar */}
-              <div className={`mt-4 p-3 rounded-xl border border-dotted shrink-0 text-xs font-medium font-sans flex items-center justify-between ${
+              <div className={`mt-4 p-3 rounded-xl border border-dotted shrink-0 text-sm font-medium font-sans flex items-center justify-between ${
                 theme === 'light' ? 'bg-slate-50 border-slate-300 text-slate-700 font-medium' : 'bg-slate-950/50 border-cyan-900/40 text-slate-350'
               }`}>
                 <span>📢 Feedback: {quizFeedback}</span>
@@ -5494,7 +5178,7 @@ export default function App() {
                       startVocabularyQuiz();
                       playWebAudioBeep(700, 'sine', 0.15);
                     }}
-                    className="ml-3 px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white font-mono text-[10px] font-bold uppercase rounded cursor-pointer transition shadow"
+                    className="ml-3 px-2.5 py-1 bg-emerald-500 hover:bg-emerald-600 text-white font-mono text-sm font-bold uppercase rounded cursor-pointer transition shadow"
                   >
                     Play Again
                   </button>
@@ -5503,12 +5187,12 @@ export default function App() {
 
               {/* Close Button Footer */}
               <div className="mt-5 pt-4 border-t border-cyan-500/10 flex justify-between shrink-0">
-                <span className="text-[10px] font-mono text-slate-400 tracking-wider">
+                <span className="text-sm font-mono text-slate-400 tracking-wider">
                   PERSISTENT QUIZ MANAGER
                 </span>
                 <button
                   onClick={() => setIsQuizOpen(false)}
-                  className={`px-4 py-2 font-bold rounded-xl text-xs uppercase tracking-widest transition shadow-md cursor-pointer ${
+                  className={`px-4 py-2 font-bold rounded-xl text-sm uppercase tracking-widest transition shadow-md cursor-pointer ${
                     theme === 'light'
                       ? 'bg-slate-600 hover:bg-slate-700 text-white shadow-slate-100'
                       : 'bg-slate-900 border border-cyan-950 text-slate-300 hover:bg-slate-950'
@@ -5534,6 +5218,8 @@ export default function App() {
 
       {/* SCREEN PROJECTION AND BROADCAST STUDY STUDIO */}
       <ProjectionStudio
+        onBookChange={setSelectedBook}
+        onChapterChange={setSelectedChapter}
         theme={theme}
         isOpen={isProjectionStudioOpen}
         onClose={() => setIsProjectionStudioOpen(false)}
@@ -5551,8 +5237,8 @@ export default function App() {
             initial={{ opacity: 0, y: 50, scale: 0.95 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
-            transition={{ type: 'spring', damping: 25, stiffness: 180 }}
-            className={`fixed bottom-6 right-6 w-80 sm:w-[400px] rounded-xl border z-40 overflow-hidden flex flex-col transition-all shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] ${
+            transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+            className={`fixed bottom-6 right-6 w-80 sm:w-[400px] rounded-xl border z-40 overflow-hidden flex flex-col shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] ${
               theme === 'light' 
                 ? 'bg-white/95 backdrop-blur-md border-zinc-200/80 text-zinc-800' 
                 : 'bg-zinc-950/90 backdrop-blur-xl border-zinc-800/80 text-zinc-100'
@@ -5567,7 +5253,7 @@ export default function App() {
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-500 opacity-60"></span>
                   <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500 shadow-[0_0_8px_rgba(239,68,68,1)]"></span>
                 </div>
-                <span className={`text-[10px] font-sans font-bold tracking-[0.2em] uppercase ${theme === 'light' ? 'text-zinc-800' : 'text-zinc-200'}`}>
+                <span className={`text-sm font-sans font-bold tracking-[0.2em] uppercase ${theme === 'light' ? 'text-zinc-800' : 'text-zinc-200'}`}>
                   Program Out
                 </span>
               </div>
@@ -5575,7 +5261,7 @@ export default function App() {
               <div className="flex items-center gap-2 font-sans">
                 <button
                   onClick={() => setIsLiveMonitorCollapsed(!isLiveMonitorCollapsed)}
-                  className={`px-2 py-1 rounded-md text-[10px] font-semibold uppercase tracking-wider transition-colors ${
+                  className={`px-2 py-1 rounded-md text-sm font-semibold uppercase tracking-wider transition-colors ${
                     theme === 'light' ? 'hover:bg-zinc-200 text-zinc-500' : 'hover:bg-zinc-800 text-zinc-400'
                   }`}
                   title={isLiveMonitorCollapsed ? "Expand live screen window" : "Minimize live screen to indicator"}
@@ -5613,7 +5299,7 @@ export default function App() {
                   {liveScreenState.layoutMode === 'lower-third' ? (
                     <div className="absolute top-0 inset-x-0 h-[65%] bg-[url('https://images.unsplash.com/photo-1543900694-133f37abaaa5?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-40 grayscale flex items-center justify-center">
                       <div className="absolute inset-0 bg-black/50" />
-                      <span className="text-[9px] font-sans font-medium uppercase tracking-[0.2em] text-white/50 relative z-10">Live Stage</span>
+                      <span className="text-sm px-1 py-1 font-sans font-medium uppercase tracking-[0.2em] text-white/50 relative z-10">Live Stage</span>
                     </div>
                   ) : null}
 
@@ -5629,7 +5315,7 @@ export default function App() {
                         {liveScreenState.book} {liveScreenState.chapter}:{liveScreenState.verseNumber}
                       </span>
                     </div>
-                    <div className={`text-[11px] leading-snug line-clamp-2 transition-all text-white shadow-sm ${
+                    <div className={`text-[15px] leading-snug line-clamp-2 transition-all text-white shadow-sm ${
                       liveScreenState.fontFamily === 'serif' ? 'font-serif' : liveScreenState.fontFamily === 'mono' ? 'font-mono' : 'font-sans'
                     } ${liveScreenState.isBold ? 'font-bold' : 'font-normal'} ${liveScreenState.isItalic ? 'italic' : 'not-italic'}`}>
                       {liveScreenState.verseText}
@@ -5638,7 +5324,7 @@ export default function App() {
                 </div>
 
                 {/* Live broadcast metadata info bar */}
-                <div className={`flex items-center justify-between text-[9px] font-mono tracking-widest uppercase pb-3 border-b ${theme === 'light' ? 'text-zinc-400 border-zinc-200' : 'text-zinc-500 border-zinc-800'}`}>
+                <div className={`flex items-center justify-between text-sm px-1 py-1 font-mono tracking-widest uppercase pb-3 border-b ${theme === 'light' ? 'text-zinc-400 border-zinc-200' : 'text-zinc-500 border-zinc-800'}`}>
                   <div className="flex items-center gap-3">
                     <span className="text-emerald-500 font-semibold flex items-center gap-1">
                       <Check className="w-3 h-3" /> NDI Stream
@@ -5655,7 +5341,7 @@ export default function App() {
                       setIsProjectionStudioOpen(true);
                       playWebAudioBeep(520, 'sine', 0.08);
                     }}
-                    className={`px-2 py-2 rounded-lg text-[9px] font-sans font-semibold tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`px-2 py-2 rounded-lg text-sm px-1 py-1 font-sans font-semibold tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       theme === 'light' 
                         ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700' 
                         : 'bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300'
@@ -5665,11 +5351,11 @@ export default function App() {
                     <Settings className="w-3 h-3" /> Config
                   </button>
                   <button
-                    onClick={() => {
+                    onClick={async () => {
                       playWebAudioBeep(880, 'sine', 0.1);
-                      window.open(window.location.origin + window.location.pathname + '?projector=true', '_blank');
+                      await openProjectorStandalone(liveScreenState);
                     }}
-                    className={`px-2 py-2 rounded-lg text-[9px] font-sans font-semibold tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
+                    className={`px-2 py-2 rounded-lg text-sm px-1 py-1 font-sans font-semibold tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
                       theme === 'light' 
                         ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700' 
                         : 'bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300'
@@ -5680,7 +5366,7 @@ export default function App() {
                   </button>
                   <button
                     onClick={handleClearLiveScreen}
-                    className="px-2 py-2 rounded-lg text-[9px] font-sans font-semibold tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20"
+                    className="px-2 py-2 rounded-lg text-sm px-1 py-1 font-sans font-semibold tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20"
                     title="Instantly black out standard screen to default standby wallpaper"
                   >
                     <Ban className="w-3 h-3" /> Clear
@@ -5710,7 +5396,7 @@ export default function App() {
               initial={{ x: '100%', opacity: 0.95 }}
               animate={{ x: 0, opacity: 1 }}
               exit={{ x: '100%', opacity: 0.95 }}
-              transition={{ type: 'spring', damping: 26, stiffness: 220 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
               className={`fixed top-0 right-0 h-full w-full sm:w-[480px] md:w-[520px] z-50 shadow-[0_0_50px_rgba(0,0,0,0.5)] flex flex-col border-l transition-colors duration-200 ${
                 theme === 'light'
                   ? 'bg-white border-slate-200 text-slate-800'
@@ -5731,7 +5417,7 @@ export default function App() {
                     <h3 className="text-sm font-display font-bold uppercase tracking-wider">
                       Study Companion Workspace
                     </h3>
-                    <p className={`text-[9.5px] font-mono leading-none mt-1 ${
+                    <p className={`text-[9.5px] font-mono leading-none mt-0.5 ${
                       theme === 'light' ? 'text-slate-500' : 'text-cyan-600/90'
                     }`}>
                       ADVANCED STUDENT STUDY DESK & SPEECH ENGINE
@@ -5765,7 +5451,7 @@ export default function App() {
                     setActiveSidebarTab('scanner');
                     setSidebarSearchQuery('');
                   }}
-                  className={`flex-1 min-w-[110px] snap-center py-3 text-center text-xs font-bold font-sans flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
+                  className={`flex-1 min-w-[110px] snap-center py-3 text-center text-sm font-bold font-sans flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
                     activeSidebarTab === 'scanner'
                       ? 'border-cyan-500 text-cyan-500 bg-cyan-500/5'
                       : 'border-transparent text-slate-400 hover:text-slate-500 dark:hover:text-slate-300'
@@ -5786,7 +5472,7 @@ export default function App() {
                     setActiveSidebarTab('notes');
                     setSidebarSearchQuery('');
                   }}
-                  className={`flex-1 min-w-[110px] snap-center py-3 text-center text-xs font-bold font-sans flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
+                  className={`flex-1 min-w-[110px] snap-center py-3 text-center text-sm font-bold font-sans flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
                     activeSidebarTab === 'notes'
                       ? 'border-cyan-500 text-cyan-500 bg-cyan-500/5'
                       : 'border-transparent text-slate-400 hover:text-slate-500 dark:hover:text-slate-300'
@@ -5794,7 +5480,7 @@ export default function App() {
                 >
                   <MessageSquare className="w-3.5 h-3.5" />
                   <span>Theological Diary</span>
-                  <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full ${
+                  <span className={`text-sm px-1 py-1 font-mono px-1.5 py-0.5 rounded-full ${
                     activeSidebarTab === 'notes' ? 'bg-cyan-500/10 text-cyan-500' : 'bg-slate-550/10 text-slate-400'
                   }`}>
                     {savedVerses.filter(sv => sv.notes && sv.notes.trim() !== '').length}
@@ -5807,7 +5493,7 @@ export default function App() {
                     setActiveSidebarTab('bookmarks');
                     setSidebarSearchQuery('');
                   }}
-                  className={`flex-1 min-w-[110px] snap-center py-3 text-center text-xs font-bold font-sans flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
+                  className={`flex-1 min-w-[110px] snap-center py-3 text-center text-sm font-bold font-sans flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
                     activeSidebarTab === 'bookmarks'
                       ? 'border-cyan-500 text-cyan-500 bg-cyan-500/5'
                       : 'border-transparent text-slate-400 hover:text-slate-500 dark:hover:text-slate-300'
@@ -5815,27 +5501,27 @@ export default function App() {
                 >
                   <Bookmark className="w-3.5 h-3.5" />
                   <span>Bookmarked Scrolls</span>
-                  <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded-full ${
+                  <span className={`text-sm px-1 py-1 font-mono px-1.5 py-0.5 rounded-full ${
                     activeSidebarTab === 'bookmarks' ? 'bg-cyan-500/10 text-cyan-500' : 'bg-slate-550/10 text-slate-400'
                   }`}>
                     {savedVerses.length}
                   </span>
                 </button>
 
-                {/* Tab 4: Speech Coaching */}
+                {/* Tab 4: Audio Settingsing */}
                 <button
                   onClick={() => {
                     setActiveSidebarTab('audio');
                     setSidebarSearchQuery('');
                   }}
-                  className={`flex-1 min-w-[110px] snap-center py-3 text-center text-xs font-bold font-sans flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
+                  className={`flex-1 min-w-[110px] snap-center py-3 text-center text-sm font-bold font-sans flex items-center justify-center gap-1.5 border-b-2 transition-all cursor-pointer ${
                     activeSidebarTab === 'audio'
                       ? 'border-cyan-500 text-cyan-500 bg-cyan-500/5'
                       : 'border-transparent text-slate-400 hover:text-slate-500 dark:hover:text-slate-300'
                   }`}
                 >
                   <Volume2 className="w-3.5 h-3.5" />
-                  <span>Speech Coach</span>
+                  <span>Audio Settings</span>
                   {currentlyReadingVerse !== null && (
                     <span className="w-2 h-2 rounded-full bg-cyan-500 animate-ping" />
                   )}
@@ -5887,7 +5573,7 @@ export default function App() {
                           onClick={() => {
                             setActiveScannerSelectedWordId(isSelected ? null : `${capturedWordKey}-${matchIndex}`);
                           }}
-                          className={`px-1.5 py-0.5 mx-[2px] rounded-md font-semibold transition-all duration-150 transform hover:-translate-y-0.5 cursor-pointer inline-block text-[11px] ${
+                          className={`px-1.5 py-0.5 mx-[2px] rounded-md font-semibold transition-all duration-150 transform hover:-translate-y-0.5 cursor-pointer inline-block text-[15px] ${
                             isSelected
                               ? 'bg-amber-500/20 text-amber-500 border border-amber-500/30 font-bold'
                               : theme === 'light'
@@ -5915,10 +5601,10 @@ export default function App() {
                       <div className={`p-4 rounded-2xl border ${
                         theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-slate-950/20 border-cyan-950/40'
                       }`}>
-                        <span className="text-[9px] font-mono uppercase tracking-widest font-extrabold text-cyan-500 block mb-1">
+                        <span className="text-sm px-1 py-1 font-mono uppercase tracking-widest font-extrabold text-cyan-500 block mb-1">
                           Theological Lexicon & Manuscript Scan Engine
                         </span>
-                        <p className={`text-[11px] leading-[1.8] tracking-[0.01em] ${
+                        <p className={`text-[15px] leading-[1.8] tracking-[0.01em] ${
                           theme === 'light' ? 'text-slate-600' : 'text-slate-400'
                         }`}>
                           Draft or paste any scripture commentaries, sermon drafts, or biblical texts in the panel below. The engine will scan and highlight terms instantly with active original manuscript links.
@@ -5931,7 +5617,7 @@ export default function App() {
                           placeholder="Paste or draft theological reflections here..."
                           value={scannerInputText}
                           onChange={(e) => setScannerInputText(e.target.value)}
-                          className={`w-full h-32 p-3 text-xs rounded-xl border focus:outline-none focus:ring-1.5 ${
+                          className={`w-full h-32 p-3 text-sm rounded-xl border focus:outline-none focus:ring-1.5 ${
                             theme === 'light'
                               ? 'bg-white border-slate-200 text-slate-800 focus:border-cyan-500 focus:ring-cyan-500/30'
                               : 'bg-slate-900 border-cyan-950/50 text-slate-100 focus:border-cyan-500 focus:ring-cyan-500/30'
@@ -5947,7 +5633,7 @@ export default function App() {
                                 setScannerInputText(fullText);
                               }
                             }}
-                            className={`px-2 py-1 text-[10px] rounded-md font-medium cursor-pointer transition-colors ${
+                            className={`px-2 py-1 text-sm rounded-md font-medium cursor-pointer transition-colors ${
                               theme === 'light' 
                                 ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' 
                                 : 'bg-slate-900 hover:bg-[#121c38] text-slate-300'
@@ -5963,7 +5649,7 @@ export default function App() {
                                 setScannerInputText(fullText);
                               }
                             }}
-                            className={`px-2 py-1 text-[10px] rounded-md font-medium cursor-pointer transition-colors ${
+                            className={`px-2 py-1 text-sm rounded-md font-medium cursor-pointer transition-colors ${
                               theme === 'light' 
                                 ? 'bg-slate-100 hover:bg-slate-200 text-slate-700' 
                                 : 'bg-slate-900 hover:bg-[#121c38] text-slate-300'
@@ -5974,7 +5660,7 @@ export default function App() {
 
                           <button
                             onClick={() => setScannerInputText('')}
-                            className={`px-2 py-1 text-[10px] rounded-md font-medium cursor-pointer transition-colors text-rose-500 ${
+                            className={`px-2 py-1 text-sm rounded-md font-medium cursor-pointer transition-colors text-rose-500 ${
                               theme === 'light' ? 'bg-rose-50 hover:bg-rose-100' : 'bg-rose-950/10 hover:bg-rose-950/25'
                             }`}
                           >
@@ -5995,7 +5681,7 @@ export default function App() {
                           }`}
                         >
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-[9px] font-mono tracking-widest uppercase font-extrabold text-amber-600 dark:text-amber-400">
+                            <span className="text-sm px-1 py-1 font-mono tracking-widest uppercase font-extrabold text-amber-600 dark:text-amber-400">
                               MANUSCRIPT CODEC • {selectedEntry.language} CORE
                             </span>
                             <button
@@ -6007,10 +5693,10 @@ export default function App() {
                           </div>
                           
                           <h4 className="text-sm font-sans font-extrabold">
-                            {selectedEntry.word.toUpperCase()} — <span className="font-mono text-cyan-600 dark:text-cyan-400 text-xs">{selectedEntry.originalValue}</span>
+                            {selectedEntry.word.toUpperCase()} — <span className="font-mono text-cyan-600 dark:text-cyan-400 text-sm">{selectedEntry.originalValue}</span>
                           </h4>
                           
-                          <p className={`text-xs leading-[1.8] tracking-[0.01em] mt-2 font-medium ${
+                          <p className={`text-sm leading-[1.8] tracking-[0.01em] mt-2 font-medium ${
                             theme === 'light' ? 'text-slate-700' : 'text-slate-300'
                           }`}>
                             {selectedEntry.explanation}
@@ -6023,10 +5709,10 @@ export default function App() {
                         theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-900/40 border-cyan-950/30'
                       }`}>
                         <div className="pb-2 border-b border-dashed border-slate-200 dark:border-cyan-950/30 mb-3 flex items-center justify-between">
-                          <span className="text-[9px] font-mono uppercase tracking-widest font-bold text-slate-400">
+                          <span className="text-sm px-1 py-1 font-mono uppercase tracking-widest font-bold text-slate-400">
                             Scanned Interactive Translation Output
                           </span>
-                          <span className="text-[9px] font-mono text-cyan-500 px-1.5 py-0.5 rounded-md bg-cyan-500/5">
+                          <span className="text-sm px-1 py-1 font-mono text-cyan-500 px-1.5 py-0.5 rounded-md bg-cyan-500/5">
                             Real-Time Scan
                           </span>
                         </div>
@@ -6034,11 +5720,11 @@ export default function App() {
                         {!scannerInputText ? (
                           <div className="py-8 text-center flex flex-col items-center justify-center text-slate-400 dark:text-cyan-850">
                             <Compass className="w-8 h-8 text-slate-300 dark:text-cyan-950 mb-2 animate-spin-slow" />
-                            <p className="text-xs font-medium">Text space currently empty.</p>
-                            <p className="text-[10px] mt-1 text-slate-400">Type above or click a load button to begin.</p>
+                            <p className="text-sm font-medium">Text space currently empty.</p>
+                            <p className="text-sm mt-1 text-slate-400">Type above or click a load button to begin.</p>
                           </div>
                         ) : (
-                          <div className={`text-xs md:text-sm leading-[1.8] tracking-[0.01em] whitespace-pre-wrap ${
+                          <div className={`text-sm md:text-sm leading-[1.8] tracking-[0.01em] whitespace-pre-wrap ${
                             theme === 'light' ? 'text-slate-800' : 'text-slate-200'
                           }`}>
                             {tokenizeTextForScanner(scannerInputText)}
@@ -6049,7 +5735,7 @@ export default function App() {
                   );
                 })()}
 
-                {/* TAB 1: SPEECH COACHING DYNAMIC AUDIO DESK */}
+                {/* TAB 1: AUDIO SETTINGS */}
                 {activeSidebarTab === 'audio' && (
                   <div className="space-y-5 animate-fadeIn">
                     
@@ -6059,17 +5745,17 @@ export default function App() {
                     }`}>
                       <div className="text-center mb-3">
                         <span className="text-[9.5px] font-mono uppercase tracking-widest font-extrabold text-cyan-500 block">
-                          Real-Time Voice Coaching Frequency Matcher
+                          Audio playback
                         </span>
                         {currentlyReadingVerse !== null ? (
-                          <span className={`text-xs block mt-1 leading-normal font-sans tracking-wide font-normal ${
+                          <span className={`text-sm block mt-1 leading-normal font-sans tracking-wide font-normal ${
                             theme === 'light' ? 'text-slate-700' : 'text-slate-200'
                           }`}>
-                            📖 <span className="font-bold">Sync Reading:</span> Verse {currentlyReadingVerse} of {chapterData?.verses?.length || 0}
+                            <span className="font-bold">Playing:</span> Verse {currentlyReadingVerse} of {chapterData?.verses?.length || 0}
                           </span>
                         ) : (
-                          <span className="text-xs text-slate-500 block mt-1 font-sans">
-                            Synthesizer Engine Idle • Standby Ready
+                          <span className="text-sm text-slate-500 block mt-1 font-sans">
+                            Not playing
                           </span>
                         )}
                       </div>
@@ -6108,41 +5794,41 @@ export default function App() {
                       theme === 'light' ? 'bg-[#fcfdfe] border-slate-200/80' : 'bg-[#0b1222] border-cyan-950/45'
                     }`}>
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold font-sans">
-                          Audio Pronunciation Modifier Speed
+                        <span className="text-sm font-bold font-sans">
+                          Playback speed
                         </span>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-mono text-slate-500">Rate:</span>
+                          <span className="text-sm font-mono text-slate-500">Speed:</span>
                           <select
                             value={playbackSpeed}
                             onChange={(e) => setPlaybackSpeed(parseFloat(e.target.value))}
-                            className={`text-xs font-mono font-bold rounded border bg-transparent p-1.5 focus:outline-none ${
+                            className={`text-sm font-mono font-bold rounded border bg-transparent p-1.5 focus:outline-none ${
                               theme === 'light' 
                                 ? 'bg-white border-slate-200 text-slate-800' 
                                 : 'bg-slate-950 border-cyan-950 text-cyan-400'
                             }`}
                           >
-                            <option value="0.5">0.50x Slow</option>
-                            <option value="0.65">0.65x Mod</option>
-                            <option value="0.8">0.80x Natural</option>
-                            <option value="1.0">1.00x Regular</option>
-                            <option value="1.2">1.20x Accelerated</option>
-                            <option value="1.5">1.50x Rapid</option>
+                            <option value="0.5">0.5x (Slow)</option>
+                            <option value="0.65">0.65x</option>
+                            <option value="0.8">0.8x</option>
+                            <option value="1.0">1x (Normal)</option>
+                            <option value="1.2">1.2x</option>
+                            <option value="1.5">1.5x (Fast)</option>
                           </select>
                         </div>
                       </div>
 
                       <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold font-sans">
-                          Audio Target Reading Version
+                        <span className="text-sm font-bold font-sans">
+                          Audio translation
                         </span>
                         <div className="flex items-center gap-1.5">
-                          <span className="text-[10px] font-mono text-slate-500">Read:</span>
+                          <span className="text-sm font-mono text-slate-500">Source:</span>
                           <select
                             id="audio-target-selection"
                             value={audioReadingSelection}
                             onChange={(e) => setAudioReadingSelection(e.target.value as any)}
-                            className={`text-xs font-mono font-bold rounded border bg-transparent p-1.5 focus:outline-none ${
+                            className={`text-sm font-mono font-bold rounded border bg-transparent p-1.5 focus:outline-none ${
                               theme === 'light' 
                                 ? 'bg-white border-slate-200 text-slate-800' 
                                 : 'bg-slate-950 border-cyan-950 text-cyan-400'
@@ -6159,38 +5845,14 @@ export default function App() {
 
                       <div className="h-px bg-slate-200 dark:bg-cyan-950/30" />
 
-                      <div className="flex justify-center my-6">
-                        <button
-                          onClick={() => {
-                            if (currentlyReadingVerse !== null) {
-                              stopSpeaking();
-                            } else {
-                              playEntireChapter();
-                            }
-                          }}
-                          className={`flex items-center justify-center w-12 h-12 rounded-full shadow-xl ${
-                            (currentlyReadingVerse !== null && activeAudioStream === 'chapter')
-                              ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-rose-500/30 ring-4 ring-rose-500/20' 
-                              : theme === 'light' 
-                                ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:from-cyan-400 hover:to-blue-500 ring-4 ring-cyan-500/20' 
-                                : 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white shadow-cyan-900/50 hover:shadow-cyan-600/50 hover:from-cyan-500 hover:to-blue-600 ring-4 ring-cyan-500/30'
-                          } transition-all duration-300 transform hover:-translate-y-1 active:translate-y-0 active:scale-95`}
-                          title={(currentlyReadingVerse !== null && activeAudioStream === 'chapter') ? "Stop Audio" : "Play Audio"}
-                        >
-                          {(currentlyReadingVerse !== null && activeAudioStream === 'chapter') ? (
-                            <Square className="w-5 h-5 fill-current animate-pulse" />
-                          ) : (
-                            <Play className="w-5 h-5 fill-current ml-1" />
-                          )}
-                        </button>
-                      </div>
+                      
                     </div>
 
                     {/* Chapter Verses list with individual play controls */}
                     <div className="space-y-2.5">
                       <div className="flex items-center justify-between">
-                        <span className="text-[10px] font-mono font-extrabold uppercase tracking-widest text-slate-400">
-                          Pronunciation Verse Scrolling (This Chapter)
+                        <span className="text-sm font-mono font-extrabold uppercase tracking-widest text-slate-400">
+                          Verses in this chapter
                         </span>
                         <span className="text-[9.5px] font-mono text-cyan-500 font-bold">
                           {chapterData?.book} {chapterData?.chapter}
@@ -6204,14 +5866,14 @@ export default function App() {
                             <div
                               key={v.verseNumber}
                               onClick={() => navigateToSidebarVerse(chapterData.book, chapterData.chapter, v.verseNumber)}
-                              className={`p-3 rounded-xl border text-xs leading-normal transition-all cursor-pointer ${
+                              className={`p-3 rounded-xl border text-sm leading-normal transition-all cursor-pointer ${
                                 isThisWordReading
                                   ? (theme === 'light' ? 'bg-cyan-50 border-cyan-300 ring-1 ring-cyan-200' : 'bg-[#0f1d35] border-cyan-500/40 text-cyan-300 font-medium')
                                   : (theme === 'light' ? 'bg-white hover:bg-slate-50 border-slate-200' : 'bg-slate-950 hover:bg-slate-900 border-cyan-950/40')
                               }`}
                             >
                               <div className="flex items-center justify-between mb-1.5">
-                                <span className={`font-mono text-[10px] uppercase tracking-wide font-extrabold px-1.5 py-0.5 rounded border ${
+                                <span className={`font-mono text-sm uppercase tracking-wide font-extrabold px-1.5 py-0.5 rounded border ${
                                   isThisWordReading
                                     ? 'bg-cyan-500 border-cyan-400 text-white'
                                     : (theme === 'light' ? 'bg-slate-50 border-slate-200 text-slate-500' : 'bg-slate-900 border-cyan-950 text-cyan-600')
@@ -6228,13 +5890,7 @@ export default function App() {
                                       playSingleVerse(v.verseNumber, getSpeechTextForVerse(v));
                                     }
                                   }}
-                                  className={`flex items-center justify-center w-7 h-7 rounded-full shadow-md ${
-                                    isThisWordReading
-                                      ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-rose-500/30 ring-2 ring-rose-500/20' 
-                                      : theme === 'light' 
-                                        ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:from-cyan-400 hover:to-blue-500 ring-2 ring-cyan-500/20' 
-                                        : 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white shadow-cyan-900/50 hover:shadow-cyan-600/50 hover:from-cyan-500 hover:to-blue-600 ring-2 ring-cyan-500/30'
-                                  } transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95`}
+                                  className={`flex items-center justify-center w-7 h-7 rounded-full shadow-md ${ isThisWordReading ? 'bg-rose-500/10 text-rose-500' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' } transition-all duration-500 ease-in-out hover:-translate-y-0.5 active:translate-y-0 active:scale-95`}
                                   title={isThisWordReading ? 'Silence Voice' : 'Play audio'}
                                 >
                                   {isThisWordReading ? <Square className="w-3 h-3 fill-current animate-pulse" /> : <Play className="w-3 h-3 fill-current ml-0.5" />}
@@ -6268,7 +5924,7 @@ export default function App() {
                         placeholder="Search your theological diary notes or books..."
                         value={sidebarSearchQuery}
                         onChange={(e) => setSidebarSearchQuery(e.target.value)}
-                        className={`w-full text-xs pl-8.5 pr-3 py-2.5 rounded-xl border focus:outline-none focus:ring-1 focus:ring-cyan-500 ${
+                        className={`w-full text-sm pl-8.5 pr-3 py-2.5 rounded-xl border focus:outline-none focus:ring-1 focus:ring-cyan-500 ${
                           theme === 'light'
                             ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200 shadow-sm'
                             : 'bg-slate-950 text-slate-100 border-cyan-950/50 shadow-inner'
@@ -6298,10 +5954,10 @@ export default function App() {
                               theme === 'light' ? 'bg-slate-50/50 border-slate-200' : 'bg-slate-950/25 border-cyan-950/40'
                             }`}>
                               <MessageSquare className="w-10 h-10 text-slate-300 dark:text-cyan-950/30 mx-auto mb-3" />
-                              <h4 className="text-xs font-bold uppercase tracking-wider mb-1 text-slate-700 dark:text-slate-300">
+                              <h4 className="text-sm font-bold uppercase tracking-wider mb-1 text-slate-700 dark:text-slate-300">
                                 Reflection Diary Empty
                               </h4>
-                              <p className="text-xs text-slate-500 max-w-xs mx-auto leading-[1.8] tracking-[0.01em]">
+                              <p className="text-sm text-slate-500 max-w-xs mx-auto leading-[1.8] tracking-[0.01em]">
                                 No theological reflections recorded yet. Click the theological message icon on any verse in the scripture scroll to log your research insights.
                               </p>
                             </div>
@@ -6310,7 +5966,7 @@ export default function App() {
 
                         if (filteredNotes.length === 0) {
                           return (
-                            <p className="text-center font-mono text-slate-500 text-xs py-10">
+                            <p className="text-center font-mono text-slate-500 text-sm py-10">
                               No diaries matched your keyword.
                             </p>
                           );
@@ -6341,7 +5997,7 @@ export default function App() {
                               <div className="flex items-center justify-between border-b pb-2 mb-2 border-dashed border-amber-500/10">
                                 <button
                                   onClick={() => navigateToSidebarVerse(n.book, n.chapter, n.verse)}
-                                  className={`text-xs font-mono font-bold tracking-tight uppercase flex items-center gap-1 cursor-pointer transition-colors hover:scale-105 ${
+                                  className={`text-sm font-mono font-bold tracking-tight uppercase flex items-center gap-1 cursor-pointer transition-colors hover:scale-105 ${
                                     theme === 'light'
                                       ? 'text-cyan-700 hover:text-cyan-600'
                                       : 'text-cyan-400 hover:text-cyan-300'
@@ -6361,7 +6017,7 @@ export default function App() {
                                         onClick={() =>
                                           startSidebarNoteEdit(n.book, n.chapter, n.verse, n.notes || '')
                                         }
-                                        className={`text-[10px] font-mono font-bold hover:underline transition cursor-pointer ${
+                                        className={`text-sm font-mono font-bold hover:underline transition cursor-pointer ${
                                           theme === 'light' ? 'text-amber-700' : 'text-amber-500'
                                         }`}
                                       >
@@ -6372,7 +6028,7 @@ export default function App() {
                                         onClick={() =>
                                           deleteSidebarNote(n.book, n.chapter, n.verse)
                                         }
-                                        className="text-[10px] font-mono text-rose-500 font-bold hover:underline cursor-pointer"
+                                        className="text-sm font-mono text-rose-500 font-bold hover:underline cursor-pointer"
                                       >
                                         ✕ Delete
                                       </button>
@@ -6387,7 +6043,7 @@ export default function App() {
                                   <textarea
                                     value={sidebarDraftText}
                                     onChange={(e) => setSidebarDraftText(e.target.value)}
-                                    className={`w-full text-xs p-2.5 rounded-lg border focus:outline-none focus:ring-1 focus:ring-cyan-500 ${
+                                    className={`w-full text-sm p-2.5 rounded-lg border focus:outline-none focus:ring-1 focus:ring-cyan-500 ${
                                       theme === 'light'
                                         ? 'bg-white text-slate-800 border-slate-200 shadow-inner'
                                         : 'bg-slate-950 text-slate-150 border-cyan-900/40 shadow-inner'
@@ -6398,7 +6054,7 @@ export default function App() {
                                   <div className="flex items-center justify-end space-x-1.5 pt-1">
                                     <button
                                       onClick={() => setSidebarDraftingIndex(null)}
-                                      className={`text-[10px] uppercase font-mono px-2 py-1 rounded transition-colors cursor-pointer ${
+                                      className={`text-sm uppercase font-mono px-2 py-1 rounded transition-colors cursor-pointer ${
                                         theme === 'light'
                                           ? 'bg-slate-100 text-slate-605 hover:bg-slate-200'
                                           : 'bg-slate-900 text-slate-400 hover:bg-slate-800'
@@ -6408,7 +6064,7 @@ export default function App() {
                                     </button>
                                     <button
                                       onClick={saveSidebarNoteEdit}
-                                      className="text-[10px] uppercase font-mono px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-colors cursor-pointer"
+                                      className="text-sm uppercase font-mono px-2 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-bold transition-colors cursor-pointer"
                                     >
                                       Save Note
                                     </button>
@@ -6416,7 +6072,7 @@ export default function App() {
                                 </div>
                               ) : (
                                 <>
-                                  <div className={`font-serif leading-[1.8] tracking-[0.01em] italic pr-2 select-text text-xs mb-2 pl-2 border-l-2 ${
+                                  <div className={`font-serif leading-[1.8] tracking-[0.01em] italic pr-2 select-text text-sm mb-2 pl-2 border-l-2 ${
                                     theme === 'light' ? 'text-slate-705 border-slate-300' : 'text-amber-105/90 border-amber-955/60'
                                   }`}>
                                     "{n.notes}"
@@ -6424,7 +6080,7 @@ export default function App() {
 
                                   {/* Scripture verse context */}
                                   {mappedVerseObj ? (
-                                    <p className="text-[10.5px] leading-[1.8] tracking-[0.01em] text-slate-550 dark:text-slate-400 border-t pt-1.5 border-dashed border-amber-500/5 select-none line-clamp-2">
+                                    <p className="text-sm leading-[1.8] tracking-[0.01em] text-slate-550 dark:text-slate-400 border-t pt-1.5 border-dashed border-amber-500/5 select-none line-clamp-2">
                                       <span className="font-bold">Text:</span> "{getSpeechTextForVerse(mappedVerseObj)}"
                                     </p>
                                   ) : (
@@ -6459,7 +6115,7 @@ export default function App() {
                         placeholder="Search your bookmarked covenants..."
                         value={sidebarSearchQuery}
                         onChange={(e) => setSidebarSearchQuery(e.target.value)}
-                        className={`w-full text-xs pl-8.5 pr-3 py-2.5 rounded-xl border focus:outline-none focus:ring-1 focus:ring-cyan-500 ${
+                        className={`w-full text-sm pl-8.5 pr-3 py-2.5 rounded-xl border focus:outline-none focus:ring-1 focus:ring-cyan-500 ${
                           theme === 'light'
                             ? 'bg-white hover:bg-slate-50 text-slate-800 border-slate-200'
                             : 'bg-slate-950 text-slate-100 border-cyan-950/50 shadow-inner'
@@ -6484,10 +6140,10 @@ export default function App() {
                               theme === 'light' ? 'bg-slate-50/50 border-slate-200' : 'bg-slate-950/25 border-cyan-950/40'
                             }`}>
                               <Bookmark className="w-10 h-10 text-slate-300 dark:text-cyan-950/30 mx-auto mb-3" />
-                              <h4 className="text-xs font-bold uppercase tracking-wider mb-1 text-slate-700 dark:text-slate-300">
+                              <h4 className="text-sm font-bold uppercase tracking-wider mb-1 text-slate-700 dark:text-slate-300">
                                 Portfolio Bookmarks Empty
                               </h4>
-                              <p className="text-xs text-slate-500 max-w-xs mx-auto leading-[1.8] tracking-[0.01em]">
+                              <p className="text-sm text-slate-500 max-w-xs mx-auto leading-[1.8] tracking-[0.01em]">
                                 No scriptural bookmarks created yet. Navigate scripture and click the scroll icon on any verse to index it inside your portfolio for lightning reference.
                               </p>
                             </div>
@@ -6496,7 +6152,7 @@ export default function App() {
 
                         if (filteredBookmarks.length === 0) {
                           return (
-                            <p className="text-center font-mono text-slate-505 text-xs py-10">
+                            <p className="text-center font-mono text-slate-505 text-sm py-10">
                               No bookmarks matched search.
                             </p>
                           );
@@ -6521,7 +6177,7 @@ export default function App() {
                               <div className="flex items-center justify-between mb-2">
                                 <button
                                   onClick={() => navigateToSidebarVerse(b.book, b.chapter, b.verse)}
-                                  className={`text-xs font-mono font-bold tracking-tight uppercase flex items-center gap-1 cursor-pointer transition-colors hover:scale-105 ${
+                                  className={`text-sm font-mono font-bold tracking-tight uppercase flex items-center gap-1 cursor-pointer transition-colors hover:scale-105 ${
                                     theme === 'light'
                                       ? 'text-cyan-700 hover:text-cyan-600'
                                       : 'text-cyan-400 hover:text-cyan-300'
@@ -6538,13 +6194,7 @@ export default function App() {
                                   {mappedVerseObj && (
                                     <button
                                       onClick={() => playSingleVerse(b.verse, getSpeechTextForVerse(mappedVerseObj))}
-                                      className={`flex items-center justify-center w-7 h-7 rounded-full shadow-md ${
-                                        currentlyReadingVerse === b.verse
-                                          ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-rose-500/30 ring-2 ring-rose-500/20' 
-                                          : theme === 'light' 
-                                            ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:from-cyan-400 hover:to-blue-500 ring-2 ring-cyan-500/20' 
-                                            : 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white shadow-cyan-900/50 hover:shadow-cyan-600/50 hover:from-cyan-500 hover:to-blue-600 ring-2 ring-cyan-500/30'
-                                      } transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95`}
+                                      className={`flex items-center justify-center w-7 h-7 rounded-full shadow-md ${ currentlyReadingVerse === b.verse ? 'bg-rose-500/10 text-rose-500' : 'text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800' } transition-all duration-500 ease-in-out hover:-translate-y-0.5 active:translate-y-0 active:scale-95`}
                                       title="Listen to audio"
                                     >
                                       {currentlyReadingVerse === b.verse ? <Square className="w-3 h-3 fill-current animate-pulse" /> : <Play className="w-3 h-3 fill-current ml-0.5" />}
@@ -6564,7 +6214,7 @@ export default function App() {
                               </div>
 
                               {mappedVerseObj ? (
-                                <p className="font-serif leading-[1.8] tracking-[0.01em] text-xs pr-1 sm:line-clamp-3">
+                                <p className="font-serif leading-[1.8] tracking-[0.01em] text-sm pr-1 sm:line-clamp-3">
                                   "{getSpeechTextForVerse(mappedVerseObj)}"
                                 </p>
                               ) : (
@@ -6577,7 +6227,7 @@ export default function App() {
                               )}
                               
                               {b.notes && (
-                                <div className={`mt-2 p-2 rounded-lg text-[10.5px] leading-snug relative border ${
+                                <div className={`mt-2 p-2 rounded-lg text-sm leading-snug relative border ${
                                   theme === 'light' ? 'bg-amber-55 border-amber-100/70 text-slate-650' : 'bg-[#181109]/45 border-amber-955/40 text-amber-205'
                                 }`}>
                                   <span className="font-bold block text-[8px] font-mono tracking-wider uppercase mb-0.5 text-amber-700">Reflective study note:</span>
@@ -6598,15 +6248,14 @@ export default function App() {
               <div className={`p-4 md:p-5 border-t text-center shrink-0 border-dashed ${
                 theme === 'light' ? 'bg-slate-50/50 border-slate-200' : 'bg-[#060b14] border-cyan-950/20'
               }`}>
-                <span className="text-[9px] font-mono uppercase tracking-widest text-slate-400">
-                  PERSISTENT STUDY WORKSPACE • COVENANT EDITION
+                <span className="text-sm px-1 py-1 font-mono uppercase tracking-widest text-slate-400">
+                  PERSISTENT STUDY WORKSPACE • LOGOSBRIDGE EDITION
                 </span>
               </div>
             </motion.div>
           </>
         )}
       </AnimatePresence>
-
       {/* Deep Journaling Bottom Drawer */}
       {activeDraftVerse !== null && (
         <div className={`fixed bottom-0 left-0 right-0 z-[100] p-4 md:p-6 border-t shadow-2xl animate-fade-in-up ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
@@ -6635,7 +6284,7 @@ export default function App() {
             <div className="mt-3 flex items-center justify-end space-x-3">
               <button
                 onClick={handleCancelNote}
-                className={`text-xs uppercase font-mono tracking-wider font-extrabold px-4 py-2 rounded-lg transition-colors cursor-pointer ${
+                className={`text-sm uppercase font-mono tracking-wider font-extrabold px-4 py-2 rounded-lg transition-colors cursor-pointer ${
                   theme === 'light' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
                 }`}
               >
@@ -6643,7 +6292,7 @@ export default function App() {
               </button>
               <button
                 onClick={() => handleSaveNote(activeDraftVerse)}
-                className="text-xs uppercase font-mono tracking-wider font-extrabold px-6 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition-colors cursor-pointer"
+                className="text-sm uppercase font-mono tracking-wider font-extrabold px-6 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition-colors cursor-pointer"
               >
                 💾 Save Entry
               </button>
@@ -6654,37 +6303,185 @@ export default function App() {
 
 
 
-      {/* Floating Play Audio Button (Slides in when stopped scrolling) */}
-      <div 
-        className={`fixed bottom-6 right-6 md:bottom-8 md:right-8 z-40 transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] ${
-          isScrolling ? 'translate-y-32 opacity-0 pointer-events-none scale-90' : 'translate-y-0 opacity-100 scale-100'
-        }`}
-      >
-        <button
-          onClick={() => {
-            if (currentlyReadingVerse !== null) {
-              stopSpeaking();
-            } else {
-              playEntireChapter();
-            }
-          }}
-          className={`group relative flex items-center justify-center w-14 h-14 md:w-16 md:h-16 rounded-full shadow-2xl backdrop-blur-xl border ${
-            (currentlyReadingVerse !== null)
-              ? 'bg-rose-500/90 border-rose-400 text-white shadow-rose-500/30'
-              : theme === 'light'
-                ? 'bg-white/90 border-slate-200/60 text-slate-700 shadow-slate-200/50 hover:bg-slate-50 hover:scale-105'
-                : 'bg-cyan-950/80 border-cyan-800/40 text-cyan-100 shadow-cyan-900/30 hover:bg-cyan-900/80 hover:scale-105'
-          } transition-all`}
-          title={(currentlyReadingVerse !== null) ? "Stop Audio" : "Play Chapter Audio"}
-        >
-          {(currentlyReadingVerse !== null) ? (
-            <Square className="w-5 h-5 md:w-6 md:h-6 fill-current animate-pulse" />
-          ) : (
-            <Play className="w-6 h-6 md:w-7 md:h-7 fill-current ml-1.5 transition-transform group-hover:scale-110" />
-          )}
-        </button>
-      </div>
+      
 
+                  <AnimatePresence>
+                    {isBookDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 30, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                        transition={{ duration: 0.3, ease: "easeInOut" }}
+                        className={`fixed inset-0 z-[1000] flex flex-col h-[100dvh] ${theme === 'light' ? 'bg-[#fcfcfc]' : 'bg-[#0a0d16]'}`}
+                      >
+                        {/* Modal Header */}
+                        <div className={`shrink-0 px-4 py-4 border-b flex items-center justify-between ${theme === 'light' ? 'bg-white border-zinc-200' : 'bg-zinc-900 border-zinc-800'}`}>
+                          <h2 className={`text-xl font-bold font-serif ${theme === 'light' ? 'text-zinc-800' : 'text-zinc-100'}`}>
+                            {isChapterDropdownOpen ? `Select Chapter for ${selectedBook}` : 'Select Book'}
+                          </h2>
+                          <div className="flex items-center gap-2">
+                            {isChapterDropdownOpen && (
+                              <button
+                                onClick={() => setIsChapterDropdownOpen(false)}
+                                className={`text-sm px-4 py-2 rounded-md font-semibold transition-all ${theme === 'light' ? 'bg-zinc-100 text-zinc-700 hover:bg-zinc-200' : 'bg-zinc-800 text-zinc-300 hover:bg-zinc-700'}`}
+                              >
+                                Back to Books
+                              </button>
+                            )}
+                            <button
+                              onClick={() => setIsBookDropdownOpen(false)}
+                              className={`p-2 rounded-full transition-all ${theme === 'light' ? 'bg-zinc-100 text-zinc-600 hover:bg-zinc-200' : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'}`}
+                            >
+                              <X className="w-5 h-5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {!isChapterDropdownOpen ? (
+                          <>
+                            {/* Book Selection Step */}
+                            <div className={`shrink-0 p-4 border-b flex items-center ${theme === 'light' ? 'bg-[#fdfbff] border-[#e7e0ec]' : 'bg-[#1d1b20] border-[#49454f]'}`}>
+                              <Search className={`w-5 h-5 ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'} ml-2 mr-3`} />
+                              <input
+                                type="text"
+                                placeholder="Find a book (e.g. Genesis)..."
+                                value={bookSearchQuery}
+                                onChange={(e) => setBookSearchQuery(e.target.value)}
+                                className={`text-base px-4 py-3 rounded-full w-full focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all font-sans ${theme === 'light' ? 'bg-[#1c1b1f]/5 text-[#1c1b1f] placeholder-[#49454f]' : 'bg-[#e6e1e5]/10 text-[#e6e1e5] placeholder-[#cac4d0]'}`}
+                              />
+                              {bookSearchQuery && (
+                                <button
+                                  onClick={() => setBookSearchQuery('')}
+                                  className="text-zinc-500 hover:text-zinc-800 dark:hover:text-zinc-300 ml-2 mr-2"
+                                >
+                                  <X className="w-5 h-5" />
+                                </button>
+                              )}
+                            </div>
+                            
+                            <div className="flex-1 min-h-0 overflow-y-auto p-4 md:p-6 pb-24">
+                              <div className="max-w-4xl mx-auto flex flex-col md:flex-row gap-8">
+                                {/* Old Testament */}
+                                <div className="flex-1">
+                                  <div className={`sticky top-0 z-10 ${theme === 'light' ? 'bg-[#fcfcfc]/95' : 'bg-[#0a0d16]/95'} backdrop-blur-sm pb-2 mb-3 border-b ${theme === 'light' ? 'border-zinc-200' : 'border-zinc-800/60'}`}>
+                                    <p className={`text-xs px-2 py-2 font-sans font-bold uppercase tracking-widest ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                                      Old Testament
+                                    </p>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {filteredBooks
+                                      .filter((b) => b.testament === 'Old')
+                                      .map((book) => (
+                                        <button
+                                          id={`select-book-${book.name}`}
+                                          key={book.name}
+                                          onClick={() => {
+                                            setSelectedBook(book.name);
+                                            setIsChapterDropdownOpen(true); // Switch to chapter selection
+                                            setBookSearchQuery('');
+                                          }}
+                                          className={`text-left text-sm md:text-base p-3 rounded-lg transition-all font-sans flex items-center justify-between ${
+                                            theme === 'light'
+                                              ? 'hover:bg-zinc-100 text-zinc-700 hover:text-zinc-900'
+                                              : 'hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100'
+                                          } ${
+                                            selectedBook === book.name
+                                              ? (theme === 'light' ? 'bg-cyan-50 text-cyan-700 font-semibold shadow-sm border border-cyan-100' : 'bg-cyan-900/30 text-cyan-400 font-semibold shadow-sm border border-cyan-800/50')
+                                              : 'border border-transparent'
+                                          }`}
+                                        >
+                                          <span className="truncate">{book.name}</span>
+                                          {selectedBook === book.name && (
+                                            <Check className="w-5 h-5 shrink-0 ml-1" />
+                                          )}
+                                        </button>
+                                      ))}
+                                  </div>
+                                </div>
+                                {/* New Testament */}
+                                <div className="flex-1">
+                                  <div className={`sticky top-0 z-10 ${theme === 'light' ? 'bg-[#fcfcfc]/95' : 'bg-[#0a0d16]/95'} backdrop-blur-sm pb-2 mb-3 border-b ${theme === 'light' ? 'border-zinc-200' : 'border-zinc-800/60'}`}>
+                                    <p className={`text-xs px-2 py-2 font-sans font-bold uppercase tracking-widest ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>
+                                      New Testament
+                                    </p>
+                                  </div>
+                                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                    {filteredBooks
+                                      .filter((b) => b.testament === 'New')
+                                      .map((book) => (
+                                        <button
+                                          id={`select-book-${book.name}`}
+                                          key={book.name}
+                                          onClick={() => {
+                                            setSelectedBook(book.name);
+                                            setIsChapterDropdownOpen(true); // Switch to chapter selection
+                                            setBookSearchQuery('');
+                                          }}
+                                          className={`text-left text-sm md:text-base p-3 rounded-lg transition-all font-sans flex items-center justify-between ${
+                                            theme === 'light'
+                                              ? 'hover:bg-zinc-100 text-zinc-700 hover:text-zinc-900'
+                                              : 'hover:bg-zinc-800 text-zinc-400 hover:text-zinc-100'
+                                          } ${
+                                            selectedBook === book.name
+                                              ? (theme === 'light' ? 'bg-cyan-50 text-cyan-700 font-semibold shadow-sm border border-cyan-100' : 'bg-cyan-900/30 text-cyan-400 font-semibold shadow-sm border border-cyan-800/50')
+                                              : 'border border-transparent'
+                                          }`}
+                                        >
+                                          <span className="truncate">{book.name}</span>
+                                          {selectedBook === book.name && (
+                                            <Check className="w-5 h-5 shrink-0 ml-1" />
+                                          )}
+                                        </button>
+                                      ))}
+                                  </div>
+                                </div>
+                              </div>
+                              {filteredBooks.length === 0 && (
+                                <div className="text-center text-lg text-zinc-500 py-10 font-sans">
+                                  No biblical books matched.
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        ) : (
+                          <>
+                            {/* Chapter Selection Step */}
+                            <div className="flex-1 min-h-0 overflow-y-auto p-6 pb-24">
+                              <div className="max-w-4xl mx-auto">
+                                <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-8 gap-3">
+                                  {Array.from(
+                                    { length: currentBookObj.chapters },
+                                    (_, i) => i + 1
+                                  ).map((ch) => (
+                                    <button
+                                      key={ch}
+                                      onClick={() => {
+                                        setSelectedChapter(ch);
+                                        setStudyResponse(null);
+                                        setStudyQuery('');
+                                        setIsBookDropdownOpen(false); // Close the whole modal
+                                      }}
+                                      className={`text-center text-base py-3 rounded-xl transition-all font-sans font-semibold shadow-sm ${
+                                        theme === 'light'
+                                          ? 'hover:bg-zinc-100 text-zinc-800 hover:text-zinc-900 bg-white border border-zinc-200'
+                                          : 'hover:bg-zinc-800 text-zinc-300 hover:text-zinc-100 bg-zinc-900 border border-zinc-800'
+                                      } ${
+                                        selectedChapter === ch
+                                          ? (theme === 'light' ? 'bg-cyan-50 text-cyan-700 font-bold shadow-md border border-cyan-300 ring-2 ring-cyan-500/20' : 'bg-cyan-900/40 text-cyan-400 font-bold shadow-md border border-cyan-700 ring-2 ring-cyan-500/30')
+                                          : ''
+                                      }`}
+                                    >
+                                      {ch}
+                                    </button>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        )}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
     </div>
   );
 }

@@ -36,6 +36,7 @@ function createControlWindow() {
   controlWindow = new BrowserWindow({
     width: 1280,
     height: 800,
+    backgroundColor: '#020617', // Match the dark splash screen background
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
       contextIsolation: true,
@@ -43,7 +44,7 @@ function createControlWindow() {
     }
   });
 
-  const startUrl = 'http://localhost:3000';
+  const startUrl = 'http://localhost:3000/app';
   controlWindow.loadURL(startUrl);
 
   controlWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
@@ -95,6 +96,7 @@ function createProjectionWindow(display) {
     frame: !isSimulated,
     alwaysOnTop: !isSimulated,
     autoHideMenuBar: true,
+    backgroundColor: '#09090b', // Match the black projector background
     title: isSimulated ? '📺 Projection Window (SIMULATED)' : 'Scripture Projection',
     webPreferences: {
       preload: path.join(__dirname, 'preload.cjs'),
@@ -276,5 +278,21 @@ ipcMain.on('write-clipboard', (event, text) => {
     console.log('[Main Process] System clipboard updated via native API.');
   } catch (err) {
     console.error('[Main Process] Failed to write to system clipboard:', err);
+  }
+});
+
+ipcMain.on('reopen-projector', () => {
+  console.log('[Main Process] Reopening projector window by user request.');
+  updateDisplays();
+  
+  if (projectionWindow && lastSlideData) {
+    // Ensure the new window gets the current slide state once loaded
+    // updateDisplays() is async/sync, but the window might take a moment to load
+    // so we re-send it after a brief delay
+    setTimeout(() => {
+      if (projectionWindow) {
+        projectionWindow.webContents.send('slide-update-relay', lastSlideData);
+      }
+    }, 1000);
   }
 });

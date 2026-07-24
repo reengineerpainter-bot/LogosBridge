@@ -122,6 +122,18 @@ if (typeof window !== 'undefined') {
       // Page Background
       if (pageEl) {
         pageEl.className = `fixed inset-0 ${styles.pageBg} overflow-hidden font-sans select-none flex flex-col justify-end transition-colors duration-300`;
+        
+        // Ensure absolutely no scrollbars ever flash in the native window
+        if (!document.getElementById('projector-global-styles')) {
+          const style = document.createElement('style');
+          style.id = 'projector-global-styles';
+          style.innerHTML = `
+            body, html { overflow: hidden !important; }
+            ::-webkit-scrollbar { display: none !important; }
+            * { scrollbar-width: none !important; -ms-overflow-style: none !important; }
+          `;
+          document.head.appendChild(style);
+        }
       }
 
       // Inner container structure
@@ -135,10 +147,10 @@ if (typeof window !== 'undefined') {
 
       // Slide Container
       if (slideEl) {
-        slideEl.className = `w-full transition-all duration-350 flex flex-col overflow-hidden ${styles.container} ${
+        slideEl.className = `transition-all duration-350 flex flex-col overflow-hidden ${styles.container} ${
           !isLowerThird 
-            ? 'max-w-5xl py-16 px-12 sm:px-16 md:px-20 rounded-3xl relative shadow-2xl' 
-            : 'h-1/3 min-h-[150px] max-h-[250px] sm:min-h-[180px] sm:max-h-[280px] justify-center px-12 sm:px-20 md:px-24'
+            ? 'w-[95vw] max-w-[120rem] py-32 px-16 sm:px-24 md:px-32 rounded-[3rem] relative shadow-2xl' 
+            : 'w-full h-[33vh] min-h-[170px] max-h-[45vh] sm:min-h-[200px] sm:max-h-[45vh] justify-center px-8 sm:px-12 md:px-24 lg:px-32 rounded-none shadow-[0_0_50px_rgba(0,0,0,0.8)] border-t-[4px] border-x-0 border-b-0'
         }`;
       }
 
@@ -149,24 +161,26 @@ if (typeof window !== 'undefined') {
       }
       if (refEl) {
         refEl.textContent = `${state.book} ${state.chapter}:${state.verseNumber}`;
-        refEl.className = `tracking-wide ${styles.ref} ${isLowerThird ? 'text-xs sm:text-sm' : 'text-base sm:text-lg'}`;
+        refEl.className = `tracking-wide ${styles.ref} ${isLowerThird ? 'text-sm sm:text-lg lg:text-xl' : 'text-base sm:text-lg lg:text-2xl'}`;
       }
 
-      // Text alignment & styles
+      const headerEl = document.getElementById('header');
+      if (headerEl) {
+        headerEl.className = `flex items-center justify-between font-sans leading-none w-full ${
+          isLowerThird 
+            ? 'text-xs sm:text-sm md:text-base lg:text-lg mb-2 pb-2 border-b border-white/10' 
+            : 'text-sm sm:text-base mb-5 pb-3 border-b border-white/10'
+        } ${styles.textShadow}`;
+      }
+
+      // Main Text Body
       if (textEl) {
         textEl.textContent = state.verseText;
+        textEl.className = `w-full whitespace-pre-wrap transition-all leading-normal ${styles.textShadow} ${
+          state.fontFamily === 'serif' ? 'font-serif' : state.fontFamily === 'mono' ? 'font-mono' : 'font-sans'
+        } ${state.isBold ? 'font-bold' : 'font-normal'} ${state.isItalic ? 'italic' : 'not-italic'}`;
         
-        // Font Family
-        const fontFamilyClass = state.fontFamily === 'serif' ? 'font-serif' : state.fontFamily === 'mono' ? 'font-mono' : 'font-sans';
-        // Font Weight
-        const fontWeightClass = state.isBold ? 'font-bold' : 'font-normal';
-        // Italic
-        const italicClass = state.isItalic ? 'italic' : 'not-italic';
-
-        textEl.className = `w-full whitespace-pre-wrap transition-all leading-normal ${styles.textShadow} ${fontFamilyClass} ${fontWeightClass} ${italicClass}`;
-        
-        // Font size calculation (mirroring React exactly)
-        const size = isLowerThird ? Math.max(16, Math.min(state.fontSize - 6, 38)) : state.fontSize + 4;
+        const size = isLowerThird ? Math.max(48, state.fontSize * 2.0) : state.fontSize * 1.5 + 8;
         textEl.style.fontSize = `${size}px`;
         textEl.style.textAlign = state.alignment;
         textEl.style.lineHeight = '1.3';

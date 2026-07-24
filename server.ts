@@ -3,7 +3,7 @@ import path from 'path';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import { ZipArchive } from 'archiver';
-// Vite module is dynamically imported below to avoid production load dependencies issues
+import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import { STATIC_CHAPTERS } from './src/staticChapters';
 import { enrichChapter } from './src/utils/personalizer';
@@ -1860,30 +1860,21 @@ li {
 // Vite & Static Asset Handling Middleware Setup
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
-    const { createServer: createViteServer } = await import('vite');
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
     app.use(vite.middlewares);
   } else {
-    const distPath = path.basename(__dirname) === 'dist' ? __dirname : path.join(__dirname, 'dist');
+    const distPath = __dirname;
     app.use(express.static(distPath));
     app.get('*', (req, res) => {
       res.sendFile(path.join(distPath, 'index.html'));
     });
   }
 
-  const server = app.listen(PORT, '0.0.0.0', () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server started running on http://localhost:${PORT}`);
-  });
-
-  server.on('error', (err: any) => {
-    if (err.code === 'EADDRINUSE') {
-      console.warn(`[Server Warning] Port ${PORT} is already in use. Express server not started because another instance is running.`);
-    } else {
-      throw err;
-    }
   });
 }
 

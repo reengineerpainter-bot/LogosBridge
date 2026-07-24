@@ -13,5 +13,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   },
   writeClipboard: (text) => {
     ipcRenderer.send('write-clipboard', text);
+  },
+  reopenProjector: () => {
+    ipcRenderer.send('reopen-projector');
   }
 });

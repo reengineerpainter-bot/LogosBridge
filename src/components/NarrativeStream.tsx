@@ -41,6 +41,8 @@ export interface VerseHighlight {
 }
 
 export interface NarrativeStreamProps {
+  isComparisonEnabled?: boolean;
+  referenceDisplayMode?: 'both' | 'kjv' | 'bsb';
   title: string;
   streamType: 'plain' | 'pers' | 'kjv' | 'bsb';
   chunks: Verse[][];
@@ -111,6 +113,8 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
   manuscriptBold = false,
   manuscriptItalic = false,
   onOpenProjection,
+  isComparisonEnabled,
+  referenceDisplayMode,
   isHeaderHidden = false,
 }) => {
   const isBold = streamType === 'plain' 
@@ -126,33 +130,6 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
 
   return (
     <div className="space-y-2 animate-fade-in relative">
-      <div className={`flex items-center justify-between mb-1 pb-1 border-b border-slate-200/50 dark:border-zinc-800/50 transition-all duration-300 ease-in-out`}>
-        <h5 className="text-[10px] font-mono uppercase tracking-widest font-extrabold text-slate-400 dark:text-cyan-600">
-          {title}
-        </h5>
-        {playTranslationStream && (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              if (isPlayingAudio && activeAudioStream === streamType) {
-                stopSpeaking();
-              } else {
-                playTranslationStream(streamType);
-              }
-            }}
-            className={`flex items-center justify-center w-8 h-8 rounded-full shadow-lg ${
-              (isPlayingAudio && activeAudioStream === streamType) 
-                ? 'bg-gradient-to-br from-rose-500 to-rose-600 text-white shadow-rose-500/30 ring-2 ring-rose-500/20' 
-                : theme === 'light' 
-                  ? 'bg-gradient-to-br from-cyan-500 to-blue-600 text-white shadow-cyan-500/30 hover:shadow-cyan-500/50 hover:from-cyan-400 hover:to-blue-500 ring-2 ring-cyan-500/20' 
-                  : 'bg-gradient-to-br from-cyan-600 to-blue-700 text-white shadow-cyan-900/50 hover:shadow-cyan-600/50 hover:from-cyan-500 hover:to-blue-600 ring-2 ring-cyan-500/30'
-            } transition-all duration-300 transform hover:-translate-y-0.5 active:translate-y-0 active:scale-95`}
-            title={(isPlayingAudio && activeAudioStream === streamType) ? "Stop Audio" : "Play Audio"}
-          >
-            {(isPlayingAudio && activeAudioStream === streamType) ? <Square className="w-3.5 h-3.5 fill-current animate-pulse" /> : <Play className="w-3.5 h-3.5 fill-current ml-0.5" />}
-          </button>
-        )}
-      </div>
       <div className={`${
         theme === 'light' ? 'text-slate-800' : 'text-slate-200'
       } space-y-3.5 text-justify leading-[1.8] tracking-[0.01em]`}>
@@ -192,6 +169,27 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                         ? (v.kjvText || '') 
                         : (v.bsbText || '');
 
+                  const renderRefs = () => {
+                    if (!isComparisonEnabled) return null;
+                    if (streamType === 'kjv' || streamType === 'bsb') return null;
+                    return (
+                      <span className={`block my-3 p-3.5 rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col gap-2.5 w-full transition-all ${theme === 'light' ? 'bg-slate-50/70 border border-slate-100' : 'bg-[#121622]/40 border border-cyan-950/20'}`}>
+                        {(referenceDisplayMode === 'both' || referenceDisplayMode === 'kjv') && (
+                          <span className={`block font-serif text-[0.85em] leading-relaxed ${theme === 'light' ? 'text-slate-500' : 'text-slate-400/90'}`}>
+                            <span className={`font-mono font-bold text-sm uppercase tracking-widest mr-2.5 px-1.5 py-0.5 rounded-sm ${theme === 'light' ? 'bg-slate-200/50 text-slate-500' : 'bg-cyan-950/30 text-cyan-500/70'}`}>KJV</span>
+                            {v.kjvText}
+                          </span>
+                        )}
+                        {(referenceDisplayMode === 'both' || referenceDisplayMode === 'bsb') && (
+                          <span className={`block font-serif text-[0.85em] leading-relaxed ${theme === 'light' ? 'text-slate-500' : 'text-slate-400/90'}`}>
+                            <span className={`font-mono font-bold text-sm uppercase tracking-widest mr-2.5 px-1.5 py-0.5 rounded-sm ${theme === 'light' ? 'bg-slate-200/50 text-slate-500' : 'bg-cyan-950/30 text-cyan-500/70'}`}>BSB</span>
+                            {v.bsbText}
+                          </span>
+                        )}
+                      </span>
+                    );
+                  };
+
                   return (
                     <span
                       key={`para-${streamType}-${v.verseNumber}`}
@@ -210,13 +208,14 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                       } mr-1`}
                       title={`Double-click to focus study on Verse ${v.verseNumber}`}
                     >
-                      <sup className={`text-[9px] font-mono leading-none select-none font-black mr-0.5 ${
+                      <sup className={`text-sm font-mono leading-none select-none font-black mr-0.5 ${
                         isReadingThis 
                           ? 'text-cyan-500 animate-bounce' 
                           : theme === 'light' ? 'text-slate-400' : 'text-cyan-600/70'
                       }`}>
                         {v.verseNumber}
                       </sup>
+                      {renderRefs()}
                       <span className={isBold ? 'font-bold' : isItalic ? 'italic' : ''}>
                         {textVal}
                       </span>
@@ -233,7 +232,7 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                       <div className={`flex items-center px-1.5 py-0.5 rounded-full shrink-0 ${
                         theme === 'light' ? 'bg-slate-100 text-slate-500' : 'bg-white/5 text-slate-400'
                       }`}>
-                        <span className="text-[9px] font-mono font-bold uppercase tracking-widest">v.{v.verseNumber}</span>
+                        <span className="text-sm font-mono font-bold uppercase tracking-widest">v.{v.verseNumber}</span>
                       </div>
 
                       <div className={`w-[1px] h-3 mx-0.5 shrink-0 ${theme === 'light' ? 'bg-slate-200' : 'bg-zinc-800'}`} />
@@ -334,7 +333,7 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                   </div>
                   {currentlyReadingVerse === v.verseNumber && (
                     <div className="mt-2 flex items-center justify-between bg-slate-100 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-250 dark:border-cyan-950/30">
-                      <span className="text-[10px] font-mono text-slate-400 dark:text-cyan-650 flex items-center gap-1">
+                      <span className="text-sm font-mono text-slate-400 dark:text-cyan-650 flex items-center gap-1">
                         ⚙️ Playback Speed:
                       </span>
                       <div className="flex items-center space-x-2">
@@ -350,7 +349,7 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                           }}
                           className="w-20 h-1 bg-slate-205 dark:bg-cyan-955 rounded-lg appearance-none cursor-pointer accent-cyan-500"
                         />
-                        <span className="text-[10.5px] font-mono font-bold text-cyan-600">
+                        <span className="text-sm font-mono font-bold text-cyan-600">
                           {playbackSpeed.toFixed(1)}x
                         </span>
                       </div>

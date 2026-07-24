@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Tv, Sparkles, Sliders, Layers } from 'lucide-react';
+import { Tv, Maximize, Sparkles, Sliders, Layers } from 'lucide-react';
 
 type ThemePreset = 'sapphire-gold' | 'chroma-green' | 'cyber-slate' | 'amber-parchment' | 'glass-minimal';
 type LayoutMode = 'lower-third' | 'projector-slide';
@@ -186,14 +186,132 @@ export default function ProjectorCleanDisplay({ theme }: { theme: 'light' | 'dar
     };
 
   const activePreset = liveState?.themePreset || 'sapphire-gold';
+  
+  
+  const [hasInteracted, setHasInteracted] = useState(false);
+
+  
+  
+  useEffect(() => {
+    // Attempt to move to external monitor and go fullscreen automatically
+    
+    const setupDisplay = async () => {
+      let targetScreen = null;
+      try {
+        if ('getScreenDetails' in window) {
+          // @ts-ignore
+          const screenDetails = await window.getScreenDetails();
+          const externalScreen = screenDetails.screens.find((s: any) => !s.isInternal) || screenDetails.screens[1];
+          
+          if (externalScreen) {
+            targetScreen = externalScreen;
+            // Move window to external screen
+            window.moveTo(externalScreen.left, externalScreen.top);
+            window.resizeTo(externalScreen.width, externalScreen.height);
+          }
+        }
+      } catch (err) {
+        console.warn('Could not auto-move to external screen:', err);
+      }
+
+      // Then attempt fullscreen
+      if (!document.fullscreenElement) {
+        try {
+          if (targetScreen) {
+            // @ts-ignore
+            await document.documentElement.requestFullscreen({ screen: targetScreen });
+          } else {
+            await document.documentElement.requestFullscreen();
+          }
+          setHasInteracted(true);
+        } catch (err) {
+          console.log('Auto-fullscreen prevented by browser, waiting for user click:', err);
+        }
+      }
+    };
+
+    
+    setTimeout(setupDisplay, 100);
+
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'f' || e.key === 'F' || e.key === 'F11') {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(err => {
+            console.log(err);
+          });
+        } else {
+          document.exitFullscreen();
+        }
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, []);
+
+  
+  
+  const toggleFullscreen = async () => {
+    setHasInteracted(true);
+    
+    let targetScreen = null;
+    try {
+      if ('getScreenDetails' in window) {
+        // @ts-ignore
+        const screenDetails = await window.getScreenDetails();
+        const externalScreen = screenDetails.screens.find((s: any) => !s.isInternal) || screenDetails.screens[1];
+        
+        if (externalScreen) {
+          targetScreen = externalScreen;
+          window.moveTo(externalScreen.left, externalScreen.top);
+          window.resizeTo(externalScreen.width, externalScreen.height);
+        }
+      }
+    } catch (e) {
+      console.warn('Screen details error', e);
+    }
+
+    if (!document.fullscreenElement) {
+      try {
+        if (targetScreen) {
+          // @ts-ignore
+          await document.documentElement.requestFullscreen({ screen: targetScreen });
+        } else {
+          await document.documentElement.requestFullscreen();
+        }
+      } catch (err) {
+        console.log('Fullscreen error:', err);
+      }
+    } else {
+      document.exitFullscreen();
+    }
+  };
+
+
+
   const isLowerThird = (liveState?.layoutMode || 'lower-third') === 'lower-third';
   const styles = getThemeStyles(activePreset, isLowerThird);
 
   // If no scripture is live, render a beautiful standby display
   if (!liveState) {
     return (
-      <div className="fixed inset-0 bg-[#09090b] flex flex-col items-center justify-center text-zinc-500 font-sans text-center p-8 select-none border-[12px] border-zinc-950">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-900/40 via-zinc-950 to-[#09090b] pointer-events-none" />
+      <div onDoubleClick={toggleFullscreen} className="fixed inset-0 bg-[#09090b] flex flex-col items-center justify-center text-zinc-500 font-sans text-center p-8 select-none border-[12px] border-zinc-950">
+        
+      {/* Fullscreen Overlay */}
+      {!hasInteracted && !document.fullscreenElement && (
+        <div 
+          onClick={toggleFullscreen}
+          className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-white cursor-pointer backdrop-blur-sm transition-opacity duration-500"
+        >
+          <Maximize className="w-16 h-16 mb-4 text-zinc-400 animate-pulse" />
+          <h2 className="text-2xl font-bold tracking-widest uppercase mb-2">Click to Enter Fullscreen</h2>
+          <p className="text-zinc-400 font-medium max-w-md text-center">
+            For a seamless, distraction-free projection, click anywhere to hide the browser address bar and toolbars.
+          </p>
+        </div>
+      )}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-zinc-900/40 via-zinc-950 to-[#09090b] pointer-events-none" />
         
         <div className="relative z-10 flex flex-col items-center space-y-6">
           <div className="w-20 h-20 rounded-full border border-zinc-800 bg-zinc-900/50 shadow-2xl flex items-center justify-center backdrop-blur-xl">
@@ -220,9 +338,23 @@ export default function ProjectorCleanDisplay({ theme }: { theme: 'light' | 'dar
   }
 
   return (
-    <div className={`fixed inset-0 ${styles.pageBg} overflow-hidden font-sans select-none flex flex-col justify-end transition-colors duration-300`}>
+    <div onDoubleClick={toggleFullscreen} className={`fixed inset-0 ${styles.pageBg} overflow-hidden font-sans select-none flex flex-col justify-end transition-colors duration-300`}>
+      {/* Fullscreen Overlay */}
+      {!hasInteracted && !document.fullscreenElement && (
+        <div 
+          onClick={toggleFullscreen}
+          className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-black/80 text-white cursor-pointer backdrop-blur-sm transition-opacity duration-500"
+        >
+          <Maximize className="w-16 h-16 mb-4 text-zinc-400 animate-pulse" />
+          <h2 className="text-2xl font-bold tracking-widest uppercase mb-2">Click to Enter Fullscreen</h2>
+          <p className="text-zinc-400 font-medium max-w-md text-center">
+            For a seamless, distraction-free projection, click anywhere to hide the browser address bar and toolbars.
+          </p>
+        </div>
+      )}
       
       {/* Main Alignment framework */}
+
       <div className={`w-full transition-all duration-300 ${
         !isLowerThird 
           ? 'h-full flex flex-col justify-center items-center p-8 md:p-16' 
@@ -230,23 +362,23 @@ export default function ProjectorCleanDisplay({ theme }: { theme: 'light' | 'dar
       }`}>
         
         {/* Presentation Slide Container */}
-        <div className={`w-full transition-all duration-350 flex flex-col overflow-hidden ${styles.container} ${
+        <div className={`transition-all duration-350 flex flex-col overflow-hidden ${styles.container} ${
           !isLowerThird 
-            ? 'max-w-5xl py-16 px-12 sm:px-16 md:px-20 rounded-3xl relative shadow-2xl' 
-            : 'h-1/3 min-h-[150px] max-h-[250px] sm:min-h-[180px] sm:max-h-[280px] justify-center px-12 sm:px-20 md:px-24'
+            ? 'w-[95vw] max-w-[120rem] py-32 px-16 sm:px-24 md:px-32 rounded-[3rem] relative shadow-2xl' 
+            : 'w-full h-[33vh] min-h-[170px] max-h-[45vh] sm:min-h-[200px] sm:max-h-[45vh] justify-center px-8 sm:px-12 md:px-24 lg:px-32 rounded-none shadow-[0_0_50px_rgba(0,0,0,0.8)] border-t-[4px] border-x-0 border-b-0'
         }`}
           id="projector-live-slide"
         >
           {/* Upper Header info */}
           <div className={`flex items-center justify-between font-sans leading-none w-full ${
             isLowerThird 
-              ? 'text-xs sm:text-sm mb-2 pb-2 border-b border-white/10' 
+              ? 'text-xs sm:text-sm md:text-base lg:text-lg mb-2 pb-2 border-b border-white/10' 
               : 'text-sm sm:text-base mb-5 pb-3 border-b border-white/10'
           } ${styles.textShadow}`}>
             <span className={`uppercase font-bold tracking-wider ${styles.label}`}>
               {liveState.isCustomLabelEnabled ? liveState.translationLabel : mapTranslationShorthandToFullName(liveState.liveTranslation)}
             </span>
-            <span className={`tracking-wide ${styles.ref} ${isLowerThird ? 'text-xs sm:text-sm' : 'text-base sm:text-lg'}`}>
+            <span className={`tracking-wide ${styles.ref} ${isLowerThird ? 'text-sm sm:text-lg lg:text-xl' : 'text-base sm:text-lg'}`}>
               {liveState.book} {liveState.chapter}:{liveState.verseNumber}
             </span>
           </div>
@@ -261,7 +393,7 @@ export default function ProjectorCleanDisplay({ theme }: { theme: 'light' | 'dar
               liveState.isItalic ? 'italic' : 'not-italic'
             }`}
             style={{ 
-              fontSize: `${isLowerThird ? Math.max(16, Math.min(liveState.fontSize - 6, 38)) : liveState.fontSize + 4}px`, 
+              fontSize: `${isLowerThird ? Math.max(48, liveState.fontSize * 2.0) : liveState.fontSize * 1.5 + 8}px`, 
               textAlign: liveState.alignment,
               lineHeight: '1.3'
             }}
