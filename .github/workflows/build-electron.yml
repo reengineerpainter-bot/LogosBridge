@@ -1,0 +1,41 @@
+name: Build and Release Windows App
+
+on:
+  push:
+    tags:
+      - 'v*' # Trigger only when you push a tag (e.g. v1.0.0)
+  workflow_dispatch: # Allows you to run this workflow manually from the Actions tab
+
+jobs:
+  release:
+    runs-on: windows-latest
+    permissions:
+      contents: write # Needed to create the Release on GitHub
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Web App
+        run: npm run build
+
+      - name: Build and Package Electron App
+        run: npm run electron:build
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/dist-electron/LogosBridge Setup*.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
