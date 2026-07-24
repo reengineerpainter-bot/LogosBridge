@@ -43,6 +43,7 @@ interface ProjectionStudioProps {
   onBookChange: (book: string) => void;
   onChapterChange: (chapter: number) => void;
   initialVerseNumber?: number;
+  dynamicTranslationData?: Record<string, string>;
 }
 
 type ThemePreset = 'sapphire-gold' | 'chroma-green' | 'cyber-slate' | 'amber-parchment' | 'glass-minimal';
@@ -72,6 +73,9 @@ const mapTranslationShorthandToFullName = (shortName: string | undefined): strin
   if (name === 'bsb') return 'BEREAN STANDARD BIBLE';
   if (name === 'plain') return 'PLAIN ENGLISH TRANSLATION';
   if (name === 'personalized') return 'PERSONALISED PRAYER VERSION';
+  if (name === 'asv') return 'AMERICAN STANDARD VERSION';
+  if (name === 'ylt') return 'YOUNG\'S LITERAL TRANSLATION';
+  if (name === 'bbe') return 'BIBLE IN BASIC ENGLISH';
   return shortName.toUpperCase();
 };
 
@@ -85,12 +89,13 @@ export default function ProjectionStudio({
   onNavigateToVerse,
   initialVerseNumber = 0,
   onBookChange,
-  onChapterChange
+  onChapterChange,
+  dynamicTranslationData = {}
 }: ProjectionStudioProps) {
   // Active state for projected verse details
   const [activeVerseIndex, setActiveVerseIndex] = useState<number>(0);
   const [pendingVerseIndex, setPendingVerseIndex] = useState<number | null>(null);
-  const [activeTranslation, setActiveTranslation] = useState<'kjv' | 'bsb' | 'plain' | 'personalized'>('kjv');
+  const [activeTranslation, setActiveTranslation] = useState<'kjv' | 'bsb' | 'plain' | 'personalized' | 'asv' | 'ylt' | 'bbe'>('kjv');
   const [customTranslationLabel, setCustomTranslationLabel] = useState<string>('Personal Study Bible');
   const [isCustomLabelEnabled, setIsCustomLabelEnabled] = useState<boolean>(true);
 
@@ -98,6 +103,22 @@ export default function ProjectionStudio({
   const [liveState, setLiveState] = useState<LiveProjectionState | null>(null);
   const [isLiveAutoSync, setIsLiveAutoSync] = useState<boolean>(true);
   const [activeMonitorTab, setActiveMonitorTab] = useState<'preview' | 'live'>('preview');
+  
+  const [localDynamicData, setLocalDynamicData] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (['asv', 'ylt', 'bbe'].includes(activeTranslation)) {
+      setLocalDynamicData({});
+      fetch(`/api/translation/${activeTranslation}?book=${encodeURIComponent(currentBook)}&chapter=${currentChapter}`)
+        .then(res => res.json())
+        .then(data => {
+           if (data.success && data.data && data.data.verses) {
+             setLocalDynamicData(data.data.verses);
+           }
+        })
+        .catch(err => console.warn('Failed to fetch local dynamic translation in studio:', err));
+    }
+  }, [activeTranslation, currentBook, currentChapter]);
 
   // Styling and configuration preferences
   const [themePreset, setThemePreset] = useState<ThemePreset>('sapphire-gold');
@@ -259,6 +280,10 @@ export default function ProjectionStudio({
         return verse.contemporary || '';
       case 'personalized':
         return verse.nonNativeEnglish || '';
+      case 'asv':
+      case 'ylt':
+      case 'bbe':
+        return localDynamicData[verse.verseNumber.toString()] || dynamicTranslationData[verse.verseNumber.toString()] || '[Loading...]';
       default:
         return verse.kjvText || '';
     }

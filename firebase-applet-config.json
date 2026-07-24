@@ -1,10 +1,10 @@
 {
-  "projectId": "eastern-campaign-1r4g1",
-  "appId": "1:796450481275:web:7c5a3bc612944182e2aede",
-  "apiKey": "AIzaSyD9Ycy4s44TcKPDwuL1o6NFVFCeZrWRsho",
-  "authDomain": "eastern-campaign-1r4g1.firebaseapp.com",
-  "firestoreDatabaseId": "ai-studio-48fcfd58-a82a-401a-ab99-5f49f0b67751",
-  "storageBucket": "eastern-campaign-1r4g1.firebasestorage.app",
-  "messagingSenderId": "796450481275",
+  "projectId": "logosbridge-3f0a5",
+  "appId": "1:81269048206:web:a498950afa09f56a151adf",
+  "apiKey": "AIzaSyClbalxMjQY1QlamSvGDhTNOBKQzw0c6Uo",
+  "authDomain": "logosbridge-3f0a5.firebaseapp.com",
+  "firestoreDatabaseId": "(default)",
+  "storageBucket": "logosbridge-3f0a5.firebasestorage.app",
+  "messagingSenderId": "81269048206",
   "measurementId": ""
 }

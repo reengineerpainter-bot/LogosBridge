@@ -25,22 +25,31 @@ let adminDb: any = null;
 function getAdminFirestore() {
   if (!adminDbInitialized) {
     try {
+      let sa;
+      try {
+        sa = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'serviceAccountKey.json'), 'utf8'));
+      } catch (e) {}
+
       if (admin.apps.length === 0) {
-        // Automatically fetch Default Application Credentials in Cloud Run or Local
         admin.initializeApp({
-          projectId: firebaseConfig.projectId
+          projectId: firebaseConfig.projectId,
+          credential: sa ? admin.credential.cert(sa) : undefined
         });
       }
-      // Instantiate Firestore directly targeting the exact databaseId from our configuration
+
       adminDb = new admin.firestore.Firestore({
         projectId: firebaseConfig.projectId,
-        databaseId: firebaseConfig.firestoreDatabaseId
+        databaseId: firebaseConfig.firestoreDatabaseId,
+        credentials: sa ? {
+          client_email: sa.client_email,
+          private_key: sa.private_key
+        } : undefined
       });
       adminDbInitialized = true;
       console.log(`[Firebase Admin] Successfully connected to named database: ${firebaseConfig.firestoreDatabaseId}`);
     } catch (err: any) {
       console.warn('[Firebase Admin Warning] Failed to initialize Firebase admin SDK. Server will run on in-memory dynamic cache, falling back gracefully.', err.message || err);
-      adminDbInitialized = true; // Set to true to prevent infinite retry loops
+      adminDbInitialized = true;
       adminDb = null;
     }
   }
@@ -1403,6 +1412,43 @@ function generateLocalHelpsStudy(word: string, originalValue: string, language: 
     usage: usage
   };
 }
+
+// 2.4 Raw Translation Endpoint for Public Domain Data
+app.get('/api/translation/:translationId', async (req, res) => {
+  const { translationId } = req.params;
+  const book = String(req.query.book || 'John');
+  const chapter = String(req.query.chapter || '1');
+
+  try {
+    const dbInstance = getAdminFirestore();
+    if (!dbInstance) {
+      return res.status(500).json({ success: false, error: 'Database not initialized' });
+    }
+
+    const docRef = dbInstance
+      .collection('translations')
+      .doc(translationId)
+      .collection('books')
+      .doc(book)
+      .collection('chapters')
+      .doc(chapter);
+
+    const snap = await docRef.get();
+    if (!snap.exists) {
+      return res.status(404).json({ success: false, error: 'Translation chapter not found in database' });
+    }
+
+    return res.json({
+      success: true,
+      source: 'firestore',
+      translationId,
+      data: snap.data()
+    });
+  } catch (error: any) {
+    console.error('[Translation API Error]', error.message || error);
+    return res.status(500).json({ success: false, error: 'Internal Server Error' });
+  }
+});
 
 // 2.5 Dynamic HELPS Word-studies Lexicon Endpoint
 app.post('/api/helps-word-study', async (req, res) => {

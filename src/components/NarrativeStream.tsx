@@ -44,7 +44,7 @@ export interface NarrativeStreamProps {
   isComparisonEnabled?: boolean;
   referenceDisplayMode?: 'both' | 'kjv' | 'bsb';
   title: string;
-  streamType: 'plain' | 'pers' | 'kjv' | 'bsb';
+  streamType: 'plain' | 'pers' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe';
   chunks: Verse[][];
   focusedVerse: Verse | null;
   focusedStreamType?: string | null;
@@ -64,10 +64,10 @@ export interface NarrativeStreamProps {
   getVerseHighlight: (verseNo: number) => VerseHighlight | undefined;
   stopSpeaking: () => void;
   playSingleVerse: (verseNo: number, text: string) => void;
-  playTranslationStream?: (transType: 'plain' | 'pers' | 'kjv' | 'bsb') => void;
+  playTranslationStream?: (transType: 'plain' | 'pers' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe') => void;
   isPlayingAudio?: boolean;
   activeAudioStream?: string | null;
-  getSpeechTextForVerse: (v: Verse, overrideTransType?: 'plain' | 'pers' | 'kjv' | 'bsb') => string;
+  getSpeechTextForVerse: (v: Verse, overrideTransType?: 'plain' | 'pers' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe') => string;
   toggleSaveVerse: (verseNo: number) => void;
   plainBold: boolean;
   plainItalic: boolean;
@@ -77,6 +77,7 @@ export interface NarrativeStreamProps {
   manuscriptItalic?: boolean;
   onOpenProjection?: (verseNo: number) => void;
   isHeaderHidden?: boolean;
+  dynamicTranslationData?: Record<string, string>;
 }
 
 export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
@@ -116,6 +117,7 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
   isComparisonEnabled,
   referenceDisplayMode,
   isHeaderHidden = false,
+  dynamicTranslationData = {},
 }) => {
   const isBold = streamType === 'plain' 
     ? plainBold 
@@ -129,10 +131,10 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
       : manuscriptItalic;
 
   return (
-    <div className="space-y-2 animate-fade-in relative">
+    <div className="space-y-2 animate-fade-in relative h-full flex flex-col">
       <div className={`${
         theme === 'light' ? 'text-slate-800' : 'text-slate-200'
-      } space-y-3.5 text-justify leading-[1.8] tracking-[0.01em]`}>
+      } space-y-3.5 text-justify leading-[1.8] tracking-[0.01em] flex-1`}>
         {chunks.map((chunk, chunkIdx) => {
           const containsFocused = chunk.some(v => v.verseNumber === focusedVerse?.verseNumber) && (!focusedStreamType || focusedStreamType === streamType);
           const focusedInChunk = containsFocused ? chunk.find(v => v.verseNumber === focusedVerse?.verseNumber) : null;
@@ -161,13 +163,18 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                     highlightClasses = 'px-1 py-0.5 rounded-sm hover:bg-slate-500/5 dark:hover:bg-cyan-500/5 transition-colors duration-155';
                   }
 
-                  const textVal = streamType === 'plain' 
-                    ? v.contemporary 
-                    : streamType === 'pers' 
-                      ? v.nonNativeEnglish 
-                      : streamType === 'kjv' 
-                        ? (v.kjvText || '') 
-                        : (v.bsbText || '');
+                  let textContent = '';
+                  if (streamType === 'plain') {
+                    textContent = v.contemporary;
+                  } else if (streamType === 'pers') {
+                    textContent = v.nonNativeEnglish;
+                  } else if (streamType === 'kjv') {
+                    textContent = v.kjvText || '';
+                  } else if (streamType === 'bsb') {
+                    textContent = v.bsbText || '';
+                  } else if (['asv', 'ylt', 'bbe'].includes(streamType)) {
+                    textContent = dynamicTranslationData[v.verseNumber.toString()] || '[Loading...]';
+                  }
 
                   const renderRefs = () => {
                     if (!isComparisonEnabled) return null;
@@ -203,7 +210,7 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                           if (setFocusedStreamType) setFocusedStreamType(streamType);
                         }
                       }}
-                      className={`inline relative cursor-pointer leading-[1.8] tracking-[0.01em] transition-all duration-150 ${highlightClasses} ${
+                      className={`inline relative cursor-pointer transition-all duration-150 ${highlightClasses} ${
                         isReadingThis ? 'ring-1.5 ring-cyan-500/40 animate-pulse-slow' : ''
                       } mr-1`}
                       title={`Double-click to focus study on Verse ${v.verseNumber}`}
@@ -217,7 +224,7 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                       </sup>
                       {renderRefs()}
                       <span className={isBold ? 'font-bold' : isItalic ? 'italic' : ''}>
-                        {textVal}
+                        {textContent}
                       </span>
 {focusedVerse?.verseNumber === v.verseNumber && focusedStreamType === streamType && (
                 <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up w-max">

@@ -47,7 +47,9 @@ import {
   MonitorPlay,
   Ban,
   ToggleLeft,
-  ToggleRight
+  ToggleRight,
+  Settings2,
+  Layers
 } from 'lucide-react';
 import { BIBLE_BOOKS } from './bibleMetadata';
 import { STATIC_CHAPTERS } from './staticChapters';
@@ -199,6 +201,91 @@ const welcomeStyles: Record<'royal' | 'minimal', WelcomeStyleConfig> = {
   }
 };
 
+const AUDIO_TRANS_OPTIONS = [
+  { id: 'plain', label: 'Plain English' },
+  { id: 'pers', label: 'Personalised Prayer' },
+  { id: 'kjv', label: 'King James Version' },
+  { id: 'bsb', label: 'Berean Standard' },
+  { id: 'asv', label: 'American Standard' },
+  { id: 'ylt', label: 'Young\'s Literal' },
+  { id: 'bbe', label: 'Basic English' },
+];
+
+const AudioFAB = ({ 
+  theme, 
+  isPlayingAudio, 
+  activeAudioStream, 
+  stopSpeaking, 
+  playTranslationStream, 
+  currentTransId,
+  onTransChange,
+}: any) => {
+  const currentIndex = AUDIO_TRANS_OPTIONS.findIndex(t => t.id === currentTransId) >= 0 
+    ? AUDIO_TRANS_OPTIONS.findIndex(t => t.id === currentTransId)
+    : 0;
+  
+  const currentTrans = AUDIO_TRANS_OPTIONS[currentIndex];
+  
+  const handleNext = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const nextIdx = (currentIndex + 1) % AUDIO_TRANS_OPTIONS.length;
+    onTransChange(AUDIO_TRANS_OPTIONS[nextIdx].id);
+  };
+  
+  const handlePrev = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    const prevIdx = (currentIndex - 1 + AUDIO_TRANS_OPTIONS.length) % AUDIO_TRANS_OPTIONS.length;
+    onTransChange(AUDIO_TRANS_OPTIONS[prevIdx].id);
+  };
+
+  const isPlayingThis = isPlayingAudio && activeAudioStream === currentTrans.id;
+
+  return (
+    <div className={`flex items-center gap-1 p-1 rounded-full shadow-lg border backdrop-blur-md ${
+      theme === 'light'
+        ? 'bg-white/90 border-slate-200 shadow-[0_4px_15px_rgba(0,0,0,0.08)]'
+        : 'bg-[#1c1c1e]/90 border-[#2d2d2d] shadow-[0_4px_15px_rgba(0,0,0,0.5)]'
+    }`}>
+      <button
+        onClick={(e) => {
+          e.stopPropagation();
+          if (isPlayingThis) {
+            stopSpeaking();
+          } else if (playTranslationStream) {
+            playTranslationStream(currentTrans.id);
+          }
+        }}
+        className={`w-9 h-9 rounded-full flex items-center justify-center transition-all hover:scale-105 active:scale-95 cursor-pointer shrink-0 ${
+          theme === 'light'
+            ? 'bg-cyan-600 text-white'
+            : 'bg-cyan-700 text-zinc-100'
+        }`}
+        title={isPlayingThis ? "Stop Audio" : `Play ${currentTrans.label} Audio`}
+      >
+        {isPlayingThis ? (
+          <Square className="w-4 h-4 fill-current animate-pulse" />
+        ) : (
+          <Play className="w-4 h-4 fill-current ml-0.5" />
+        )}
+      </button>
+
+      <div className="flex items-center gap-1 px-1">
+        <button onClick={handlePrev} className={`p-1.5 rounded-full transition-colors ${theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-zinc-800 text-zinc-400'}`}>
+          <ChevronLeft className="w-3.5 h-3.5" />
+        </button>
+        
+        <span className={`text-[11px] font-bold tracking-wider w-[110px] md:w-[130px] flex justify-center text-center ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
+          <span className="truncate">{currentTrans.label}</span>
+        </span>
+        
+        <button onClick={handleNext} className={`p-1.5 rounded-full transition-colors ${theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-zinc-800 text-zinc-400'}`}>
+          <ChevronRight className="w-3.5 h-3.5" />
+        </button>
+      </div>
+    </div>
+  );
+};
+
 export default function App() {
   // Check if projector fullscreen mode is active
   const isProjectorMode = useMemo(() => {
@@ -269,14 +356,20 @@ export default function App() {
   const [manuscriptItalic, setManuscriptItalic] = useState<boolean>(true);
   const [isComparisonEnabled, setIsComparisonEnabled] = useState<boolean>(true);
   const [referenceDisplayMode, setReferenceDisplayMode] = useState<'both' | 'kjv' | 'bsb'>('both');
-  const [translationDisplayMode, setTranslationDisplayMode] = useState<'both' | 'plain' | 'personalized' | 'kjv' | 'bsb' | 'plain_kjv' | 'personalized_kjv'>(() => {
-    return (localStorage.getItem('personalized_bible_translation_display_mode') as any) || 'plain';
+  const [translationDisplayMode, setTranslationDisplayMode] = useState<'both' | 'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>(() => {
+    const val = localStorage.getItem('personalized_bible_translation_display_mode');
+    return val === 'interlinear' ? 'plain' : (val as any) || 'plain';
   });
+  const [dualStreamLeft, setDualStreamLeft] = useState<'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>('plain');
+  const [dualStreamRight, setDualStreamRight] = useState<'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>('personalized');
+  const [mainView, setMainView] = useState<'read' | 'interlinear'>('read');
+  const [interlinearThirdLine, setInterlinearThirdLine] = useState<string>('kjv');
+  const [dynamicTranslationData, setDynamicTranslationData] = useState<Record<string, string>>({});
   const translationPickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (translationPickerRef.current) {
-      const modes = ['plain', 'personalized', 'kjv', 'bsb'];
+      const modes = ['plain', 'personalized', 'kjv', 'bsb', 'interlinear'];
       const index = modes.indexOf(translationDisplayMode);
       if (index !== -1) {
         const itemHeight = window.innerWidth >= 768 ? 40 : 32;
@@ -284,6 +377,26 @@ export default function App() {
       }
     }
   }, [translationDisplayMode]);
+
+  useEffect(() => {
+    const shouldFetch = ['asv', 'ylt', 'bbe'].includes(translationDisplayMode) 
+                        ? translationDisplayMode 
+                        : (mainView === 'interlinear' && ['asv', 'ylt', 'bbe'].includes(interlinearThirdLine))
+                          ? interlinearThirdLine
+                          : null;
+
+    if (shouldFetch) {
+      setDynamicTranslationData({});
+      fetch(`/api/translation/${shouldFetch}?book=${encodeURIComponent(selectedBook)}&chapter=${selectedChapter}`)
+        .then(res => res.json())
+        .then(data => {
+           if (data.success && data.data && data.data.verses) {
+             setDynamicTranslationData(data.data.verses);
+           }
+        })
+        .catch(err => console.warn('Failed to fetch dynamic translation:', err));
+    }
+  }, [translationDisplayMode, interlinearThirdLine, selectedBook, selectedChapter]);
 
   const [layoutMode, setLayoutMode] = useState<'formal' | 'paragraph'>(() => {
     return (localStorage.getItem('personalized_bible_layout_mode') as 'formal' | 'paragraph') || 'paragraph';
@@ -728,7 +841,7 @@ export default function App() {
   // Feature 1: Audio Playback (TTS)
   const [currentlyReadingVerse, setCurrentlyReadingVerse] = useState<number | null>(null);
   const [isPlayingAudio, setIsPlayingAudio] = useState<boolean>(false);
-  const [activeAudioStream, setActiveAudioStream] = useState<'plain' | 'pers' | 'kjv' | 'bsb' | 'chapter' | 'single' | null>(null);
+  const [activeAudioStream, setActiveAudioStream] = useState<'plain' | 'pers' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe' | 'chapter' | 'single' | null>(null);
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const synthRef = useRef<SpeechSynthesis | null>(typeof window !== 'undefined' ? window.speechSynthesis : null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
@@ -1931,7 +2044,7 @@ export default function App() {
     return textParts.join('. ');
   };
 
-  const playTranslationStream = (transType: 'plain' | 'pers' | 'kjv' | 'bsb') => {
+  const playTranslationStream = (transType: 'plain' | 'pers' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe') => {
     if (!chapterData || !synthRef.current) return;
     stopSpeaking();
     
@@ -1961,6 +2074,9 @@ export default function App() {
       else if (transType === 'pers') text = v.nonNativeEnglish;
       else if (transType === 'kjv') text = v.kjvText || '';
       else if (transType === 'bsb') text = v.bsbText || '';
+      else if (['asv', 'ylt', 'bbe'].includes(transType)) {
+        text = dynamicTranslationData[v.verseNumber.toString()] || '';
+      }
 
       const utteranceText = `Verse ${v.verseNumber}, ${text}`;
       const utterance = new SpeechSynthesisUtterance(utteranceText);
@@ -2501,91 +2617,41 @@ export default function App() {
       </AnimatePresence>
 
       {/* FLOATING AUDIO PLAY FAB & TRANSLATION TOGGLE */}
-      <div className={`fixed bottom-[60px] md:bottom-[64px] left-1 md:left-2 z-[90] flex items-center gap-2 transition-all duration-500 ease-in-out ${isSidePanelHidden ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100'}`}>
-          {!(translationDisplayMode === 'both' || translationDisplayMode === 'plain_kjv' || translationDisplayMode === 'personalized_kjv') && (
-            <button
-            onClick={() => {
-              if (isPlayingAudio) {
-                stopSpeaking();
-              } else {
-                playTranslationStream(
-                  translationDisplayMode === 'kjv' ? 'kjv' :
-                  translationDisplayMode === 'bsb' ? 'bsb' :
-                  translationDisplayMode === 'personalized' ? 'pers' : 'plain'
-                );
-              }
-            }}
-            className={`w-8 h-8 md:w-9 md:h-9 rounded-full shadow-lg border flex items-center justify-center transition-all hover:scale-110 active:scale-95 cursor-pointer shrink-0 ${
-              theme === 'light'
-                ? 'bg-zinc-800 border-zinc-700 text-white shadow-md md:bg-cyan-500 md:border-cyan-400 md:shadow-[0_8px_20px_rgba(6,182,212,0.3)]'
-                : 'bg-white border-zinc-200 text-zinc-900 shadow-md md:bg-cyan-600 md:border-cyan-500 md:shadow-[0_8px_20px_rgba(8,145,178,0.4)]'
-            }`}
-            title={isPlayingAudio ? "Stop Audio" : "Play Chapter Audio"}
-          >
-            {isPlayingAudio ? (
-              <Square className="w-4 h-4 md:w-5 md:h-5 fill-current animate-pulse" />
-            ) : (
-              <Play className="w-4 h-4 md:w-5 md:h-5 fill-current ml-0.5 md:ml-1" />
-            )}
-          </button>
-          )}
-
-          {!(translationDisplayMode === 'both' || translationDisplayMode === 'plain_kjv' || translationDisplayMode === 'personalized_kjv') && (
-            <div 
-              ref={translationPickerRef}
-              className={`relative h-8 md:h-10 w-[140px] md:w-[180px] rounded-full shadow-[0_8px_20px_rgba(0,0,0,0.12)] border overflow-y-auto snap-y snap-mandatory hide-scrollbar ${
-                theme === 'light'
-                  ? 'bg-white/95 backdrop-blur-xl border-zinc-200/80'
-                  : 'bg-zinc-900/95 backdrop-blur-xl border-zinc-700/80'
-              }`}
-              onScroll={(e) => {
-                const el = e.currentTarget;
-                const itemHeight = window.innerWidth >= 768 ? 40 : 32;
-                const index = Math.round(el.scrollTop / itemHeight);
-                const modes = ['plain', 'personalized', 'kjv', 'bsb'];
-                if (modes[index] && translationDisplayMode !== modes[index]) {
-                  setTranslationDisplayMode(modes[index]);
-                  localStorage.setItem('personalized_bible_translation_display_mode', modes[index]);
+      <div className={`fixed bottom-[76px] left-4 right-4 z-[90] flex items-center ${translationDisplayMode === 'both' ? 'justify-between' : 'justify-start'} pointer-events-none transition-all duration-500 ease-in-out ${isSidePanelHidden ? 'translate-y-24 opacity-0' : 'translate-y-0 opacity-100'}`}>
+          <div className="pointer-events-auto">
+            <AudioFAB 
+              theme={theme}
+              isPlayingAudio={isPlayingAudio}
+              activeAudioStream={activeAudioStream}
+              stopSpeaking={stopSpeaking}
+              playTranslationStream={playTranslationStream}
+              currentTransId={translationDisplayMode === 'both' ? dualStreamLeft : (['plain', 'kjv', 'bsb', 'pers', 'asv', 'ylt', 'bbe'].includes(translationDisplayMode) ? translationDisplayMode : 'plain')}
+              onTransChange={(newTrans: string) => {
+                if (translationDisplayMode === 'both') {
+                  setDualStreamLeft(newTrans as any);
+                } else {
+                  setTranslationDisplayMode(newTrans as any);
+                  localStorage.setItem('personalized_bible_translation_display_mode', newTrans);
                 }
               }}
-            >
-              {/* Fade overlays for the picker wheel effect */}
-              <div className="absolute inset-x-0 top-0 h-1.5 pointer-events-none rounded-t-full z-10" style={{ background: theme === 'light' ? 'linear-gradient(to bottom, rgba(255,255,255,0.9), transparent)' : 'linear-gradient(to bottom, rgba(24,24,27,0.9), transparent)' }}></div>
-              <div className="absolute inset-x-0 bottom-0 h-1.5 pointer-events-none rounded-b-full z-10" style={{ background: theme === 'light' ? 'linear-gradient(to top, rgba(255,255,255,0.9), transparent)' : 'linear-gradient(to top, rgba(24,24,27,0.9), transparent)' }}></div>
-              
-              <div className="flex flex-col">
-                {[
-                  { id: 'plain', label: 'Plain English' },
-                  { id: 'personalized', label: 'Personalised Prayer' },
-                  { id: 'kjv', label: 'King James Version' },
-                  { id: 'bsb', label: 'Berean Standard' }
-                ].map((mode) => (
-                  <button
-                    key={mode.id}
-                    onClick={(e) => {
-                      setTranslationDisplayMode(mode.id);
-                      localStorage.setItem('personalized_bible_translation_display_mode', mode.id);
-                      playWebAudioBeep(480, 'sine', 0.04);
-                      e.currentTarget.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    }}
-                    className={`h-8 md:h-10 w-full snap-center shrink-0 flex items-center justify-center text-sm md:text-[15px] font-bold font-sans tracking-wide transition-all ${
-                      translationDisplayMode === mode.id
-                        ? (theme === 'light' ? 'text-zinc-800 md:text-cyan-700' : 'text-zinc-100 md:text-cyan-400')
-                        : (theme === 'light' ? 'text-slate-400' : 'text-slate-500')
-                    }`}
-                  >
-                    {mode.label}
-                  </button>
-                ))}
-              </div>
+            />
+          </div>
+          {translationDisplayMode === 'both' && (
+            <div className="pointer-events-auto">
+              <AudioFAB 
+                theme={theme}
+                isPlayingAudio={isPlayingAudio}
+                activeAudioStream={activeAudioStream}
+                stopSpeaking={stopSpeaking}
+                playTranslationStream={playTranslationStream}
+                currentTransId={dualStreamRight}
+                onTransChange={(newTrans: string) => {
+                  setDualStreamRight(newTrans as any);
+                }}
+              />
             </div>
-        )}
+          )}
       </div>
-
-
-      
-
-
       
       {/* FLOATING PILL BOTTOM NAVIGATION BAR */}
       <div className={`fixed bottom-2 left-4 right-4 z-[1050] flex items-center justify-around px-2 py-1 rounded-[2rem] shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out ${
@@ -2600,6 +2666,7 @@ export default function App() {
           onClick={() => {
               setFullPageMenu(null);
               setIsProjectionStudioOpen(false);
+              setMainView('read');
           }}
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
@@ -2626,14 +2693,15 @@ export default function App() {
         <button
           onClick={() => {
               setIsProjectionStudioOpen(false);
-              setFullPageMenu('companion');
+              setFullPageMenu(null);
+              setMainView('interlinear');
           }}
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
-          <div className={`p-1 rounded-full transition-colors ${fullPageMenu === 'companion' ? (theme === 'light' ? 'bg-cyan-100 text-cyan-600' : 'bg-cyan-900/50 text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>
-             <Library className="w-[20px] h-[20px]" strokeWidth={fullPageMenu === 'companion' ? 2.5 : 2} />
+          <div className={`p-1 rounded-full transition-colors ${mainView === 'interlinear' ? (theme === 'light' ? 'bg-cyan-100 text-cyan-600' : 'bg-cyan-900/50 text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>
+             <Layers className="w-[20px] h-[20px]" strokeWidth={mainView === 'interlinear' ? 2.5 : 2} />
           </div>
-          <span className={`text-[10px] font-bold tracking-wide mt-0.5 ${fullPageMenu === 'companion' ? (theme === 'light' ? 'text-cyan-600' : 'text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>Companion</span>
+          <span className={`text-[10px] font-bold tracking-wide mt-0.5 ${mainView === 'interlinear' ? (theme === 'light' ? 'text-cyan-600' : 'text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>Interlinear</span>
         </button>
 
         <button
@@ -2653,12 +2721,14 @@ export default function App() {
       {/* FULL PAGE MENU MODAL */}
       <AnimatePresence>
         {fullPageMenu && (
+          <>
+          <div className="fixed inset-0 z-[990] bg-slate-900/40 backdrop-blur-sm" onClick={() => setFullPageMenu(null)} />
           <motion.div
             initial={{ opacity: 0, y: 50, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className={`fixed inset-0 z-[1000] flex flex-col h-[100dvh] ${theme === 'light' ? 'bg-[#fcfcfc]' : 'bg-[#0a0d16]'}`}
+            className={`fixed top-[80px] bottom-[70px] left-0 right-0 md:left-4 md:right-4 lg:max-w-5xl lg:mx-auto z-[1000] flex flex-col rounded-2xl shadow-2xl overflow-hidden border ${theme === 'light' ? 'bg-[#fcfcfc] border-zinc-200' : 'bg-[#0a0d16] border-zinc-800'}`}
           >
             {/* Modal Header */}
             <div className={`flex items-center justify-between p-4 md:p-6 border-b ${theme === 'light' ? 'border-slate-200/80 bg-white/50' : 'border-zinc-800/80 bg-[#0c111c]/50'} backdrop-blur-md sticky top-0 z-10`}>
@@ -2670,7 +2740,7 @@ export default function App() {
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <h2 className="text-xl font-bold font-display tracking-tight capitalize">
-                  {fullPageMenu === 'companion' ? 'Study Companion' : 'App Settings'}
+                  {fullPageMenu === 'versions' ? 'Study Options' : 'App Settings'}
                 </h2>
               </div>
             </div>
@@ -2682,32 +2752,6 @@ export default function App() {
                 {fullPageMenu === 'settings' && (
                   <>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Translation Display Mode */}
-                      <div className={`flex flex-col space-y-2 p-4 rounded-2xl shadow-sm border ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#121622] border-cyan-950/30'}`}>
-                        <div className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-1">View Mode</div>
-                        <select
-                          value={['plain', 'personalized', 'kjv', 'bsb'].includes(translationDisplayMode) ? 'single' : translationDisplayMode}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            if (val === 'single') {
-                              setTranslationDisplayMode('plain');
-                              localStorage.setItem('personalized_bible_translation_display_mode', 'plain');
-                            } else {
-                              setTranslationDisplayMode(val);
-                              localStorage.setItem('personalized_bible_translation_display_mode', val);
-                            }
-                          }}
-                          className={`w-full text-sm font-medium border-0 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-                            theme === 'light' ? 'bg-slate-50 text-slate-800' : 'bg-slate-900/50 text-slate-200'
-                          }`}
-                        >
-                          <option value="single">Single Stream</option>
-                          <option value="both">Dual-Stream</option>
-                          <option value="plain_kjv">PET KJV</option>
-                          <option value="personalized_kjv">PPV KJV</option>
-                        </select>
-                      </div>
-
                       {/* Layout Mode Toggle */}
                       <div className={`flex flex-col space-y-2 p-4 rounded-2xl shadow-sm border ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#121622] border-cyan-950/30'}`}>
                         <div className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-1">Layout Mode</div>
@@ -2801,11 +2845,57 @@ export default function App() {
                   </>
                 )}
 
-                {fullPageMenu === 'companion' && (
-                  <div className="flex flex-col space-y-4">
-                    <p className="text-sm text-slate-500 italic mb-4">
-                      "The Bible that talks with you" study companion aids.
-                    </p>
+                {fullPageMenu === 'versions' && (
+                  <div className="flex flex-col space-y-6">
+                    
+                    {/* View Modes Selection */}
+                    <div>
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Single Translations</h3>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
+                        {[
+                          { id: 'plain', label: 'Plain English (PET)' },
+                          { id: 'personalized', label: 'Personalised Prayer' },
+                          { id: 'kjv', label: 'King James (KJV)' },
+                          { id: 'bsb', label: 'Berean Standard (BSB)' },
+                          { id: 'asv', label: 'American Standard (ASV)' },
+                          { id: 'ylt', label: 'Young\'s Literal (YLT)' },
+                          { id: 'bbe', label: 'Bible in Basic English' },
+                        ].map(mode => (
+                          <button
+                            key={mode.id}
+                            onClick={() => {
+                              setTranslationDisplayMode(mode.id as any);
+                              localStorage.setItem('personalized_bible_translation_display_mode', mode.id);
+                              playWebAudioBeep(520, 'sine', 0.05);
+                            }}
+                            className={`p-3 rounded-xl border text-sm font-bold transition-all text-left ${translationDisplayMode === mode.id ? (theme === 'light' ? 'bg-cyan-50 border-cyan-300 text-cyan-700 shadow-sm' : 'bg-cyan-900/40 border-cyan-700 text-cyan-300') : (theme === 'light' ? 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50' : 'bg-[#121622] border-slate-800 text-slate-400 hover:bg-[#161a27]')}`}
+                          >
+                            {mode.label}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Study Layouts</h3>
+                      <div className="grid grid-cols-1 gap-3">
+                        {/* Interlinear option removed to become standalone tab */}
+                        <button
+                          onClick={() => {
+                            setTranslationDisplayMode('both');
+                            localStorage.setItem('personalized_bible_translation_display_mode', 'both');
+                            playWebAudioBeep(520, 'sine', 0.05);
+                          }}
+                          className={`p-4 rounded-xl border transition-all text-left flex flex-col ${translationDisplayMode === 'both' ? (theme === 'light' ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-sm' : 'bg-indigo-900/40 border-indigo-700 text-indigo-300') : (theme === 'light' ? 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50' : 'bg-[#121622] border-slate-800 text-slate-400 hover:bg-[#161a27]')}`}
+                        >
+                          <span className="font-bold text-sm mb-1">Dual-Stream Side-by-Side</span>
+                          <span className="text-xs opacity-70">Read Plain English alongside Personalised Prayer</span>
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
+                      <p className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Study Aids</p>
                     
                     <button
                       onClick={() => {
@@ -2852,18 +2942,18 @@ export default function App() {
                       <span className="text-sm text-slate-500 font-medium">Understand the historical background of the passage.</span>
                     </button>
                   </div>
+                  </div>
                 )}
               </div>
             </div>
           </motion.div>
+          </>
         )}
       </AnimatePresence>
 
       {/* FLOATING MIDDLE NAV: TRIANGLE IN CIRCLE SLIDE OPTIONS */}
       {/* PREVIOUS CHAPTER FLOATER */}
-      <div className={`fixed left-1 md:left-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${
-        isSidePanelHidden ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100'
-      }`}>
+      <div className={`fixed left-1 md:left-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out`}>
         <button
           id="floating-nav-prev-chapter-btn"
           onClick={handlePrevChapter}
@@ -2881,9 +2971,7 @@ export default function App() {
       </div>
 
       {/* NEXT CHAPTER FLOATER */}
-      <div className={`fixed right-1 md:right-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${
-        isSidePanelHidden ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100'
-      }`}>
+      <div className={`fixed right-1 md:right-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out`}>
         <button
           id="floating-nav-next-chapter-btn"
           onClick={handleNextChapter}
@@ -3075,8 +3163,14 @@ export default function App() {
                 {/* Table container */}
                 <div 
                   ref={scriptureContainerRef}
-                  className={`scripture-zoom-container relative z-20 transition-colors ${
-                    theme === 'light' ? 'bg-transparent' : 'bg-transparent'
+                  className={`scripture-zoom-container relative z-20 transition-all duration-500 antialiased ${
+                    scriptureTypefaceSetting === 'serif' ? 'font-serif' : scriptureTypefaceSetting === 'mono' ? 'font-mono' : 'font-sans'
+                  } ${
+                    scriptureFontSizeSetting === 'xs' ? 'text-sm' : scriptureFontSizeSetting === 'sm' ? 'text-base' : scriptureFontSizeSetting === 'lg' ? 'text-xl' : 'text-lg'
+                  } ${
+                    scriptureTextStyleSetting === 'elegant' ? 'font-light tracking-[0.02em] leading-[2.0]' : scriptureTextStyleSetting === 'compact' ? 'tracking-tight leading-snug' : scriptureTextStyleSetting === 'classic' ? 'font-medium leading-[1.9]' : 'font-normal leading-[1.8] tracking-[0.01em]'
+                  } ${
+                    theme === 'light' ? 'bg-transparent text-slate-800' : 'bg-transparent text-slate-200'
                   }`}
                 >
                   {/* Dynamic CSS injecting custom zoom styles */}
@@ -3095,25 +3189,114 @@ export default function App() {
                     .scripture-zoom-container .text-\\[19px\\] { font-size: calc(19px * var(--sz)) !important; }
                     .scripture-zoom-container .text-\\[20px\\] { font-size: calc(20px * var(--sz)) !important; }
                     .scripture-zoom-container sup.text-\\[9\\.5px\\] { font-size: calc(9.5px * var(--sz)) !important; }
+.scripture-zoom-container sup.text-\\[9\\.5px\\] { font-size: calc(9.5px * var(--sz)) !important; }
 ` }} />
+                  
+                  {/* Top Right FAB for Study Options (Only visible on Read screen) */}
+                  {mainView === 'read' && (
+                    <div className="fixed top-20 right-6 z-40 hidden md:flex flex-col gap-3">
+                      <button
+                        onClick={() => {
+                          setFullPageMenu('versions');
+                          playWebAudioBeep(440, 'sine', 0.05);
+                        }}
+                        className={`p-3 rounded-2xl shadow-lg border backdrop-blur-xl transition-all hover:scale-105 active:scale-95 group ${theme === 'light' ? 'bg-white/90 border-slate-200 text-slate-700 hover:text-cyan-600' : 'bg-slate-900/90 border-slate-700 text-slate-300 hover:text-cyan-400'}`}
+                        title="Study Options"
+                      >
+                        <Settings2 className="w-6 h-6 transition-transform group-hover:rotate-45" />
+                      </button>
+                    </div>
+                  )}
+                  {/* For mobile, positioned slightly differently so it doesn't overlap header */}
+                  {mainView === 'read' && (
+                    <div className="fixed top-24 right-4 z-40 md:hidden flex flex-col gap-3">
+                      <button
+                        onClick={() => {
+                          setFullPageMenu('versions');
+                          playWebAudioBeep(440, 'sine', 0.05);
+                        }}
+                        className={`p-2.5 rounded-2xl shadow-lg border backdrop-blur-xl transition-all hover:scale-105 active:scale-95 group ${theme === 'light' ? 'bg-white/90 border-slate-200 text-slate-700 hover:text-cyan-600' : 'bg-slate-900/90 border-slate-700 text-slate-300 hover:text-cyan-400'}`}
+                      >
+                        <Settings2 className="w-5 h-5" />
+                      </button>
+                    </div>
+                  )}
                   
                   {/* Table header REMOVED */}
 
 
 
-                  {/* Table rows / Paragraph blocks */}
-                  {layoutMode === 'paragraph' ? (() => {
+                  {/* Main Viewer Switch: Interlinear vs Read Mode */}
+                  {mainView === 'interlinear' ? (() => {
+                     return (
+                       <div className="p-5 md:p-8 space-y-8 max-w-4xl mx-auto pb-32">
+                         {chapterData.verses.map(v => {
+                           const thirdLineText = interlinearThirdLine === 'kjv' ? v.kjvText : 
+                                                 interlinearThirdLine === 'bsb' ? v.bsbText : 
+                                                 dynamicTranslationData[v.verseNumber.toString()] || (['asv', 'ylt', 'bbe'].includes(interlinearThirdLine) ? '[Loading...]' : '');
+                           
+                           return (
+                             <div key={v.verseNumber} className={`relative p-4 rounded-xl border ${theme === 'light' ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#121622] border-slate-800/80 shadow-md'}`}>
+                               <div className={`absolute -top-3 left-4 w-6 h-6 rounded-full flex items-center justify-center text-[11px] font-black tracking-tighter ${theme === 'light' ? 'bg-white text-slate-500 border border-slate-200 shadow-sm' : 'bg-[#121622] text-slate-400 border border-slate-700 shadow-sm'}`}>
+                                 {v.verseNumber}
+                               </div>
+                               <div className="pt-2 flex flex-col gap-5">
+                                 {/* Line 1: Manuscript */}
+                                 <div className="flex flex-col">
+                                   <span className="text-[0.65em] uppercase tracking-widest font-bold text-amber-600/80 dark:text-amber-500/80 mb-1.5 flex items-center gap-1.5">
+                                     <Layers className="w-3 h-3" /> Original Manuscript
+                                   </span>
+                                   <div className={`font-serif text-[19px] leading-relaxed tracking-wide ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>
+                                     {v.manuscriptText ? v.manuscriptText : <span className="italic opacity-50">[Original Manuscript Not Available]</span>}
+                                   </div>
+                                 </div>
+                                 
+                                 {/* Line 2: PET */}
+                                 <div className="flex flex-col border-t border-slate-100 dark:border-slate-800/50 pt-4">
+                                   <span className="text-[0.65em] uppercase tracking-widest font-bold text-cyan-600/80 dark:text-cyan-500/80 mb-1.5">Plain English Translation</span>
+                                   <div className={`font-sans text-[17px] leading-relaxed ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
+                                     {v.contemporary ? v.contemporary : <span className="italic opacity-50">[Plain English Translation Not Available]</span>}
+                                   </div>
+                                 </div>
+                                 
+                                 {/* Line 3: Dynamic Translation */}
+                                 <div className="flex flex-col border-t border-slate-100 dark:border-slate-800/50 pt-4 relative group">
+                                   <div className="absolute top-2 right-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
+                                     <div className={`flex items-center rounded-lg shadow-sm border overflow-hidden text-[10px] ${theme === 'light' ? 'bg-slate-100 border-slate-200' : 'bg-[#0f121d] border-slate-700/80'}`}>
+                                       {['kjv', 'bsb', 'asv', 'ylt', 'bbe'].map(opt => (
+                                         <button
+                                           key={opt}
+                                           onClick={() => setInterlinearThirdLine(opt)}
+                                           className={`px-2.5 py-1.5 font-bold uppercase transition-colors ${interlinearThirdLine === opt ? (theme === 'light' ? 'bg-emerald-100 text-emerald-700 shadow-inner' : 'bg-emerald-900/40 text-emerald-400 shadow-inner') : (theme === 'light' ? 'text-slate-500 hover:bg-slate-200' : 'text-slate-400 hover:bg-slate-800')}`}
+                                         >
+                                           {opt}
+                                         </button>
+                                       ))}
+                                     </div>
+                                   </div>
+                                   <span className="text-[0.65em] uppercase tracking-widest font-bold text-emerald-600/80 dark:text-emerald-500/80 mb-1.5 pr-32">{interlinearThirdLine.toUpperCase()} TRANSLATION</span>
+                                   <div className={`font-serif text-[17px] leading-relaxed ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>
+                                     {renderInteractiveText(thirdLineText || '', v.specialWords, `inter-${v.verseNumber}`)}
+                                   </div>
+                                 </div>
+                               </div>
+                             </div>
+                           );
+                         })}
+                       </div>
+                     );
+                  })() : layoutMode === 'paragraph' ? (() => {
                     const versesList = paginatedVersesList;
                     const chunks: any[][] = [];
                     for (let i = 0; i < versesList.length; i += 3) {
                       chunks.push(versesList.slice(i, i + 3));
                     }
 
-                    const isMultiCol = translationDisplayMode === 'both' || translationDisplayMode === 'plain_kjv' || translationDisplayMode === 'personalized_kjv' ;
+                    const isMultiCol = translationDisplayMode === 'both';
 
-                    const renderNarrativeStream = (type: 'plain' | 'pers' | 'kjv' | 'bsb', customTitle?: string) => (
+                    const renderNarrativeStream = (type: 'plain' | 'pers' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe', customTitle?: string) => (
                       <NarrativeStream
-                        title={customTitle || (type === 'plain' ? "PET" : type === 'pers' ? "PPV" : type === 'kjv' ? "📜 KJV" : "🛡️ BSB")}
+                        title={customTitle || (type === 'plain' ? "PET" : type === 'pers' ? "PPV" : type === 'kjv' ? "📜 KJV" : type === 'bsb' ? "🛡️ BSB" : type.toUpperCase())}
                         streamType={type}
                         chunks={chunks}
                         focusedVerse={focusedVerse}
@@ -3153,41 +3336,26 @@ export default function App() {
                           setIsProjectionStudioOpen(true);
                           playWebAudioBeep(640, 'sine', 0.08);
                         }}
+                        dynamicTranslationData={dynamicTranslationData}
                       />
                     );
 
                     if (isMultiCol) {
                       return (
                         <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 h-[calc(100vh-160px)]">
-                          {(translationDisplayMode === 'kjv' || translationDisplayMode === 'plain_kjv' || translationDisplayMode === 'personalized_kjv') && (
-                            <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-amber-50/30' : 'bg-amber-950/10'} p-2`}>
-                              {renderNarrativeStream('kjv')}
-                            </div>
-                          )}
+                          <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2`}>
+                            {renderNarrativeStream(dualStreamLeft)}
+                          </div>
 
-                          {((translationDisplayMode === 'bsb')) && (
-                            <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-emerald-50/30' : 'bg-emerald-950/10'} p-2`}>
-                              {renderNarrativeStream('bsb')}
-                            </div>
-                          )}
-
-                          {(translationDisplayMode === 'plain' || translationDisplayMode === 'both' || translationDisplayMode === 'plain_kjv') && (
-                            <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2`}>
-                              {renderNarrativeStream('plain')}
-                            </div>
-                          )}
-
-                          {(translationDisplayMode === 'personalized' || translationDisplayMode === 'both' || translationDisplayMode === 'personalized_kjv') && (
-                            <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2`}>
-                              {renderNarrativeStream('pers')}
-                            </div>
-                          )}
+                          <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2`}>
+                            {renderNarrativeStream(dualStreamRight)}
+                          </div>
                         </div>
                       );
                     }
 
                     // Original Single Column view
-                    const singleTransType = translationDisplayMode === 'plain' ? 'plain' : translationDisplayMode === 'personalized' ? 'pers' : translationDisplayMode === 'kjv' ? 'kjv' : 'bsb';
+                    const singleTransType = translationDisplayMode === 'plain' ? 'plain' : translationDisplayMode === 'personalized' ? 'pers' : translationDisplayMode === 'kjv' ? 'kjv' : translationDisplayMode === 'bsb' ? 'bsb' : translationDisplayMode as any;
 
                     return (
                       <div className="p-5 md:p-8 space-y-6">
@@ -3205,7 +3373,7 @@ export default function App() {
                     <div className="flex flex-col space-y-1 py-1">
                       
                     {(() => {
-                      const isMultiCol = translationDisplayMode === 'both' || translationDisplayMode === 'plain_kjv' || translationDisplayMode === 'personalized_kjv' ;
+                      const isMultiCol = translationDisplayMode === 'both';
                       
                       const renderVerseCard = (v, transType) => {
                           const isFocused = focusedVerse?.verseNumber === v.verseNumber && focusedStreamType === transType;
@@ -3559,33 +3727,13 @@ export default function App() {
                       if (isMultiCol) {
                         return (
                           <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 h-[calc(100vh-160px)]">
-                            {(translationDisplayMode === 'kjv' || translationDisplayMode === 'plain_kjv' || translationDisplayMode === 'personalized_kjv') && (
-                              <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-amber-50/30' : 'bg-amber-950/10'} p-2 relative`}>
-                                
-                                {chapterData.verses.map(v => renderVerseCard(v, 'kjv'))}
-                              </div>
-                            )}
+                            <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative`}>
+                              {chapterData.verses.map(v => renderVerseCard(v, 'plain'))}
+                            </div>
 
-                            {((translationDisplayMode === 'bsb')) && (
-                              <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-emerald-50/30' : 'bg-emerald-950/10'} p-2 relative`}>
-                                
-                                {chapterData.verses.map(v => renderVerseCard(v, 'bsb'))}
-                              </div>
-                            )}
-
-                            {(translationDisplayMode === 'plain' || translationDisplayMode === 'both' || translationDisplayMode === 'plain_kjv') && (
-                              <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative`}>
-                                
-                                {chapterData.verses.map(v => renderVerseCard(v, 'plain'))}
-                              </div>
-                            )}
-
-                            {(translationDisplayMode === 'personalized' || translationDisplayMode === 'both' || translationDisplayMode === 'personalized_kjv') && (
-                              <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative`}>
-                                
-                                {chapterData.verses.map(v => renderVerseCard(v, 'pers'))}
-                              </div>
-                            )}
+                            <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative`}>
+                              {chapterData.verses.map(v => renderVerseCard(v, 'pers'))}
+                            </div>
                           </div>
                         );
                       }
@@ -5221,6 +5369,7 @@ export default function App() {
         onBookChange={setSelectedBook}
         onChapterChange={setSelectedChapter}
         theme={theme}
+        dynamicTranslationData={dynamicTranslationData}
         isOpen={isProjectionStudioOpen}
         onClose={() => setIsProjectionStudioOpen(false)}
         currentBook={selectedBook}
@@ -6307,12 +6456,14 @@ export default function App() {
 
                   <AnimatePresence>
                     {isBookDropdownOpen && (
+                      <>
+                      <div className="fixed inset-0 z-[990] bg-slate-900/40 backdrop-blur-sm" onClick={() => setIsBookDropdownOpen(false)} />
                       <motion.div
                         initial={{ opacity: 0, y: 30, scale: 0.95 }}
                         animate={{ opacity: 1, y: 0, scale: 1 }}
                         exit={{ opacity: 0, y: 20, scale: 0.95 }}
                         transition={{ duration: 0.3, ease: "easeInOut" }}
-                        className={`fixed inset-0 z-[1000] flex flex-col h-[100dvh] ${theme === 'light' ? 'bg-[#fcfcfc]' : 'bg-[#0a0d16]'}`}
+                        className={`fixed top-[80px] bottom-[70px] left-0 right-0 md:left-4 md:right-4 lg:max-w-5xl lg:mx-auto z-[1000] flex flex-col rounded-2xl shadow-2xl overflow-hidden border ${theme === 'light' ? 'bg-[#fcfcfc] border-zinc-200' : 'bg-[#0a0d16] border-zinc-800'}`}
                       >
                         {/* Modal Header */}
                         <div className={`shrink-0 px-4 py-4 border-b flex items-center justify-between ${theme === 'light' ? 'bg-white border-zinc-200' : 'bg-zinc-900 border-zinc-800'}`}>
@@ -6480,6 +6631,7 @@ export default function App() {
                           </>
                         )}
                       </motion.div>
+                      </>
                     )}
                   </AnimatePresence>
     </div>

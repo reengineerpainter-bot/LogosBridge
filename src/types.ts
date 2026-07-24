@@ -11,6 +11,7 @@ export interface Verse {
   bsbText: string;
   contemporary: string;
   nonNativeEnglish: string;
+  manuscriptText?: string;
   specialWords: SpecialWord[];
 }
 
