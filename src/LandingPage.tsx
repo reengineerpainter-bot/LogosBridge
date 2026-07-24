@@ -15,7 +15,8 @@ export default function LandingPage() {
   };
 
   const handleDownload = () => {
-    alert("The desktop app download link will be available soon!");
+    // Redirects the user to the GitHub Releases page where they can download the .exe
+    window.open("https://github.com/reengineerpainter-bot/LogosBridge/releases/latest", "_blank");
   };
 
   return (
