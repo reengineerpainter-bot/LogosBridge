@@ -1048,15 +1048,7 @@ export default function App() {
   const [memorizationCorrectCount, setMemorizationCorrectCount] = useState<number | null>(null);
 
   // Welcome walk-through guide states
-  const [isWelcomeOpen, setIsWelcomeOpen] = useState<boolean>(() => {
-    if (typeof window !== 'undefined' && window.location && window.location.search) {
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('welcome') === 'true' || params.get('tour') === 'true' || params.get('guide') === 'true') {
-        return true;
-      }
-    }
-    return localStorage.getItem('personalized_bible_welcome_dismissed') !== 'true';
-  });
+  const [isWelcomeOpen, setIsWelcomeOpen] = useState<boolean>(false);
 
   const [welcomeStep, setWelcomeStep] = useState<number>(0);
   const [selectedWelcomeStyle, setSelectedWelcomeStyle] = useState<'royal' | 'minimal'>(() => {
