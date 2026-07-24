@@ -416,17 +416,7 @@ export default function App() {
            }
         })
         .catch(err => {
-           console.warn(`[Fallback] Backend translation fetch failed (${err.message}), fetching directly from public API...`);
-           // Direct client-side fallback to bible-api.com
-           const urlBook = encodeURIComponent(selectedBook.toLowerCase());
-           fetch(`https://bible-api.com/${urlBook}+${selectedChapter}?translation=${shouldFetch}`)
-             .then(res => res.json())
-             .then(data => {
-                if (data && data.verses) {
-                  processVerses(data.verses);
-                }
-             })
-             .catch(e => console.error('[Fallback] Direct public API fetch also failed:', e));
+           console.error(`[Translation Fetch] Failed to fetch from backend database:`, err.message);
         });
     }
   }, [translationDisplayMode, interlinearThirdLine, selectedBook, selectedChapter]);

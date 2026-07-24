@@ -1441,23 +1441,7 @@ app.get('/api/translation/:translationId', async (req, res) => {
       }
     }
 
-    // Fallback to bible-api.com if not found in Firestore or if offline mode triggers
-    const urlBook = encodeURIComponent(book.toLowerCase());
-    const fetchUrl = `https://bible-api.com/${urlBook}+${chapter}?translation=${translationId}`;
-    console.log(`[API Fallback] Fetching ${translationId} from bible-api.com for ${book} ${chapter}`);
-    
-    const response = await fetch(fetchUrl);
-    if (response.ok) {
-       const data = await response.json();
-       return res.json({
-         success: true,
-         source: 'bible-api',
-         translationId,
-         data: data
-       });
-    }
-
-    return res.status(404).json({ success: false, error: 'Translation chapter not found in database or external API' });
+    return res.status(404).json({ success: false, error: 'Translation chapter not found in database.' });
   } catch (error: any) {
     console.error('[Translation API Error]', error.message || error);
     return res.status(500).json({ success: false, error: 'Internal Server Error' });
