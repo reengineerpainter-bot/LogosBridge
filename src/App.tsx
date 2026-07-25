@@ -3280,20 +3280,26 @@ export default function App() {
                                  
                                  {/* Line 3: Dynamic Translation */}
                                  <div className="flex flex-col border-t border-slate-100 dark:border-slate-800/50 pt-4 relative group">
-                                   <div className="absolute top-2 right-0 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition-opacity z-10">
-                                     <div className={`flex items-center rounded-lg shadow-sm border overflow-hidden text-[10px] ${theme === 'light' ? 'bg-slate-100 border-slate-200' : 'bg-[#0f121d] border-slate-700/80'}`}>
+                                   <div className="absolute top-2 right-0 z-20 group/menu flex items-center justify-end">
+                                     {/* 3-dot FAB icon, visible by default */}
+                                     <button className={`p-1.5 rounded-full backdrop-blur-md border shadow-lg flex items-center justify-center transition-all ${theme === 'light' ? 'bg-white/90 border-slate-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700' : 'bg-slate-800/90 border-slate-700 text-emerald-400 hover:bg-slate-700 hover:text-emerald-300'} z-20`}>
+                                       <MoreVertical className="w-3.5 h-3.5" />
+                                     </button>
+
+                                     {/* Compact horizontal menu fading in on hover */}
+                                     <div className={`absolute right-[32px] top-1/2 -translate-y-1/2 flex items-center rounded-lg shadow-lg border overflow-hidden text-[9px] sm:text-[10px] opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all translate-x-2 group-hover/menu:translate-x-0 ${theme === 'light' ? 'bg-white/95 border-emerald-200/50' : 'bg-slate-900/95 border-emerald-900/50'} z-10 backdrop-blur-md`}>
                                        {['kjv', 'bsb', 'asv', 'ylt', 'bbe'].map(opt => (
                                          <button
                                            key={opt}
                                            onClick={() => setInterlinearThirdLine(opt)}
-                                           className={`px-2.5 py-1.5 font-bold uppercase transition-colors ${interlinearThirdLine === opt ? (theme === 'light' ? 'bg-emerald-100 text-emerald-700 shadow-inner' : 'bg-emerald-900/40 text-emerald-400 shadow-inner') : (theme === 'light' ? 'text-slate-500 hover:bg-slate-200' : 'text-slate-400 hover:bg-slate-800')}`}
+                                           className={`px-2 py-1.5 font-bold uppercase transition-colors ${interlinearThirdLine === opt ? (theme === 'light' ? 'bg-emerald-100 text-emerald-700 shadow-inner' : 'bg-emerald-900/40 text-emerald-400 shadow-inner') : (theme === 'light' ? 'text-slate-500 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-800 hover:text-emerald-300')}`}
                                          >
                                            {opt}
                                          </button>
                                        ))}
                                      </div>
                                    </div>
-                                   <span className="text-[0.65em] uppercase tracking-widest font-bold text-emerald-600/80 dark:text-emerald-500/80 mb-1.5 pr-32">{interlinearThirdLine.toUpperCase()} TRANSLATION</span>
+                                   <span className="text-[0.65em] uppercase tracking-widest font-bold text-emerald-600/80 dark:text-emerald-500/80 mb-1.5 pr-12">{interlinearThirdLine.toUpperCase()} TRANSLATION</span>
                                    <div className={`font-serif text-[17px] leading-relaxed ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>
                                      {renderInteractiveText(thirdLineText || '', v.specialWords, `inter-${v.verseNumber}`)}
                                    </div>

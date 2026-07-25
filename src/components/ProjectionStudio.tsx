@@ -884,6 +884,9 @@ export default function ProjectionStudio({
                         <option value="bsb">Berean Standard Bible</option>
                         <option value="plain">Plain English Translation</option>
                         <option value="personalized">Personalized Promise Version</option>
+                        <option value="asv">American Standard Version</option>
+                        <option value="ylt">Young's Literal Translation</option>
+                        <option value="bbe">Bible in Basic English</option>
                       </select>
                     </div>
                   </div>
