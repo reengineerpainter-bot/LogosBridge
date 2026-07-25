@@ -8,9 +8,7 @@ const firebaseConfig = JSON.parse(fs.readFileSync(configPath, 'utf8'));
 let sa;
 try {
   sa = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'serviceAccountKey.json'), 'utf8'));
-} catch (e) {
-  console.log("No service account key");
-}
+} catch (e) {}
 
 const db = new admin.firestore.Firestore({
   projectId: firebaseConfig.projectId,
@@ -21,13 +19,17 @@ const db = new admin.firestore.Firestore({
   } : undefined
 });
 
-async function checkTranslation() {
-  const bbeBooksSnap = await db.collection('translations').doc('bbe').collection('books').listDocuments();
-  console.log("BBE Books in database:");
-  for (const doc of bbeBooksSnap) {
-    console.log(doc.id);
-  }
-  
-  process.exit(0);
+async function run() {
+    const translations = ['bbe', 'ylt', 'asv'];
+    
+    for (const trans of translations) {
+        console.log(`\n--- TRANSLATION: ${trans} ---`);
+        const booksRef = db.collection('translations').doc(trans).collection('books');
+        const docs = await booksRef.listDocuments();
+        const availableAbbrevs = docs.map(d => d.id);
+        
+        console.log(`Available abbrevs: ${availableAbbrevs.join(', ')}`);
+    }
 }
-checkTranslation();
+
+run().then(() => process.exit(0)).catch(e => { console.error(e); process.exit(1); });

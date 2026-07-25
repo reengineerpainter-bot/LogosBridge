@@ -1413,6 +1413,61 @@ function generateLocalHelpsStudy(word: string, originalValue: string, language: 
   };
 }
 
+const getBookNameVariants = (book: string): string[] => {
+  const variants = [book];
+  
+  const mapBBE: Record<string, string> = {
+    "1 Chronicles": "1ch",
+    "1 Kings": "1kgs",
+    "2 Chronicles": "2ch",
+    "2 Kings": "2kgs",
+    "Acts": "act",
+    "Ephesians": "eph",
+    "Ezra": "ezr",
+    "Haggai": "hg",
+    "Habakkuk": "hk",
+    "Hosea": "ho",
+    "James": "jm",
+    "Judges": "jud",
+    "Luke": "lk",
+    "Micah": "mi",
+    "Mark": "mk",
+    "Philippians": "ph",
+    "Philemon": "phm",
+    "Proverbs": "prv",
+    "Psalms": "ps",
+    "Revelation": "re",
+    "Song of Solomon": "so",
+    "Zephaniah": "zp"
+  };
+
+  const mapYLT: Record<string, string> = {
+    "1 Chronicles": "I Chronicles",
+    "2 Chronicles": "II Chronicles",
+    "1 Kings": "I Kings",
+    "2 Kings": "II Kings",
+    "1 Samuel": "I Samuel",
+    "2 Samuel": "II Samuel",
+    "1 Corinthians": "I Corinthians",
+    "2 Corinthians": "II Corinthians",
+    "1 Thessalonians": "I Thessalonians",
+    "2 Thessalonians": "II Thessalonians",
+    "1 Timothy": "I Timothy",
+    "2 Timothy": "II Timothy",
+    "1 Peter": "I Peter",
+    "2 Peter": "II Peter",
+    "1 John": "I John",
+    "2 John": "II John",
+    "3 John": "III John",
+    "Revelation": "Revelation of John"
+  };
+
+  if (mapBBE[book]) variants.push(mapBBE[book]);
+  if (mapYLT[book]) variants.push(mapYLT[book]);
+  
+  return variants;
+};
+
 // 2.4 Raw Translation Endpoint for Public Domain Data
 app.get('/api/translation/:translationId', async (req, res) => {
   const { translationId } = req.params;
@@ -1422,16 +1477,23 @@ app.get('/api/translation/:translationId', async (req, res) => {
   try {
     const dbInstance = getAdminFirestore();
     if (dbInstance) {
-      const docRef = dbInstance
-        .collection('translations')
-        .doc(translationId)
-        .collection('books')
-        .doc(book)
-        .collection('chapters')
-        .doc(chapter);
+      let snap = null;
+      const variants = getBookNameVariants(book);
+      
+      for (const variant of variants) {
+        const docRef = dbInstance
+          .collection('translations')
+          .doc(translationId)
+          .collection('books')
+          .doc(variant)
+          .collection('chapters')
+          .doc(chapter);
+          
+        snap = await docRef.get();
+        if (snap.exists) break;
+      }
 
-      const snap = await docRef.get();
-      if (snap.exists) {
+      if (snap && snap.exists) {
         return res.json({
           success: true,
           source: 'firestore',

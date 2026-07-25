@@ -311,8 +311,8 @@ export default function App() {
   const logoSrc = useMemo(() => {
     return appLogoNew;
   }, []);
-  const [selectedBook, setSelectedBook] = useState<string>('Hebrews');
-  const [selectedChapter, setSelectedChapter] = useState<number>(11);
+  const [selectedBook, setSelectedBook] = useState<string>('Genesis');
+  const [selectedChapter, setSelectedChapter] = useState<number>(1);
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState<boolean>(false);
   const [isTransMenuOpen, setIsTransMenuOpen] = useState<boolean>(false);
@@ -356,13 +356,13 @@ export default function App() {
   const [referenceDisplayMode, setReferenceDisplayMode] = useState<'both' | 'kjv' | 'bsb'>('both');
   const [translationDisplayMode, setTranslationDisplayMode] = useState<'both' | 'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>(() => {
     const val = localStorage.getItem('personalized_bible_translation_display_mode');
-    return val === 'interlinear' ? 'plain' : (val as any) || 'plain';
+    return val === 'interlinear' ? 'kjv' : (val as any) || 'kjv';
   });
   const [dualStreamLeft, setDualStreamLeft] = useState<'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>('plain');
   const [dualStreamRight, setDualStreamRight] = useState<'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>('personalized');
   const [mainView, setMainView] = useState<'read' | 'interlinear'>('read');
   const [interlinearThirdLine, setInterlinearThirdLine] = useState<string>('kjv');
-  const [dynamicTranslationData, setDynamicTranslationData] = useState<Record<string, string>>({});
+  const [dynamicTranslationData, setDynamicTranslationData] = useState<Record<string, Record<string, string>>>({});
   const translationPickerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -376,16 +376,25 @@ export default function App() {
     }
   }, [translationDisplayMode]);
 
+  // Clear translation data on chapter change to prevent stale data
   useEffect(() => {
-    const shouldFetch = ['asv', 'ylt', 'bbe'].includes(translationDisplayMode) 
-                        ? translationDisplayMode 
-                        : (mainView === 'interlinear' && ['asv', 'ylt', 'bbe'].includes(interlinearThirdLine))
-                          ? interlinearThirdLine
-                          : null;
+    setDynamicTranslationData({});
+  }, [selectedBook, selectedChapter]);
 
-    if (shouldFetch) {
-      setDynamicTranslationData({});
-      
+  useEffect(() => {
+    const requiredTranslations = new Set<string>();
+    
+    // Add translations needed by single view
+    if (['asv', 'ylt', 'bbe'].includes(translationDisplayMode)) requiredTranslations.add(translationDisplayMode);
+    if (mainView === 'interlinear' && ['asv', 'ylt', 'bbe'].includes(interlinearThirdLine)) requiredTranslations.add(interlinearThirdLine);
+    
+    // Add translations needed by dual stream
+    if (translationDisplayMode === 'both') {
+      if (['asv', 'ylt', 'bbe'].includes(dualStreamLeft)) requiredTranslations.add(dualStreamLeft);
+      if (['asv', 'ylt', 'bbe'].includes(dualStreamRight)) requiredTranslations.add(dualStreamRight);
+    }
+
+    requiredTranslations.forEach(shouldFetch => {
       const processVerses = (versesData: any) => {
          const formattedData: Record<string, string> = {};
          if (Array.isArray(versesData)) {
@@ -395,12 +404,14 @@ export default function App() {
          } else if (typeof versesData === 'object' && versesData !== null) {
            Object.assign(formattedData, versesData);
          }
-         setDynamicTranslationData(formattedData);
+         setDynamicTranslationData(prev => ({
+           ...prev,
+           [shouldFetch]: formattedData
+         }));
       };
 
       fetch(`/api/translation/${shouldFetch}?book=${encodeURIComponent(selectedBook)}&chapter=${selectedChapter}`)
         .then(async (res) => {
-           // On Vercel, a missing API might return the index.html page instead of JSON
            if (!res.ok || res.headers.get('content-type')?.includes('text/html')) {
                throw new Error('Backend endpoint unavailable or returned HTML');
            }
@@ -416,8 +427,8 @@ export default function App() {
         .catch(err => {
            console.error(`[Translation Fetch] Failed to fetch from backend database:`, err.message);
         });
-    }
-  }, [translationDisplayMode, interlinearThirdLine, selectedBook, selectedChapter]);
+    });
+  }, [translationDisplayMode, interlinearThirdLine, dualStreamLeft, dualStreamRight, mainView, selectedBook, selectedChapter]);
 
   const [layoutMode, setLayoutMode] = useState<'formal' | 'paragraph'>(() => {
     return (localStorage.getItem('personalized_bible_layout_mode') as 'formal' | 'paragraph') || 'paragraph';
@@ -2083,7 +2094,7 @@ export default function App() {
       else if (transType === 'kjv') text = v.kjvText || '';
       else if (transType === 'bsb') text = v.bsbText || '';
       else if (['asv', 'ylt', 'bbe'].includes(transType)) {
-        text = dynamicTranslationData[v.verseNumber.toString()] || '';
+        text = (dynamicTranslationData[transType] && dynamicTranslationData[transType][v.verseNumber.toString()]) || '';
       }
 
       const utteranceText = `Verse ${v.verseNumber}, ${text}`;
@@ -3241,7 +3252,7 @@ export default function App() {
                          {chapterData.verses.map(v => {
                            const thirdLineText = interlinearThirdLine === 'kjv' ? v.kjvText : 
                                                  interlinearThirdLine === 'bsb' ? v.bsbText : 
-                                                 dynamicTranslationData[v.verseNumber.toString()] || (['asv', 'ylt', 'bbe'].includes(interlinearThirdLine) ? '[Loading...]' : '');
+                                                 (dynamicTranslationData[interlinearThirdLine] && dynamicTranslationData[interlinearThirdLine][v.verseNumber.toString()]) || (['asv', 'ylt', 'bbe'].includes(interlinearThirdLine) ? '[Loading...]' : '');
                            
                            return (
                              <div key={v.verseNumber} className={`relative p-4 rounded-xl border ${theme === 'light' ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#121622] border-slate-800/80 shadow-md'}`}>
@@ -3302,8 +3313,9 @@ export default function App() {
 
                     const isMultiCol = translationDisplayMode === 'both';
 
-                    const renderNarrativeStream = (type: 'plain' | 'pers' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe', customTitle?: string) => (
+                    const renderNarrativeStream = (type: 'plain' | 'pers' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe', customTitle?: string, keyString?: string) => (
                       <NarrativeStream
+                        key={keyString || type}
                         title={customTitle || (type === 'plain' ? "PET" : type === 'pers' ? "PPV" : type === 'kjv' ? "📜 KJV" : type === 'bsb' ? "🛡️ BSB" : type.toUpperCase())}
                         streamType={type}
                         chunks={chunks}
@@ -3344,7 +3356,7 @@ export default function App() {
                           setIsProjectionStudioOpen(true);
                           playWebAudioBeep(640, 'sine', 0.08);
                         }}
-                        dynamicTranslationData={dynamicTranslationData}
+                        dynamicTranslationData={dynamicTranslationData[type] || {}}
                       />
                     );
 
@@ -3352,11 +3364,11 @@ export default function App() {
                       return (
                         <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 h-[calc(100vh-160px)]">
                           <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2`}>
-                            {renderNarrativeStream(dualStreamLeft)}
+                            {renderNarrativeStream(dualStreamLeft, undefined, 'left')}
                           </div>
 
                           <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2`}>
-                            {renderNarrativeStream(dualStreamRight)}
+                            {renderNarrativeStream(dualStreamRight, undefined, 'right')}
                           </div>
                         </div>
                       );

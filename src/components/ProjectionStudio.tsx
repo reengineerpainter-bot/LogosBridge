@@ -43,7 +43,7 @@ interface ProjectionStudioProps {
   onBookChange: (book: string) => void;
   onChapterChange: (chapter: number) => void;
   initialVerseNumber?: number;
-  dynamicTranslationData?: Record<string, string>;
+  dynamicTranslationData?: Record<string, Record<string, string>>;
 }
 
 type ThemePreset = 'sapphire-gold' | 'chroma-green' | 'cyber-slate' | 'amber-parchment' | 'glass-minimal';
@@ -283,7 +283,7 @@ export default function ProjectionStudio({
       case 'asv':
       case 'ylt':
       case 'bbe':
-        return localDynamicData[verse.verseNumber.toString()] || dynamicTranslationData[verse.verseNumber.toString()] || '[Loading...]';
+        return localDynamicData[verse.verseNumber.toString()] || (dynamicTranslationData && dynamicTranslationData[activeTranslation] && dynamicTranslationData[activeTranslation][verse.verseNumber.toString()]) || '[Loading...]';
       default:
         return verse.kjvText || '';
     }
