@@ -3388,11 +3388,7 @@ export default function App() {
                         <div className={`max-w-3xl mx-auto ${scriptureFontSizeSetting === 'xs' ? 'text-[14px]' : scriptureFontSizeSetting === 'sm' ? 'text-[16px]' : scriptureFontSizeSetting === 'base' ? 'text-[18px]' : 'text-[20px]'} ${getScriptureStyleClasses()}`}>
                           {renderNarrativeStream(singleTransType)}
                         </div>
-                        
-                        {/* Micro notice representing focused verse helper */}
-                        <div className={`mt-6 text-center text-sm font-mono text-slate-400 dark:text-cyan-600/60 border-t pt-4 ${theme === 'light' ? 'border-slate-100' : 'border-cyan-950/25'}`}>
-                          💡 Double-click on any verse section above in the paragraph to activate bookmarks, voice reading, lexicons, and personal notes inside the Deep Study Panel below!
-                        </div>
+
                       </div>
                     );
                   })() : (
@@ -3793,14 +3789,7 @@ export default function App() {
 
       </main>
 
-      {/* FOOTER METRICS RAIL (No Tech larping, clean literal helper) */}
-      <footer className={`w-full mt-auto border-t p-4 text-center select-none ${
-        theme === 'light' ? 'bg-white border-slate-200/85 text-slate-500 shadow-inner' : 'bg-[#04060d] border-cyan-950/30 text-slate-600'
-      }`}>
-        <p className="text-sm font-mono uppercase tracking-widest leading-[1.8] tracking-[0.01em] font-semibold">
-          Translation Scholar Sanctuary • Side-by-Side English Edition • Powered by Gemini
-        </p>
-      </footer>
+
 
       {/* SHALOM INTERACTIVE WELCOME SCREEN */}
       <AnimatePresence>
