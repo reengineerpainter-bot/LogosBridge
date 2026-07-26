@@ -1503,6 +1503,56 @@ app.get('/api/translation/:translationId', async (req, res) => {
       }
     }
 
+    // Local JSON Fallback
+    try {
+      const fallbackPaths = [
+        path.join(process.cwd(), 'node_modules', '.cache', `temp_${translationId.toLowerCase()}.json`),
+        path.join(process.cwd(), 'data', `en_${translationId.toLowerCase()}.json`)
+      ];
+      
+      let fileContent = null;
+      for (const p of fallbackPaths) {
+        if (fs.existsSync(p)) {
+          fileContent = fs.readFileSync(p, 'utf8');
+          break;
+        }
+      }
+
+      if (fileContent) {
+        const bibleData = JSON.parse(fileContent);
+        
+        let targetBook = null;
+        const variants = getBookNameVariants(book);
+        for (const b of bibleData) {
+          if (b.name && variants.some(v => v.toLowerCase() === b.name.toLowerCase())) {
+            targetBook = b;
+            break;
+          }
+        }
+        
+        if (targetBook) {
+          const chapterIndex = parseInt(chapter) - 1;
+          const chapterData = targetBook.chapters[chapterIndex];
+          
+          if (chapterData) {
+            const verses = chapterData.map((text: string, idx: number) => ({
+              verse: idx + 1,
+              text: text
+            }));
+            
+            return res.json({
+              success: true,
+              source: 'local_file',
+              translationId,
+              data: { verses }
+            });
+          }
+        }
+      }
+    } catch (localErr: any) {
+      console.error('[Local Fallback Error]', localErr.message);
+    }
+
     return res.status(404).json({ success: false, error: 'Translation chapter not found in database.' });
   } catch (error: any) {
     console.error('[Translation API Error]', error.message || error);

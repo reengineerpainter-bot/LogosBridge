@@ -116,7 +116,12 @@ export default function ProjectionStudio({
              setLocalDynamicData(data.data.verses);
            }
         })
-        .catch(err => console.warn('Failed to fetch local dynamic translation in studio:', err));
+        .catch(err => {
+          console.warn('Failed to fetch local dynamic translation in studio:', err);
+          const offlineData: Record<string, string> = {};
+          for (let i = 1; i <= 200; i++) offlineData[String(i)] = '[Translation Offline]';
+          setLocalDynamicData(offlineData);
+        });
     }
   }, [activeTranslation, currentBook, currentChapter]);
 
@@ -283,7 +288,7 @@ export default function ProjectionStudio({
       case 'asv':
       case 'ylt':
       case 'bbe':
-        return localDynamicData[verse.verseNumber.toString()] || (dynamicTranslationData && dynamicTranslationData[activeTranslation] && dynamicTranslationData[activeTranslation][verse.verseNumber.toString()]) || '[Loading...]';
+        return localDynamicData[verse.verseNumber.toString()] || (dynamicTranslationData && dynamicTranslationData[activeTranslation] && dynamicTranslationData[activeTranslation][verse.verseNumber.toString()]) || '';
       default:
         return verse.kjvText || '';
     }

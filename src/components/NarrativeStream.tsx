@@ -163,7 +163,7 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                     highlightClasses = 'px-1 py-0.5 rounded-sm hover:bg-slate-500/5 dark:hover:bg-cyan-500/5 transition-colors duration-155';
                   }
 
-                  let textContent = '';
+                  let textContent: React.ReactNode = '';
                   if (streamType === 'plain') {
                     textContent = v.contemporary;
                   } else if (streamType === 'pers') {
@@ -173,7 +173,7 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                   } else if (streamType === 'bsb') {
                     textContent = v.bsbText || '';
                   } else if (['asv', 'ylt', 'bbe'].includes(streamType)) {
-                    textContent = dynamicTranslationData[v.verseNumber.toString()] || '[Loading...]';
+                    textContent = dynamicTranslationData[v.verseNumber.toString()] || <span className="inline-block animate-pulse bg-slate-200 dark:bg-slate-800 h-4 w-3/4 rounded align-middle mx-1"></span>;
                   }
 
                   const renderRefs = () => {
@@ -223,7 +223,7 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                         {v.verseNumber}
                       </sup>
                       {renderRefs()}
-                      <span className={isBold ? 'font-bold' : isItalic ? 'italic' : ''}>
+                      <span className={isBold ? 'font-extrabold' : `font-medium ${isItalic ? 'italic' : ''}`}>
                         {textContent}
                       </span>
 {focusedVerse?.verseNumber === v.verseNumber && focusedStreamType === streamType && (

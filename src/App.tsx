@@ -351,7 +351,7 @@ export default function App() {
   const [personalizedBold, setPersonalizedBold] = useState<boolean>(true);
   const [personalizedItalic, setPersonalizedItalic] = useState<boolean>(false);
   const [manuscriptBold, setManuscriptBold] = useState<boolean>(false);
-  const [manuscriptItalic, setManuscriptItalic] = useState<boolean>(true);
+  const [manuscriptItalic, setManuscriptItalic] = useState<boolean>(false);
   const [isComparisonEnabled, setIsComparisonEnabled] = useState<boolean>(false);
   const [referenceDisplayMode, setReferenceDisplayMode] = useState<'both' | 'kjv' | 'bsb'>('both');
   const [translationDisplayMode, setTranslationDisplayMode] = useState<'both' | 'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>(() => {
@@ -426,6 +426,12 @@ export default function App() {
         })
         .catch(err => {
            console.error(`[Translation Fetch] Failed to fetch from backend database:`, err.message);
+           const offlineData: Record<string, string> = {};
+           for (let i = 1; i <= 200; i++) offlineData[String(i)] = '[Translation Offline]';
+           setDynamicTranslationData(prev => ({
+             ...prev,
+             [shouldFetch]: offlineData
+           }));
         });
     });
   }, [translationDisplayMode, interlinearThirdLine, dualStreamLeft, dualStreamRight, mainView, selectedBook, selectedChapter]);
@@ -2689,10 +2695,10 @@ export default function App() {
           }}
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
-          <div className={`p-1 rounded-full transition-colors ${!fullPageMenu && !isProjectionStudioOpen ? (theme === 'light' ? 'bg-cyan-100 text-cyan-600' : 'bg-cyan-900/50 text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>
-             <BookOpen className="w-[20px] h-[20px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen ? 2.5 : 2} />
+          <div className={`p-1.5 rounded-xl transition-colors ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'bg-slate-200 text-slate-800' : 'bg-slate-700/70 text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
+             <BookOpen className="w-[20px] h-[20px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? 3 : 2.5} />
           </div>
-          <span className={`text-[10px] font-bold tracking-wide mt-0.5 ${!fullPageMenu && !isProjectionStudioOpen ? (theme === 'light' ? 'text-cyan-600' : 'text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>Read</span>
+          <span className={`text-[10px] font-extrabold tracking-wide mt-1 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'text-slate-800' : 'text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Read</span>
         </button>
 
         <button
@@ -2703,10 +2709,10 @@ export default function App() {
           }}
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
-          <div className={`p-1 rounded-full transition-colors ${isProjectionStudioOpen ? (theme === 'light' ? 'bg-cyan-100 text-cyan-600' : 'bg-cyan-900/50 text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>
-             <MonitorPlay className="w-[20px] h-[20px]" strokeWidth={isProjectionStudioOpen ? 2.5 : 2} />
+          <div className={`p-1.5 rounded-xl transition-colors ${isProjectionStudioOpen ? (theme === 'light' ? 'bg-slate-200 text-slate-800' : 'bg-slate-700/70 text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
+             <MonitorPlay className="w-[20px] h-[20px]" strokeWidth={isProjectionStudioOpen ? 3 : 2.5} />
           </div>
-          <span className={`text-[10px] font-bold tracking-wide mt-0.5 ${isProjectionStudioOpen ? (theme === 'light' ? 'text-cyan-600' : 'text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>LiveScreen</span>
+          <span className={`text-[10px] font-extrabold tracking-wide mt-1 ${isProjectionStudioOpen ? (theme === 'light' ? 'text-slate-800' : 'text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>LiveScreen</span>
         </button>
 
         <button
@@ -2717,10 +2723,10 @@ export default function App() {
           }}
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
-          <div className={`p-1 rounded-full transition-colors ${mainView === 'interlinear' ? (theme === 'light' ? 'bg-cyan-100 text-cyan-600' : 'bg-cyan-900/50 text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>
-             <Layers className="w-[20px] h-[20px]" strokeWidth={mainView === 'interlinear' ? 2.5 : 2} />
+          <div className={`p-1.5 rounded-xl transition-colors ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'bg-slate-200 text-slate-800' : 'bg-slate-700/70 text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
+             <Layers className="w-[20px] h-[20px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? 3 : 2.5} />
           </div>
-          <span className={`text-[10px] font-bold tracking-wide mt-0.5 ${mainView === 'interlinear' ? (theme === 'light' ? 'text-cyan-600' : 'text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>Interlinear</span>
+          <span className={`text-[10px] font-extrabold tracking-wide mt-1 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'text-slate-800' : 'text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Interlinear</span>
         </button>
 
         <button
@@ -2730,10 +2736,10 @@ export default function App() {
           }}
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
-          <div className={`p-1 rounded-full transition-colors ${fullPageMenu === 'settings' ? (theme === 'light' ? 'bg-cyan-100 text-cyan-600' : 'bg-cyan-900/50 text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>
-             <Settings className="w-[20px] h-[20px]" strokeWidth={fullPageMenu === 'settings' ? 2.5 : 2} />
+          <div className={`p-1.5 rounded-xl transition-colors ${fullPageMenu === 'settings' ? (theme === 'light' ? 'bg-slate-200 text-slate-800' : 'bg-slate-700/70 text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
+             <Settings className="w-[20px] h-[20px]" strokeWidth={fullPageMenu === 'settings' ? 3 : 2.5} />
           </div>
-          <span className={`text-[10px] font-bold tracking-wide mt-0.5 ${fullPageMenu === 'settings' ? (theme === 'light' ? 'text-cyan-600' : 'text-cyan-400') : (theme === 'light' ? 'text-slate-600' : 'text-slate-400')}`}>Settings</span>
+          <span className={`text-[10px] font-extrabold tracking-wide mt-1 ${fullPageMenu === 'settings' ? (theme === 'light' ? 'text-slate-800' : 'text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Settings</span>
         </button>
       </div>
 
@@ -3250,9 +3256,9 @@ export default function App() {
                      return (
                        <div className="p-5 md:p-8 space-y-8 max-w-4xl mx-auto pb-32">
                          {chapterData.verses.map(v => {
-                           const thirdLineText = interlinearThirdLine === 'kjv' ? v.kjvText : 
+                           const thirdLineText: React.ReactNode = interlinearThirdLine === 'kjv' ? v.kjvText : 
                                                  interlinearThirdLine === 'bsb' ? v.bsbText : 
-                                                 (dynamicTranslationData[interlinearThirdLine] && dynamicTranslationData[interlinearThirdLine][v.verseNumber.toString()]) || (['asv', 'ylt', 'bbe'].includes(interlinearThirdLine) ? '[Loading...]' : '');
+                                                 (dynamicTranslationData[interlinearThirdLine] && dynamicTranslationData[interlinearThirdLine][v.verseNumber.toString()]) || (['asv', 'ylt', 'bbe'].includes(interlinearThirdLine) ? <span className="inline-block animate-pulse bg-slate-200 dark:bg-slate-800 h-4 w-2/3 rounded align-middle mx-1"></span> : '');
                            
                            return (
                              <div key={v.verseNumber} className={`relative p-4 rounded-xl border ${theme === 'light' ? 'bg-white border-slate-200 shadow-sm' : 'bg-[#121622] border-slate-800/80 shadow-md'}`}>
@@ -3265,7 +3271,7 @@ export default function App() {
                                    <span className="text-[0.65em] uppercase tracking-widest font-bold text-amber-600/80 dark:text-amber-500/80 mb-1.5 flex items-center gap-1.5">
                                      <Layers className="w-3 h-3" /> Original Manuscript
                                    </span>
-                                   <div className={`font-serif text-[19px] leading-relaxed tracking-wide ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>
+                                   <div className={`font-serif font-medium text-[19px] leading-relaxed tracking-wide ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>
                                      {v.manuscriptText ? v.manuscriptText : <span className="italic opacity-50">[Original Manuscript Not Available]</span>}
                                    </div>
                                  </div>
@@ -3273,7 +3279,7 @@ export default function App() {
                                  {/* Line 2: PET */}
                                  <div className="flex flex-col border-t border-slate-100 dark:border-slate-800/50 pt-4">
                                    <span className="text-[0.65em] uppercase tracking-widest font-bold text-cyan-600/80 dark:text-cyan-500/80 mb-1.5">Plain English Translation</span>
-                                   <div className={`font-sans text-[17px] leading-relaxed ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
+                                   <div className={`font-sans font-medium text-[17px] leading-relaxed ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
                                      {v.contemporary ? v.contemporary : <span className="italic opacity-50">[Plain English Translation Not Available]</span>}
                                    </div>
                                  </div>
@@ -3300,7 +3306,7 @@ export default function App() {
                                      </div>
                                    </div>
                                    <span className="text-[0.65em] uppercase tracking-widest font-bold text-emerald-600/80 dark:text-emerald-500/80 mb-1.5 pr-12">{interlinearThirdLine.toUpperCase()} TRANSLATION</span>
-                                   <div className={`font-serif text-[17px] leading-relaxed ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>
+                                   <div className={`font-serif font-medium text-[17px] leading-relaxed ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>
                                      {renderInteractiveText(thirdLineText || '', v.specialWords, `inter-${v.verseNumber}`)}
                                    </div>
                                  </div>
@@ -3435,19 +3441,19 @@ export default function App() {
 
                           if (transType === 'plain') {
                               title = 'PET';
-                              fontClasses = `${plainBold ? 'font-extrabold' : 'font-medium'} ${plainItalic ? 'italic' : 'not-italic'}`;
+                              fontClasses = `${plainBold ? 'font-extrabold' : 'font-semibold'} ${plainItalic ? 'italic' : 'not-italic'}`;
                               textContent = <div className="flex flex-col w-full">{renderRefs()}<div>{v.contemporary}</div></div>;
                           } else if (transType === 'pers') {
                               title = 'PPV';
-                              fontClasses = `${personalizedBold ? 'font-extrabold' : 'font-bold'} ${personalizedItalic ? 'italic' : 'not-italic'}`;
+                              fontClasses = `${personalizedBold ? 'font-extrabold' : 'font-semibold'} ${personalizedItalic ? 'italic' : 'not-italic'}`;
                               textContent = <div className="flex flex-col w-full">{renderRefs()}<div>{v.nonNativeEnglish}</div></div>;
                           } else if (transType === 'kjv') {
                               title = 'Reference (KJV)';
-                              fontClasses = `${manuscriptBold ? 'font-extrabold' : 'font-bold'} ${manuscriptItalic ? 'italic' : 'not-italic'}`;
+                              fontClasses = `${manuscriptBold ? 'font-extrabold' : 'font-semibold'} ${manuscriptItalic ? 'italic' : 'not-italic'}`;
                               textContent = renderInteractiveText(v.kjvText || '', v.specialWords, `kjv-${v.verseNumber}`);
                           } else if (transType === 'bsb') {
                               title = 'Berean Standard Bible';
-                              fontClasses = `${manuscriptBold ? 'font-extrabold' : 'font-bold'} ${manuscriptItalic ? 'italic' : 'not-italic'}`;
+                              fontClasses = `${manuscriptBold ? 'font-extrabold' : 'font-semibold'} ${manuscriptItalic ? 'italic' : 'not-italic'}`;
                               textContent = renderInteractiveText(v.bsbText || '', v.specialWords, `bsb-${v.verseNumber}`);
                           }
 
@@ -3714,7 +3720,7 @@ export default function App() {
                                     </button>
                                   </div>
                                 </div>
-                                <div className="font-sans whitespace-pre-wrap select-text leading-[1.8] tracking-[0.01em] font-normal italic pr-2">
+                                <div className="font-sans whitespace-pre-wrap select-text leading-[1.8] tracking-[0.01em] font-normal pr-2">
                                   "{verseHighlight?.notes}"
                                 </div>
                               </div>
