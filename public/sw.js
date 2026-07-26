@@ -1,5 +1,5 @@
 // Minimal Offline/Installation Service Worker for Personalized Bible Study PWA
-const CACHE_NAME = 'personalised-bible-v1';
+const CACHE_NAME = 'personalised-bible-v2';
 const ASSETS = [
   '/',
   '/index.html',
