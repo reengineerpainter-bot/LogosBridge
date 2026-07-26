@@ -2515,7 +2515,7 @@ export default function App() {
             animate={{ height: 'auto', opacity: 1 }}
             exit={{ height: 0, opacity: 0 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className={`w-full ${theme === 'light' ? 'bg-white/95 backdrop-blur-md border-zinc-200 shadow-sm' : 'bg-zinc-950/95 backdrop-blur-md border-zinc-800 shadow-xl'} border-b px-2 md:px-4 py-1 z-40 sticky top-0 transition-transform duration-500 ease-in-out`}
+            className={`w-full ${theme === 'light' ? 'bg-white/95 backdrop-blur-md border-zinc-200 shadow-sm' : 'bg-zinc-950/95 backdrop-blur-md border-zinc-800 shadow-xl'} border-b px-2 md:px-4 py-1 z-40 sticky top-0 transition-all duration-500 ease-in-out ${isHeaderHidden ? '-translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}
           >
             <div className="max-w-7xl mx-auto flex flex-row items-center justify-between gap-3">
               
