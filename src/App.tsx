@@ -410,7 +410,9 @@ export default function App() {
          }));
       };
 
-      fetch(`/api/translation/${shouldFetch}?book=${encodeURIComponent(selectedBook)}&chapter=${selectedChapter}`)
+      const url = `/api/translation/${shouldFetch}?book=${encodeURIComponent(selectedBook)}&chapter=${selectedChapter}`;
+
+      fetch(url)
         .then(async (res) => {
            if (!res.ok || res.headers.get('content-type')?.includes('text/html')) {
                throw new Error('Backend endpoint unavailable or returned HTML');
