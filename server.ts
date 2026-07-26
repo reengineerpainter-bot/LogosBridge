@@ -6,7 +6,7 @@ import { ZipArchive } from 'archiver';
 import { GoogleGenAI, Type } from '@google/genai';
 import { STATIC_CHAPTERS } from './src/staticChapters';
 import { enrichChapter } from './src/utils/personalizer';
-import admin from 'firebase-admin';
+// import admin from 'firebase-admin';
 
 // Initialize environment variables
 dotenv.config();
@@ -21,43 +21,7 @@ let adminDbInitialized = false;
 let adminDb: any = null;
 
 function getAdminFirestore() {
-  if (!adminDbInitialized) {
-    try {
-      let firebaseConfig: any = { projectId: 'logosbridge-default', firestoreDatabaseId: '(default)' };
-      try {
-        const configStr = fs.readFileSync(path.resolve(process.cwd(), 'firebase-applet-config.json'), 'utf8');
-        firebaseConfig = JSON.parse(configStr);
-      } catch (e) {}
-
-      let sa;
-      try {
-        sa = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'serviceAccountKey.json'), 'utf8'));
-      } catch (e) {}
-
-      if (admin.apps.length === 0) {
-        admin.initializeApp({
-          projectId: firebaseConfig.projectId,
-          credential: sa ? admin.credential.cert(sa) : undefined
-        });
-      }
-
-      adminDb = new admin.firestore.Firestore({
-        projectId: firebaseConfig.projectId,
-        databaseId: firebaseConfig.firestoreDatabaseId,
-        credentials: sa ? {
-          client_email: sa.client_email,
-          private_key: sa.private_key
-        } : undefined
-      });
-      adminDbInitialized = true;
-      console.log(`[Firebase Admin] Successfully connected to named database: ${firebaseConfig.firestoreDatabaseId}`);
-    } catch (err: any) {
-      console.warn('[Firebase Admin Warning] Failed to initialize Firebase admin SDK. Server will run on in-memory dynamic cache, falling back gracefully.', err.message || err);
-      adminDbInitialized = true;
-      adminDb = null;
-    }
-  }
-  return adminDb;
+  return null;
 }
 
 // Lazy instantiation of the GoogleGenAI client (will not crash if key is missing on start)

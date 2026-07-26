@@ -1,3 +1,2 @@
-export default function handler(req: any, res: any) {
-  res.status(200).json({ success: true, message: 'Vercel API is working!' });
-}
+import app from '../server.js';
+export default app;
