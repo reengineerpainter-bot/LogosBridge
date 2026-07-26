@@ -3,7 +3,6 @@ import path from 'path';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import { ZipArchive } from 'archiver';
-import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI, Type } from '@google/genai';
 import { STATIC_CHAPTERS } from './src/staticChapters';
 import { enrichChapter } from './src/utils/personalizer';
@@ -2037,7 +2036,8 @@ li {
 // Vite & Static Asset Handling Middleware Setup
 async function startServer() {
   if (process.env.NODE_ENV !== 'production') {
-    const vite = await createViteServer({
+    const viteModule = await import('vite');
+    const vite = await viteModule.createServer({
       server: { middlewareMode: true },
       appType: 'spa',
     });
