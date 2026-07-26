@@ -2,8 +2,8 @@ import express from 'express';
 import path from 'path';
 import dotenv from 'dotenv';
 import fs from 'fs';
-import { ZipArchive } from 'archiver';
-import { GoogleGenAI, Type } from '@google/genai';
+// import { ZipArchive } from 'archiver';
+// import { GoogleGenAI, Type } from '@google/genai';
 import { STATIC_CHAPTERS } from './src/staticChapters';
 import { enrichChapter } from './src/utils/personalizer';
 // import admin from 'firebase-admin';
@@ -25,23 +25,9 @@ function getAdminFirestore() {
 }
 
 // Lazy instantiation of the GoogleGenAI client (will not crash if key is missing on start)
-let aiClient: GoogleGenAI | null = null;
-function getGenAI(): GoogleGenAI {
-  if (!aiClient) {
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey || apiKey === 'MY_GEMINI_API_KEY' || apiKey.trim() === '') {
-      throw new Error('GEMINI_API_KEY_MISSING');
-    }
-    aiClient = new GoogleGenAI({
-      apiKey,
-      httpOptions: {
-        headers: {
-          'User-Agent': 'aistudio-build',
-        },
-      },
-    });
-  }
-  return aiClient;
+let aiClient: any = null;
+function getGenAI(): any {
+  return null;
 }
 
 // Promisified Timeout Race wrapper to guarantee quick, zero-hang offline fallback conversions
