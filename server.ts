@@ -8,7 +8,6 @@ import { GoogleGenAI, Type } from '@google/genai';
 import { STATIC_CHAPTERS } from './src/staticChapters';
 import { enrichChapter } from './src/utils/personalizer';
 import admin from 'firebase-admin';
-import firebaseConfig from './firebase-applet-config.json';
 
 // Initialize environment variables
 dotenv.config();
@@ -25,6 +24,12 @@ let adminDb: any = null;
 function getAdminFirestore() {
   if (!adminDbInitialized) {
     try {
+      let firebaseConfig: any = { projectId: 'logosbridge-default', firestoreDatabaseId: '(default)' };
+      try {
+        const configStr = fs.readFileSync(path.resolve(process.cwd(), 'firebase-applet-config.json'), 'utf8');
+        firebaseConfig = JSON.parse(configStr);
+      } catch (e) {}
+
       let sa;
       try {
         sa = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'serviceAccountKey.json'), 'utf8'));
