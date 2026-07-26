@@ -1553,7 +1553,23 @@ app.get('/api/translation/:translationId', async (req, res) => {
       console.error('[Local Fallback Error]', localErr.message);
     }
 
-    return res.status(404).json({ success: false, error: 'Translation chapter not found in database.' });
+    // Bible-API Fallback (External API)
+    try {
+      // BSB is not supported by bible-api.com usually, but let's try others.
+      const verses = await fetchFromBibleApi(book, parseInt(chapter), translationId);
+      if (verses && verses.length > 0) {
+        return res.json({
+          success: true,
+          source: 'bible-api',
+          translationId,
+          data: { verses }
+        });
+      }
+    } catch (apiErr: any) {
+      console.error(`[Bible API Fallback Error]`, apiErr.message);
+    }
+
+    return res.status(404).json({ success: false, error: 'Translation chapter not found in database or external API.' });
   } catch (error: any) {
     console.error('[Translation API Error]', error.message || error);
     return res.status(500).json({ success: false, error: 'Internal Server Error' });
