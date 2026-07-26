@@ -288,7 +288,7 @@ export default function ProjectionStudio({
       case 'asv':
       case 'ylt':
       case 'bbe':
-        return localDynamicData[verse.verseNumber.toString()] || (dynamicTranslationData && dynamicTranslationData[activeTranslation] && dynamicTranslationData[activeTranslation][verse.verseNumber.toString()]) || '';
+        return localDynamicData?.[verse.verseNumber.toString()] || dynamicTranslationData?.[activeTranslation]?.[verse.verseNumber.toString()] || '';
       default:
         return verse.kjvText || '';
     }
@@ -296,8 +296,8 @@ export default function ProjectionStudio({
 
   const activeVerseText = getVerseText(currentVerse);
 
-  // playLocalBeep audio feedback helper
-  const playLocalBeep = (freq = 600, type: OscillatorType = 'sine', duration = 0.08) => {
+  // playLocalBeep audio feedback helper (Premium subtle sound)
+  const playLocalBeep = (freq = 320, type: OscillatorType = 'triangle', duration = 0.1) => {
     try {
       const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
       if (!AudioCtx) return;
@@ -455,7 +455,7 @@ export default function ProjectionStudio({
       isCustomLabelEnabled,
       liveTranslation: activeTranslation,
     });
-    playLocalBeep(880, 'sine', 0.12);
+    playLocalBeep();
     // Auto switch to show the published "live" tab momentarily
     setActiveMonitorTab('live');
   };
@@ -792,7 +792,7 @@ export default function ProjectionStudio({
             <div className="flex items-center space-x-3">
               <button type="button"
                 onClick={() => {
-                  playLocalBeep(880, 'sine', 0.1);
+                  playLocalBeep();
                   if (typeof window !== 'undefined' && (window as any).electronAPI) {
                     (window as any).electronAPI.reopenProjector();
                   } else {
@@ -905,7 +905,7 @@ export default function ProjectionStudio({
                         key={verse.verseNumber}
                         onClick={() => {
                           setActiveVerseIndex(idx);
-                          playLocalBeep(700, 'sine', 0.05);
+                          playLocalBeep();
                         }}
                         className={`p-3 rounded-xl cursor-pointer transition-all border flex gap-3 group ${
                           isActive

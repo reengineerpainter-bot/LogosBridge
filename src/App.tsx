@@ -2598,8 +2598,8 @@ export default function App() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -20 }}
           transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className={`fixed top-3 left-4 z-40 flex items-center space-x-3 backdrop-blur-md p-2 rounded-lg shadow-md ${
-            isHeaderHidden ? 'pointer-events-none' : ''
+          className={`fixed top-3 left-4 z-40 flex items-center space-x-3 backdrop-blur-md p-2 rounded-lg shadow-md transition-all duration-500 ease-in-out ${
+            isHeaderHidden ? '-translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
           } ${
             theme === 'light' ? 'bg-white border border-slate-200 text-slate-800' : 'bg-[#0a0f1d]/90 border border-cyan-500/30'
           }`}
@@ -2991,7 +2991,7 @@ export default function App() {
 
       {/* FLOATING MIDDLE NAV: TRIANGLE IN CIRCLE SLIDE OPTIONS */}
       {/* PREVIOUS CHAPTER FLOATER */}
-      <div className={`fixed left-1 md:left-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out`}>
+      <div className={`fixed left-1 md:left-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${isSidePanelHidden ? '-translate-x-24 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
         <button
           id="floating-nav-prev-chapter-btn"
           onClick={handlePrevChapter}
@@ -3009,7 +3009,7 @@ export default function App() {
       </div>
 
       {/* NEXT CHAPTER FLOATER */}
-      <div className={`fixed right-1 md:right-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out`}>
+      <div className={`fixed right-1 md:right-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${isSidePanelHidden ? 'translate-x-24 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
         <button
           id="floating-nav-next-chapter-btn"
           onClick={handleNextChapter}
@@ -3171,9 +3171,7 @@ export default function App() {
               {/* Row 1: Title, Fetch state */}
               <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-2">
                 <div className="space-y-1">
-                  <span className={`text-sm px-1 py-1 font-sans uppercase tracking-widest font-bold flex items-center gap-1.5 ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>
-                    <Compass className="w-3 h-3" /> Covenant
-                  </span>
+
                   <h2 className={`text-xl md:text-2xl font-serif font-medium tracking-tight ${theme === 'light' ? 'text-zinc-900' : 'text-zinc-50'} flex items-baseline flex-wrap gap-x-3 gap-y-1`}>
                     <span>{chapterData.book}</span>
                     <span className={`text-base md:text-lg font-mono font-bold ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>Ch. {chapterData.chapter}</span>
