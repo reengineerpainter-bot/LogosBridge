@@ -775,12 +775,12 @@ export default function ProjectionStudio({
 
   return (
     <AnimatePresence>
-      <div className={`fixed inset-0 z-[100] flex items-center justify-center p-3 sm:p-4 md:p-6 backdrop-blur-xl ${theme === 'light' ? 'bg-slate-900/60' : 'bg-[#0a0a0a]/90'} overflow-hidden font-sans`}>
+      <div className={`fixed inset-0 z-[100] flex items-center justify-center p-0 md:p-6 backdrop-blur-xl ${theme === 'light' ? 'bg-[#fcfcfc] md:bg-slate-900/60' : 'bg-[#0a0d16] md:bg-[#0a0a0a]/90'} overflow-hidden font-sans`}>
         <motion.div
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          className={`w-full max-w-[1200px] h-[85vh] md:h-[80vh] mb-12 md:mb-0 rounded-[2rem] border flex flex-col overflow-hidden shadow-2xl relative ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#131314] border-slate-800'}`}
+          className={`w-full max-w-[1200px] h-[100dvh] md:h-[80vh] mb-0 rounded-none md:rounded-[2rem] border-none md:border-solid md:border flex flex-col overflow-hidden shadow-2xl relative ${theme === 'light' ? 'bg-[#fcfcfc] md:bg-white md:border-slate-200' : 'bg-[#0a0d16] md:bg-[#131314] md:border-slate-800'}`}
         >
           {/* TOP STATUS BAR */}
           <div className={`p-4 border-b flex items-center justify-between select-none relative z-20 ${theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-[#131314]/80 border-white/10 backdrop-blur-md'}`}>
