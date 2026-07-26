@@ -2697,10 +2697,10 @@ export default function App() {
           }}
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
-          <div className={`p-1.5 rounded-xl transition-colors ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'bg-slate-200 text-slate-800' : 'bg-slate-700/70 text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
-             <BookOpen className="w-[20px] h-[20px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? 3 : 2.5} />
+          <div className={`p-1.5 rounded-xl transition-colors ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'bg-slate-300 text-slate-900' : 'bg-slate-600 text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
+             <BookOpen className="w-[20px] h-[20px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? 3.5 : 2.5} />
           </div>
-          <span className={`text-[10px] font-extrabold tracking-wide mt-1 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'text-slate-800' : 'text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Read</span>
+          <span className={`text-[11px] font-black tracking-wide mt-1 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Read</span>
         </button>
 
         <button
@@ -2711,10 +2711,10 @@ export default function App() {
           }}
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
-          <div className={`p-1.5 rounded-xl transition-colors ${isProjectionStudioOpen ? (theme === 'light' ? 'bg-slate-200 text-slate-800' : 'bg-slate-700/70 text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
-             <MonitorPlay className="w-[20px] h-[20px]" strokeWidth={isProjectionStudioOpen ? 3 : 2.5} />
+          <div className={`p-1.5 rounded-xl transition-colors ${isProjectionStudioOpen ? (theme === 'light' ? 'bg-slate-300 text-slate-900' : 'bg-slate-600 text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
+             <MonitorPlay className="w-[20px] h-[20px]" strokeWidth={isProjectionStudioOpen ? 3.5 : 2.5} />
           </div>
-          <span className={`text-[10px] font-extrabold tracking-wide mt-1 ${isProjectionStudioOpen ? (theme === 'light' ? 'text-slate-800' : 'text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>LiveScreen</span>
+          <span className={`text-[11px] font-black tracking-wide mt-1 ${isProjectionStudioOpen ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>LiveScreen</span>
         </button>
 
         <button
@@ -2725,10 +2725,10 @@ export default function App() {
           }}
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
-          <div className={`p-1.5 rounded-xl transition-colors ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'bg-slate-200 text-slate-800' : 'bg-slate-700/70 text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
-             <Layers className="w-[20px] h-[20px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? 3 : 2.5} />
+          <div className={`p-1.5 rounded-xl transition-colors ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'bg-slate-300 text-slate-900' : 'bg-slate-600 text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
+             <Layers className="w-[20px] h-[20px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? 3.5 : 2.5} />
           </div>
-          <span className={`text-[10px] font-extrabold tracking-wide mt-1 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'text-slate-800' : 'text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Interlinear</span>
+          <span className={`text-[11px] font-black tracking-wide mt-1 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Interlinear</span>
         </button>
 
         <button
@@ -2738,10 +2738,10 @@ export default function App() {
           }}
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
-          <div className={`p-1.5 rounded-xl transition-colors ${fullPageMenu === 'settings' ? (theme === 'light' ? 'bg-slate-200 text-slate-800' : 'bg-slate-700/70 text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
-             <Settings className="w-[20px] h-[20px]" strokeWidth={fullPageMenu === 'settings' ? 3 : 2.5} />
+          <div className={`p-1.5 rounded-xl transition-colors ${fullPageMenu === 'settings' ? (theme === 'light' ? 'bg-slate-300 text-slate-900' : 'bg-slate-600 text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
+             <Settings className="w-[20px] h-[20px]" strokeWidth={fullPageMenu === 'settings' ? 3.5 : 2.5} />
           </div>
-          <span className={`text-[10px] font-extrabold tracking-wide mt-1 ${fullPageMenu === 'settings' ? (theme === 'light' ? 'text-slate-800' : 'text-slate-200') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Settings</span>
+          <span className={`text-[11px] font-black tracking-wide mt-1 ${fullPageMenu === 'settings' ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Settings</span>
         </button>
       </div>
 
@@ -3428,12 +3428,12 @@ export default function App() {
                               return (
                                   <div className={`my-3 p-3.5 rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col gap-2.5 w-full transition-all ${theme === 'light' ? 'bg-slate-50/70 border border-slate-100' : 'bg-[#121622]/40 border border-cyan-950/20'}`}>
                                       {(referenceDisplayMode === 'both' || referenceDisplayMode === 'kjv') && (
-                                          <div className={`font-serif text-[0.85em] leading-relaxed ${theme === 'light' ? 'text-slate-500' : 'text-slate-400/90'}`}>
+                                          <div className={`font-serif text-[0.9em] leading-relaxed font-semibold not-italic ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
                                               {renderInteractiveText(v.kjvText || '', v.specialWords, `kjv-${v.verseNumber}`)}
                                           </div>
                                       )}
                                       {(referenceDisplayMode === 'both' || referenceDisplayMode === 'bsb') && (
-                                          <div className={`font-serif text-[0.85em] leading-relaxed ${theme === 'light' ? 'text-slate-500' : 'text-slate-400/90'}`}>
+                                          <div className={`font-serif text-[0.9em] leading-relaxed font-semibold not-italic ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
                                               {renderInteractiveText(v.bsbText || '', v.specialWords, `bsb-${v.verseNumber}`)}
                                           </div>
                                       )}
@@ -3443,19 +3443,19 @@ export default function App() {
 
                           if (transType === 'plain') {
                               title = 'PET';
-                              fontClasses = `${plainBold ? 'font-extrabold' : 'font-semibold'} ${plainItalic ? 'italic' : 'not-italic'}`;
+                              fontClasses = `${plainBold ? 'font-extrabold' : 'font-bold'} not-italic`;
                               textContent = <div className="flex flex-col w-full">{renderRefs()}<div>{v.contemporary}</div></div>;
                           } else if (transType === 'pers') {
                               title = 'PPV';
-                              fontClasses = `${personalizedBold ? 'font-extrabold' : 'font-semibold'} ${personalizedItalic ? 'italic' : 'not-italic'}`;
+                              fontClasses = `${personalizedBold ? 'font-extrabold' : 'font-bold'} not-italic`;
                               textContent = <div className="flex flex-col w-full">{renderRefs()}<div>{v.nonNativeEnglish}</div></div>;
                           } else if (transType === 'kjv') {
                               title = 'Reference (KJV)';
-                              fontClasses = `${manuscriptBold ? 'font-extrabold' : 'font-semibold'} ${manuscriptItalic ? 'italic' : 'not-italic'}`;
+                              fontClasses = `${manuscriptBold ? 'font-extrabold' : 'font-bold'} not-italic`;
                               textContent = renderInteractiveText(v.kjvText || '', v.specialWords, `kjv-${v.verseNumber}`);
                           } else if (transType === 'bsb') {
                               title = 'Berean Standard Bible';
-                              fontClasses = `${manuscriptBold ? 'font-extrabold' : 'font-semibold'} ${manuscriptItalic ? 'italic' : 'not-italic'}`;
+                              fontClasses = `${manuscriptBold ? 'font-extrabold' : 'font-bold'} not-italic`;
                               textContent = renderInteractiveText(v.bsbText || '', v.specialWords, `bsb-${v.verseNumber}`);
                           }
 
@@ -6244,7 +6244,7 @@ export default function App() {
                                 </div>
                               ) : (
                                 <>
-                                  <div className={`font-serif leading-[1.8] tracking-[0.01em] italic pr-2 select-text text-sm mb-2 pl-2 border-l-2 ${
+                                  <div className={`font-serif leading-[1.8] tracking-[0.01em] not-italic pr-2 select-text text-sm mb-2 pl-2 border-l-2 ${
                                     theme === 'light' ? 'text-slate-705 border-slate-300' : 'text-amber-105/90 border-amber-955/60'
                                   }`}>
                                     "{n.notes}"
