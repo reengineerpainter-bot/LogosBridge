@@ -1191,7 +1191,7 @@ export default function App() {
         setIsSidePanelHidden(false);
       } else if (scrollY > lastScrollY && Math.abs(scrollY - lastScrollY) >= 5) {
         // Scrolling down
-        setIsHeaderHidden(false); // Changed to false to prevent auto-hide
+        setIsHeaderHidden(true);
         setIsSidePanelHidden(true);
       } else if (scrollY < lastScrollY && Math.abs(scrollY - lastScrollY) >= 5) {
         // Scrolling up
