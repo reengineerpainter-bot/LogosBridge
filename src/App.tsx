@@ -2991,7 +2991,7 @@ export default function App() {
 
       {/* FLOATING MIDDLE NAV: TRIANGLE IN CIRCLE SLIDE OPTIONS */}
       {/* PREVIOUS CHAPTER FLOATER */}
-      <div className={`fixed left-1 md:left-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${isSidePanelHidden ? '-translate-x-24 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
+      <div className={`fixed left-0 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${isSidePanelHidden ? '-translate-x-24 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
         <button
           id="floating-nav-prev-chapter-btn"
           onClick={handlePrevChapter}
@@ -3009,7 +3009,7 @@ export default function App() {
       </div>
 
       {/* NEXT CHAPTER FLOATER */}
-      <div className={`fixed right-1 md:right-1.5 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${isSidePanelHidden ? 'translate-x-24 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
+      <div className={`fixed right-0 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${isSidePanelHidden ? 'translate-x-24 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
         <button
           id="floating-nav-next-chapter-btn"
           onClick={handleNextChapter}
