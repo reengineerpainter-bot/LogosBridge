@@ -2570,6 +2570,20 @@ export default function App() {
 
                 
               </div>
+              
+              {/* Top Right Study Options button */}
+              <div className="flex items-center">
+                <button
+                  onClick={() => {
+                    setFullPageMenu('versions');
+                    playWebAudioBeep(440, 'sine', 0.05);
+                  }}
+                  className={`p-2 transition-all hover:scale-105 active:scale-95 group ${theme === 'light' ? 'text-slate-700 hover:text-cyan-600' : 'text-slate-300 hover:text-cyan-400'}`}
+                  title="Study Options"
+                >
+                  <Settings2 className="w-6 h-6 transition-transform group-hover:rotate-45" />
+                </button>
+              </div>
 
             </div>
           </motion.header>
@@ -2698,9 +2712,9 @@ export default function App() {
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
           <div className={`p-1.5 rounded-xl transition-colors ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'bg-slate-300 text-slate-900' : 'bg-slate-600 text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
-             <BookOpen className="w-[20px] h-[20px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? 3.5 : 2.5} />
+             <BookOpen className="w-[22px] h-[22px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? 4 : 3} />
           </div>
-          <span className={`text-[11px] font-black tracking-wide mt-1 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Read</span>
+          <span className={`text-[13px] font-black tracking-wide mt-1 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Read</span>
         </button>
 
         <button
@@ -2712,9 +2726,9 @@ export default function App() {
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
           <div className={`p-1.5 rounded-xl transition-colors ${isProjectionStudioOpen ? (theme === 'light' ? 'bg-slate-300 text-slate-900' : 'bg-slate-600 text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
-             <MonitorPlay className="w-[20px] h-[20px]" strokeWidth={isProjectionStudioOpen ? 3.5 : 2.5} />
+             <MonitorPlay className="w-[22px] h-[22px]" strokeWidth={isProjectionStudioOpen ? 4 : 3} />
           </div>
-          <span className={`text-[11px] font-black tracking-wide mt-1 ${isProjectionStudioOpen ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>LiveScreen</span>
+          <span className={`text-[13px] font-black tracking-wide mt-1 ${isProjectionStudioOpen ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>LiveScreen</span>
         </button>
 
         <button
@@ -2726,9 +2740,9 @@ export default function App() {
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
           <div className={`p-1.5 rounded-xl transition-colors ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'bg-slate-300 text-slate-900' : 'bg-slate-600 text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
-             <Layers className="w-[20px] h-[20px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? 3.5 : 2.5} />
+             <Layers className="w-[22px] h-[22px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? 4 : 3} />
           </div>
-          <span className={`text-[11px] font-black tracking-wide mt-1 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Interlinear</span>
+          <span className={`text-[13px] font-black tracking-wide mt-1 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Interlinear</span>
         </button>
 
         <button
@@ -2739,23 +2753,21 @@ export default function App() {
           className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
         >
           <div className={`p-1.5 rounded-xl transition-colors ${fullPageMenu === 'settings' ? (theme === 'light' ? 'bg-slate-300 text-slate-900' : 'bg-slate-600 text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
-             <Settings className="w-[20px] h-[20px]" strokeWidth={fullPageMenu === 'settings' ? 3.5 : 2.5} />
+             <Settings className="w-[22px] h-[22px]" strokeWidth={fullPageMenu === 'settings' ? 4 : 3} />
           </div>
-          <span className={`text-[11px] font-black tracking-wide mt-1 ${fullPageMenu === 'settings' ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Settings</span>
+          <span className={`text-[13px] font-black tracking-wide mt-1 ${fullPageMenu === 'settings' ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Settings</span>
         </button>
       </div>
 
       {/* FULL PAGE MENU MODAL */}
       <AnimatePresence>
         {fullPageMenu && (
-          <>
-          <div className="fixed inset-0 z-[990] bg-slate-900/40 backdrop-blur-sm" onClick={() => setFullPageMenu(null)} />
           <motion.div
-            initial={{ opacity: 0, y: 50, scale: 0.98 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: 30, scale: 0.95 }}
-            transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
-            className={`fixed top-[80px] bottom-[70px] left-0 right-0 md:left-4 md:right-4 lg:max-w-5xl lg:mx-auto z-[1000] flex flex-col rounded-2xl shadow-2xl overflow-hidden border ${theme === 'light' ? 'bg-[#fcfcfc] border-zinc-200' : 'bg-[#0a0d16] border-zinc-800'}`}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 20 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className={`fixed inset-0 pb-[75px] z-[800] flex flex-col overflow-hidden ${theme === 'light' ? 'bg-[#fcfcfc]' : 'bg-[#0a0d16]'}`}
           >
             {/* Modal Header */}
             <div className={`flex items-center justify-between p-4 md:p-6 border-b ${theme === 'light' ? 'border-slate-200/80 bg-white/50' : 'border-zinc-800/80 bg-[#0c111c]/50'} backdrop-blur-md sticky top-0 z-10`}>
@@ -2974,7 +2986,6 @@ export default function App() {
               </div>
             </div>
           </motion.div>
-          </>
         )}
       </AnimatePresence>
 
@@ -2984,16 +2995,16 @@ export default function App() {
         <button
           id="floating-nav-prev-chapter-btn"
           onClick={handlePrevChapter}
-          className={`w-8 h-8 rounded-full border flex items-center justify-center shadow-md md:shadow-lg transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
+          className={`p-1.5 flex items-center justify-center transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
             theme === 'light'
-              ? 'bg-white/95 backdrop-blur-md border-slate-200 text-slate-700 hover:bg-cyan-500 hover:border-cyan-500 hover:text-white'
-              : 'bg-[#0a0f1d]/90 backdrop-blur-md border-cyan-500/20 text-cyan-400 hover:text-[#070b14] hover:bg-cyan-500 hover:border-cyan-500'
+              ? 'text-slate-700 hover:text-cyan-600'
+              : 'text-cyan-500 hover:text-cyan-400'
           }`}
           title={prevChapterLabel ? `Go to ${prevChapterLabel}` : "Previous Chapter"}
           disabled={!prevChapterLabel}
         >
           {/* Animated slider triangle icon */}
-          <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:-translate-x-0.5" />
+          <ChevronLeft className="w-7 h-7 md:w-8 md:h-8 transition-transform duration-300 group-hover:-translate-x-0.5" strokeWidth={3} />
         </button>
       </div>
 
@@ -3002,16 +3013,16 @@ export default function App() {
         <button
           id="floating-nav-next-chapter-btn"
           onClick={handleNextChapter}
-          className={`w-8 h-8 rounded-full border flex items-center justify-center shadow-md md:shadow-lg transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
+          className={`p-1.5 flex items-center justify-center transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
             theme === 'light'
-              ? 'bg-white/95 backdrop-blur-md border-slate-200 text-slate-700 hover:bg-cyan-500 hover:border-cyan-500 hover:text-white'
-              : 'bg-[#0a0f1d]/90 backdrop-blur-md border-cyan-500/20 text-cyan-400 hover:text-[#070b14] hover:bg-cyan-500 hover:border-cyan-500'
+              ? 'text-slate-700 hover:text-cyan-600'
+              : 'text-cyan-500 hover:text-cyan-400'
           }`}
           title={nextChapterLabel ? `Go to ${nextChapterLabel}` : "Next Chapter"}
           disabled={!nextChapterLabel}
         >
           {/* Animated slider triangle icon */}
-          <ChevronRight className="w-5 h-5 md:w-6 md:h-6 transition-transform duration-300 group-hover:translate-x-0.5" />
+          <ChevronRight className="w-7 h-7 md:w-8 md:h-8 transition-transform duration-300 group-hover:translate-x-0.5" strokeWidth={3} />
         </button>
       </div>
 
@@ -3219,36 +3230,7 @@ export default function App() {
 .scripture-zoom-container sup.text-\\[9\\.5px\\] { font-size: calc(9.5px * var(--sz)) !important; }
 ` }} />
                   
-                  {/* Top Right FAB for Study Options (Only visible on Read screen) */}
-                  {mainView === 'read' && (
-                    <div className="fixed top-20 right-6 z-40 hidden md:flex flex-col gap-3">
-                      <button
-                        onClick={() => {
-                          setFullPageMenu('versions');
-                          playWebAudioBeep(440, 'sine', 0.05);
-                        }}
-                        className={`p-3 rounded-2xl shadow-lg border backdrop-blur-xl transition-all hover:scale-105 active:scale-95 group ${theme === 'light' ? 'bg-white/90 border-slate-200 text-slate-700 hover:text-cyan-600' : 'bg-slate-900/90 border-slate-700 text-slate-300 hover:text-cyan-400'}`}
-                        title="Study Options"
-                      >
-                        <Settings2 className="w-6 h-6 transition-transform group-hover:rotate-45" />
-                      </button>
-                    </div>
-                  )}
-                  {/* For mobile, positioned slightly differently so it doesn't overlap header */}
-                  {mainView === 'read' && (
-                    <div className="fixed top-24 right-4 z-40 md:hidden flex flex-col gap-3">
-                      <button
-                        onClick={() => {
-                          setFullPageMenu('versions');
-                          playWebAudioBeep(440, 'sine', 0.05);
-                        }}
-                        className={`p-2.5 rounded-2xl shadow-lg border backdrop-blur-xl transition-all hover:scale-105 active:scale-95 group ${theme === 'light' ? 'bg-white/90 border-slate-200 text-slate-700 hover:text-cyan-600' : 'bg-slate-900/90 border-slate-700 text-slate-300 hover:text-cyan-400'}`}
-                      >
-                        <Settings2 className="w-5 h-5" />
-                      </button>
-                    </div>
-                  )}
-                  
+                  {/* Top Right FAB for Study Options removed and placed in header */}
                   {/* Table header REMOVED */}
 
 
@@ -3393,7 +3375,7 @@ export default function App() {
 
                     return (
                       <div className="p-5 md:p-8 space-y-6">
-                        <div className={`max-w-3xl mx-auto ${scriptureFontSizeSetting === 'xs' ? 'text-[14px]' : scriptureFontSizeSetting === 'sm' ? 'text-[16px]' : scriptureFontSizeSetting === 'base' ? 'text-[18px]' : 'text-[20px]'} ${getScriptureStyleClasses()}`}>
+                        <div className={`max-w-3xl mx-auto ${scriptureFontSizeSetting === 'xs' ? 'text-[15px]' : scriptureFontSizeSetting === 'sm' ? 'text-[17px]' : scriptureFontSizeSetting === 'base' ? 'text-[19px]' : 'text-[21px]'} ${getScriptureStyleClasses()}`}>
                           {renderNarrativeStream(singleTransType)}
                         </div>
 
@@ -3504,7 +3486,7 @@ export default function App() {
                               {/* Right Content Body */}
                               <div className="flex flex-col w-full flex-1">
                                 <div className={`${getScriptureStyleClasses()} ${fontClasses} leading-[1.8] tracking-[0.01em] ${
-                                  scriptureFontSizeSetting === 'xs' ? 'text-[14px]' : scriptureFontSizeSetting === 'sm' ? 'text-[15px]' : scriptureFontSizeSetting === 'base' ? 'text-[17px]' : 'text-[19px]'
+                                  scriptureFontSizeSetting === 'xs' ? 'text-[15px]' : scriptureFontSizeSetting === 'sm' ? 'text-[16px]' : scriptureFontSizeSetting === 'base' ? 'text-[18px]' : 'text-[20px]'
                                 } ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
                                   {textContent}
                                 </div>
