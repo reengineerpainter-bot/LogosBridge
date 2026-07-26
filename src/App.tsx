@@ -2767,7 +2767,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: 20 }}
             transition={{ duration: 0.2, ease: "easeOut" }}
-            className={`fixed inset-0 pb-[75px] z-[800] flex flex-col overflow-hidden ${theme === 'light' ? 'bg-[#fcfcfc]' : 'bg-[#0a0d16]'}`}
+            className={`fixed inset-0 z-[800] flex flex-col overflow-hidden ${theme === 'light' ? 'bg-[#fcfcfc]' : 'bg-[#0a0d16]'}`}
           >
             {/* Modal Header */}
             <div className={`flex items-center justify-between p-4 md:p-6 border-b ${theme === 'light' ? 'border-slate-200/80 bg-white/50' : 'border-zinc-800/80 bg-[#0c111c]/50'} backdrop-blur-md sticky top-0 z-10`}>

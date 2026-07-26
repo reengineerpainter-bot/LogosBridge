@@ -97,7 +97,7 @@ export default function ProjectionStudio({
   const [pendingVerseIndex, setPendingVerseIndex] = useState<number | null>(null);
   const [activeTranslation, setActiveTranslation] = useState<'kjv' | 'bsb' | 'plain' | 'personalized' | 'asv' | 'ylt' | 'bbe'>('kjv');
   const [customTranslationLabel, setCustomTranslationLabel] = useState<string>('Personal Study Bible');
-  const [isCustomLabelEnabled, setIsCustomLabelEnabled] = useState<boolean>(true);
+  const [isCustomLabelEnabled, setIsCustomLabelEnabled] = useState<boolean>(false);
 
   // Live broadcast / Operator lock states
   const [liveState, setLiveState] = useState<LiveProjectionState | null>(null);
@@ -113,7 +113,16 @@ export default function ProjectionStudio({
         .then(res => res.json())
         .then(data => {
            if (data.success && data.data && data.data.verses) {
-             setLocalDynamicData(data.data.verses);
+             const versesData = data.data.verses;
+             const formattedData: Record<string, string> = {};
+             if (Array.isArray(versesData)) {
+               versesData.forEach((v: any) => {
+                 formattedData[String(v.verse)] = v.text;
+               });
+             } else if (typeof versesData === 'object' && versesData !== null) {
+               Object.assign(formattedData, versesData);
+             }
+             setLocalDynamicData(formattedData);
            }
         })
         .catch(err => {
@@ -228,7 +237,7 @@ export default function ProjectionStudio({
 
       const popWindow = async () => {
          try {
-           await openProjectorStandalone(liveState);
+           await openProjectorStandalone(liveState, true);
          } catch (e) {
            console.warn('Failed to auto-open projector', e);
          }

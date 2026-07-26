@@ -1,4 +1,4 @@
-export async function openProjectorStandalone(liveState: any = null): Promise<Window | null> {
+export async function openProjectorStandalone(liveState: any = null, autoTrigger: boolean = false): Promise<Window | null> {
   const url = window.location.origin + window.location.pathname + '?projector=true';
   let left = 0;
   let top = 0;
@@ -25,6 +25,14 @@ export async function openProjectorStandalone(liveState: any = null): Promise<Wi
   } catch (error) {
     console.warn('Window Management API error or permission denied:', error);
     // Fallback to default primary screen behavior handled below
+  }
+
+  const isMobile = window.innerWidth <= 768 || /Mobi|Android/i.test(navigator.userAgent);
+  if (isMobile && !isMultiScreen) {
+    if (!autoTrigger) {
+      alert("External screen not detected. Pop-out disabled on mobile view to preserve App UI.");
+    }
+    return null;
   }
 
   // Construct features string to force a popup without browser chrome

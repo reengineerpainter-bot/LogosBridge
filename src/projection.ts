@@ -24,6 +24,9 @@ const mapTranslationShorthandToFullName = (shortName: string | undefined): strin
   if (name === 'bsb') return 'BEREAN STANDARD BIBLE';
   if (name === 'plain') return 'PLAIN ENGLISH TRANSLATION';
   if (name === 'personalized') return 'PERSONALISED PRAYER VERSION';
+  if (name === 'asv') return 'AMERICAN STANDARD VERSION';
+  if (name === 'ylt') return 'YOUNG\'S LITERAL TRANSLATION';
+  if (name === 'bbe') return 'BIBLE IN BASIC ENGLISH';
   return shortName.toUpperCase();
 };
 
