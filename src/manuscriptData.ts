@@ -1,4 +1,4 @@
-import { SpecialWord } from './types';
+import { SpecialWord } from './types.js';
 
 export interface ManuscriptEntry {
   word: string;

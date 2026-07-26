@@ -4,9 +4,8 @@ import dotenv from 'dotenv';
 import fs from 'fs';
 import { ZipArchive } from 'archiver';
 import { GoogleGenAI, Type } from '@google/genai';
-// import { STATIC_CHAPTERS } from './src/staticChapters';
-// import { enrichChapter } from './src/utils/personalizer';
-const enrichChapter = (x: any) => x;
+import { STATIC_CHAPTERS } from './src/staticChapters.js';
+import { enrichChapter } from './src/utils/personalizer.js';
 // import admin from 'firebase-admin';
 
 // Initialize environment variables
@@ -498,7 +497,6 @@ app.get('/api/bible-chapter', async (req, res) => {
 
   try {
     // A. Check in-memory static chapters ( Genesis 1, John 1, Psalms 23 )
-    const STATIC_CHAPTERS = {};
     const matchedStaticBookKey = Object.keys(STATIC_CHAPTERS).find(k => k.toLowerCase() === book.toLowerCase());
     if (matchedStaticBookKey && STATIC_CHAPTERS[matchedStaticBookKey][chapter]) {
       const staticChap = STATIC_CHAPTERS[matchedStaticBookKey][chapter];

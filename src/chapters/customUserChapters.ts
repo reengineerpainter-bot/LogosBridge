@@ -1,4 +1,4 @@
-import { ChapterData } from '../types';
+import { ChapterData } from '../types.js';
 
 /**
  * ============================================================================

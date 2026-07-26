@@ -1,4 +1,4 @@
-import { BibleBook } from './types';
+import { BibleBook } from './types.js';
 
 export const BIBLE_BOOKS: BibleBook[] = [
   // Old Testament

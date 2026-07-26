@@ -1,4 +1,4 @@
-import { ChapterData } from '../types';
+import { ChapterData } from '../types.js';
 
 export const HEBREWS_11: ChapterData = {
   "book": "Hebrews",

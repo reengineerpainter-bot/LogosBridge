@@ -1,4 +1,4 @@
-import { ChapterData } from '../types';
+import { ChapterData } from '../types.js';
 
 export const PSALMS_CHAPTERS: Record<number, ChapterData> = {
   1: {

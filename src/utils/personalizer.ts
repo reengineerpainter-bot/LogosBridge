@@ -1,4 +1,4 @@
-import { Verse, SpecialWord } from '../types';
+import { Verse, SpecialWord } from '../types.js';
 
 // Hardcoded premium reflections for John 1, John 2, John 3, Genesis 1, Hebrews 11, 2 Peter 1, and Psalms 1, 23
 // to ensure perfect, flawless flow.
