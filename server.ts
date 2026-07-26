@@ -2019,7 +2019,7 @@ async function startServer() {
   });
 }
 
-if (!process.env.VERCEL) {
+if (process.argv.includes('--local')) {
   startServer();
 }
 
