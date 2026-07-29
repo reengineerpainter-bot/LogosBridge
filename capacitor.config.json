@@ -1,6 +1,6 @@
 {
   "appId": "com.helpsbiblestudy.app",
-  "appName": "Personalized Bible Study",
+  "appName": "LogosBridge",
   "webDir": "dist",
   "server": {
     "androidScheme": "https"

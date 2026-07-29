@@ -4,6 +4,7 @@ import { HEBREWS_11 } from './chapters/hebrews11.js';
 import { JOHN_1 } from './chapters/john1.js';
 import { JOHN_2 } from './chapters/john2.js';
 import { JOHN_3 } from './chapters/john3.js';
+import { JOHN_6 } from './chapters/john6.js';
 import { TWO_PETER_1 } from './chapters/twopeter1.js';
 import { PSALMS_CHAPTERS } from './chapters/psalms.js';
 import { CUSTOM_USER_CHAPTERS } from './chapters/customUserChapters.js';
@@ -20,6 +21,7 @@ const BASE_STATIC_CHAPTERS: Record<string, Record<number, ChapterData>> = {
     1: JOHN_1,
     2: JOHN_2,
     3: JOHN_3,
+    6: JOHN_6,
   },
   '2 Peter': {
     1: TWO_PETER_1,

@@ -514,7 +514,7 @@ app.get('/api/bible-chapter', async (req, res) => {
                 chapter,
                 verses: staticChap.verses,
                 isHighFidelity: true,
-                createdAt: admin.firestore.Timestamp.now(),
+                createdAt: new Date(),
                 source: 'local_static_backport'
               }).catch(() => {});
             }
@@ -718,7 +718,7 @@ IMPORTANT: Return the filled JSON containing ALL \${alignedInput.length} verses 
                     chapter: parsedData.chapter || chapter,
                     verses: parsedData.verses,
                     isHighFidelity: true,
-                    createdAt: admin.firestore.Timestamp.now(),
+                    createdAt: new Date(),
                     source: 'gemini_api_generation'
                   });
                   console.log(`[Firestore Cache-Write] Successfully saved dynamic ${book} Chapter ${chapter} in Firestore`);
@@ -786,7 +786,7 @@ IMPORTANT: Return the filled JSON containing ALL \${alignedInput.length} verses 
             chapter,
             verses: versesList,
             isHighFidelity: true,
-            createdAt: admin.firestore.Timestamp.now(),
+            createdAt: new Date(),
             source: 'server_rules_fallback'
           });
           console.log(`[Firestore Cache-Write] Successfully saved fallback modernized ${book} Chapter ${chapter} in Firestore`);
@@ -932,7 +932,7 @@ IMPORTANT: Return the filled JSON containing ALL \${alignedInput.length} verses 
           chapter: parsedData.chapter || chapter,
           verses: parsedData.verses || [],
           isHighFidelity: true,
-          createdAt: admin.firestore.Timestamp.now(),
+          createdAt: new Date(),
           source: 'gemini_api_backup_generation'
         });
         console.log(`[Firestore Cache-Write] Successfully saved backup generated ${book} Chapter ${chapter} in Firestore`);
@@ -1134,7 +1134,7 @@ IMPORTANT: Return the filled JSON containing ALL \${alignedInput.length} verses 
               chapter: parsedData.chapter || chapterNum,
               verses: parsedData.verses,
               isHighFidelity: true,
-              createdAt: admin.firestore.Timestamp.now(),
+              createdAt: new Date(),
               source: 'gemini_admin_generation'
             });
           }

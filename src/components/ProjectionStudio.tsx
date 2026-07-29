@@ -1,6 +1,7 @@
 import { BIBLE_BOOKS } from "../bibleMetadata";
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { Capacitor } from '@capacitor/core';
 import {
   X,
   Play,
@@ -228,6 +229,41 @@ export default function ProjectionStudio({
       stopAudioAnalysis();
     };
   }, []);
+
+  // History state for mobile hardware back button
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  useEffect(() => {
+    if (isOpen) {
+      if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+        import('@capacitor/app').then(({ App }) => {
+          const listener = App.addListener('backButton', () => {
+            onCloseRef.current();
+          });
+          return () => {
+            listener.then(l => l.remove());
+          };
+        }).catch(console.error);
+      } else {
+        window.history.pushState({ isProjectionStudioOpen: true }, '');
+        const handlePopState = (e: PopStateEvent) => {
+          if (!e.state?.isProjectionStudioOpen) {
+            onCloseRef.current();
+          }
+        };
+        window.addEventListener('popstate', handlePopState);
+        return () => {
+          window.removeEventListener('popstate', handlePopState);
+          if (window.history.state?.isProjectionStudioOpen) {
+            window.history.back();
+          }
+        };
+      }
+    }
+  }, [isOpen]);
 
   useEffect(() => {
     if (isOpen) {

@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 
-const sourceLogo = path.join(process.cwd(), 'src', 'assets', 'images', 'logo_sacred_crest_1780920352594.png');
+const sourceLogo = path.join(process.cwd(), 'src', 'assets', 'images', 'logo_logosbridge.png');
 const androidResPath = path.join(process.cwd(), 'android', 'app', 'src', 'main', 'res');
 
 const mipmapDirs = [

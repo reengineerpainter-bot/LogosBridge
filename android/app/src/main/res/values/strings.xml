@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Personalized Bible Study</string>
-    <string name="title_activity_main">Personalized Bible Study</string>
+    <string name="app_name">LogosBridge</string>
+    <string name="title_activity_main">LogosBridge</string>
     <string name="package_name">com.helpsbiblestudy.app</string>
     <string name="custom_url_scheme">com.helpsbiblestudy.app</string>
 </resources>

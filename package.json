@@ -17,7 +17,11 @@
     "electron:build": "electron-builder --win"
   },
   "dependencies": {
+    "@capacitor-community/text-to-speech": "^8.0.2",
+    "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.4.0",
+    "@capacitor/status-bar": "^8.0.3",
+    "@capgo/capacitor-navigation-bar": "^8.2.6",
     "@google/genai": "^2.4.0",
     "@midvash/bible-data": "^0.1.1",
     "@tailwindcss/vite": "^4.1.14",
@@ -55,7 +59,9 @@
   "build": {
     "appId": "com.logosbridge.app",
     "productName": "LogosBridge",
-    "publish": ["github"],
+    "publish": [
+      "github"
+    ],
     "directories": {
       "output": "dist/dist-electron"
     },

@@ -1,7 +1,7 @@
 {
-  "short_name": "Bible Study",
-  "name": "Personalised Bible Study",
-  "description": "A contemporary Bible study companion tailored for non-native English speakers.",
+  "short_name": "LogosBridge",
+  "name": "LogosBridge",
+  "description": "A contemporary Bible study companion.",
   "icons": [
     {
       "src": "/icon.svg",

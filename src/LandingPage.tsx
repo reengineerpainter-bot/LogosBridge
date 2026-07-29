@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Download
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 
 export default function LandingPage() {
   const navigateToApp = () => {
@@ -44,14 +45,16 @@ export default function LandingPage() {
               onClick={navigateToApp}
               className="text-sm font-medium text-slate-300 hover:text-white transition-colors"
             >
-              Open Web App
+              {Capacitor.isNativePlatform() ? 'Launch Mobile App' : 'Open Web App'}
             </button>
-            <button 
-              onClick={handleDownload}
-              className="px-5 py-2.5 rounded-full text-sm font-bold bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 transition-all shadow-xl hover:shadow-cyan-500/20"
-            >
-              Download
-            </button>
+            {!Capacitor.isNativePlatform() && (
+              <button 
+                onClick={handleDownload}
+                className="px-5 py-2.5 rounded-full text-sm font-bold bg-white/10 hover:bg-white/20 text-white backdrop-blur-md border border-white/10 transition-all shadow-xl hover:shadow-cyan-500/20"
+              >
+                Download
+              </button>
+            )}
           </div>
         </nav>
 
@@ -99,16 +102,18 @@ export default function LandingPage() {
               onClick={navigateToApp}
               className="w-full sm:w-auto px-8 py-4 rounded-full text-base font-bold bg-cyan-500 hover:bg-cyan-400 text-slate-950 transition-all shadow-[0_0_40px_-10px_rgba(6,182,212,0.5)] hover:shadow-[0_0_60px_-10px_rgba(6,182,212,0.6)] flex items-center justify-center gap-2 group"
             >
-              Launch Web App
+              {Capacitor.isNativePlatform() ? 'Launch Mobile App' : 'Launch Web App'}
               <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
             </button>
-            <button 
-              onClick={handleDownload}
-              className="w-full sm:w-auto px-8 py-4 rounded-full text-base font-bold bg-white/5 hover:bg-white/10 text-white border border-white/10 backdrop-blur-md transition-all flex items-center justify-center gap-2"
-            >
-              <Download className="w-5 h-5" />
-              Get Windows App
-            </button>
+            {!Capacitor.isNativePlatform() && (
+              <button 
+                onClick={handleDownload}
+                className="w-full sm:w-auto px-8 py-4 rounded-full text-base font-bold bg-white/5 hover:bg-white/10 text-white border border-white/10 backdrop-blur-md transition-all flex items-center justify-center gap-2"
+              >
+                <Download className="w-5 h-5" />
+                Get Windows App
+              </button>
+            )}
           </motion.div>
 
         </main>

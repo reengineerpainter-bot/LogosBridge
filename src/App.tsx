@@ -6,22 +6,35 @@
 import React, { useState, useEffect, useMemo, useRef, FormEvent, ReactNode, TouchEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import {
-  ChevronLeft,
-  ChevronRight,
   Menu,
-  MoreVertical,
-  BookOpen,
-  Sparkles,
+  Settings,
   X,
-  Loader2,
+  Volume2,
+  VolumeX,
+  MonitorPlay,
+  Play,
+  Pause,
+  Maximize2,
+  Minimize2,
+  CheckCircle2,
+  Languages,
+  BookOpen,
   Search,
+  BookOpenCheck,
+  ChevronDown,
+  Info,
+  MoreVertical,
+  Layers,
+  ChevronRight,
+  ChevronLeft,
+  Sparkles,
+  Loader2,
   Eye,
   EyeOff,
   HelpCircle,
   ArrowLeft,
   Check,
   Compass,
-  Info,
   RefreshCw,
   Globe,
   ArrowRight,
@@ -35,22 +48,19 @@ import {
   Laptop,
   ExternalLink,
   Copy,
-  Volume2,
-  VolumeX,
   MessageSquare,
   Award,
-  Play,
   Square,
   Tv,
-  Settings,
   Library,
-  MonitorPlay,
   Ban,
   ToggleLeft,
   ToggleRight,
-  Settings2,
-  Layers
+  HeartHandshake,
+  Database,
+  Home
 } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import { BIBLE_BOOKS } from './bibleMetadata';
 import { STATIC_CHAPTERS } from './staticChapters';
 import { ChapterData, Verse, SpecialWord, BibleBook } from './types';
@@ -61,11 +71,12 @@ import {
   CloudLightning,
   AlertTriangle,
   FileDown,
-  Cloud,
-  CheckCircle2
+  Cloud
 } from 'lucide-react';
+import { PrayingHandsIcon } from './components/PrayingHandsIcon';
 import { onAuthStateChanged } from 'firebase/auth';
 import { auth, db } from './firebase';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { doc, getDoc } from 'firebase/firestore';
 import {
   saveUserBookmark,
@@ -74,7 +85,6 @@ import {
   recordQuizScore,
   getOrCreateUserProfile
 } from './utils/firebaseSync';
-import CloudSyncPanel from './components/CloudSyncPanel';
 import ProjectionStudio from './components/ProjectionStudio';
 import ProjectorCleanDisplay from './components/ProjectorCleanDisplay';
 import { openProjectorStandalone } from './utils/windowUtils';
@@ -86,7 +96,7 @@ import logoGraceAmber from './assets/images/logo_grace_amber_1780920320501.png';
 // @ts-ignore
 import logoSacredCrest from './assets/images/logo_sacred_crest_1780920352594.png';
 // @ts-ignore
-import appLogoNew from './assets/images/app_logo_1781168399204.png';
+import appLogoNew from './assets/images/logo_logosbridge.png';
 
 const StarryCradleIcon = ({ className = "w-5 h-5", active = false }: { className?: string; active?: boolean }) => {
   return (
@@ -120,88 +130,9 @@ const StarryCradleIcon = ({ className = "w-5 h-5", active = false }: { className
   );
 };
 
-interface WelcomeStyleConfig {
-  mainBg: string;
-  headerBg: string;
-  dotBg: string;
-  dotText: string;
-  closeBtn: string;
-  headingText: string;
-  subText: string;
-  descText: string;
-  iconBg: string;
-  boxBg: string;
-  itemActiveBg: string;
-  itemInactiveBg: string;
-  speedBadge: string;
-  speedBtnActive: string;
-  speedBtnInactive: string;
-  speakBtn: string;
-  stopBtn: string;
-  dotActive: string;
-  backBtn: string;
-  nextBtn: string;
-  mockVerseBg: string;
-  mockVerseBadge: string;
-  mockVerseHeading: string;
-}
 
-const welcomeStyles: Record<'royal' | 'minimal', WelcomeStyleConfig> = {
-  royal: {
-    mainBg: 'bg-[#fcfaff] border-indigo-200 text-indigo-955 shadow-indigo-955/5',
-    headerBg: 'bg-indigo-50/40 border-indigo-100',
-    dotBg: 'bg-[#6366f1] animate-pulse',
-    dotText: 'text-indigo-800',
-    closeBtn: 'bg-white border-indigo-100 text-indigo-900 hover:bg-indigo-50',
-    headingText: 'text-indigo-955',
-    subText: 'text-indigo-800',
-    descText: 'text-indigo-900/80',
-    iconBg: 'bg-indigo-100/40 border-indigo-200/80 text-indigo-700',
-    boxBg: 'bg-indigo-50/40 border-indigo-200/40',
-    itemActiveBg: 'bg-indigo-100/80 border-indigo-300 shadow-sm text-indigo-900',
-    itemInactiveBg: 'bg-white border-indigo-100/50 hover:bg-indigo-50/40',
-    speedBadge: 'bg-indigo-50 text-indigo-955 border-indigo-150',
-    speedBtnActive: 'bg-indigo-600 text-white border-indigo-600',
-    speedBtnInactive: 'bg-white border-indigo-100 text-indigo-700 hover:bg-indigo-50',
-    speakBtn: 'bg-indigo-600 hover:bg-indigo-700 text-white',
-    stopBtn: 'bg-white border-indigo-100 text-indigo-600 hover:bg-indigo-50',
-    dotActive: 'bg-indigo-600 w-6',
-    backBtn: 'bg-white border-indigo-100 text-indigo-700 hover:bg-indigo-50',
-    nextBtn: 'bg-indigo-600 hover:bg-indigo-700 text-white',
-    mockVerseBg: 'bg-[#faf8fe] border-indigo-150 text-indigo-950',
-    mockVerseBadge: 'bg-indigo-100 text-indigo-800 border-indigo-200',
-    mockVerseHeading: 'text-indigo-950 font-serif',
-  },
-  minimal: {
-    mainBg: 'bg-[#f8fafc] border-slate-200 text-slate-800 shadow-slate-900/5',
-    headerBg: 'bg-slate-50 border-slate-200',
-    dotBg: 'bg-slate-400',
-    dotText: 'text-slate-500',
-    closeBtn: 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
-    headingText: 'text-slate-900',
-    subText: 'text-slate-500',
-    descText: 'text-slate-600',
-    iconBg: 'bg-slate-100 border-slate-200 text-slate-705',
-    boxBg: 'bg-slate-100/60 border-slate-200',
-    itemActiveBg: 'bg-slate-100 border-slate-300 shadow-sm text-slate-900',
-    itemInactiveBg: 'bg-white border-slate-100 hover:bg-slate-50',
-    speedBadge: 'bg-slate-100 text-slate-600 border-slate-200',
-    speedBtnActive: 'bg-slate-800 text-white border-slate-800',
-    speedBtnInactive: 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50',
-    speakBtn: 'bg-slate-800 hover:bg-slate-900 text-white',
-    stopBtn: 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
-    dotActive: 'bg-slate-800 w-6',
-    backBtn: 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50',
-    nextBtn: 'bg-slate-800 hover:bg-slate-900 text-white',
-    mockVerseBg: 'bg-[#fafbfc] border-slate-200 text-slate-800',
-    mockVerseBadge: 'bg-slate-100 text-slate-800 border border-slate-200',
-    mockVerseHeading: 'text-slate-900 font-sans font-bold',
-  }
-};
 
 const AUDIO_TRANS_OPTIONS = [
-  { id: 'plain', label: 'Plain English' },
-  { id: 'pers', label: 'Personalised Prayer' },
   { id: 'kjv', label: 'King James Version' },
   { id: 'bsb', label: 'Berean Standard' },
   { id: 'asv', label: 'American Standard' },
@@ -269,7 +200,7 @@ const AudioFAB = ({
 
       <div className="flex items-center gap-1 px-1">
         <button onClick={handlePrev} className={`p-1.5 rounded-full transition-colors ${theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-zinc-800 text-zinc-400'}`}>
-          <ChevronLeft className="w-3.5 h-3.5" />
+          <Play className="w-3 h-3 fill-current rotate-180" />
         </button>
         
         <span className={`text-[11px] font-bold tracking-wider w-[110px] md:w-[130px] flex justify-center text-center ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
@@ -277,7 +208,7 @@ const AudioFAB = ({
         </span>
         
         <button onClick={handleNext} className={`p-1.5 rounded-full transition-colors ${theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-zinc-800 text-zinc-400'}`}>
-          <ChevronRight className="w-3.5 h-3.5" />
+          <Play className="w-3 h-3 fill-current" />
         </button>
       </div>
     </div>
@@ -313,6 +244,7 @@ export default function App() {
   }, []);
   const [selectedBook, setSelectedBook] = useState<string>('Genesis');
   const [selectedChapter, setSelectedChapter] = useState<number>(1);
+  const [slideDirection, setSlideDirection] = useState<'forward' | 'backward' | 'none'>('none');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState<boolean>(false);
   const [isTransMenuOpen, setIsTransMenuOpen] = useState<boolean>(false);
@@ -345,23 +277,36 @@ export default function App() {
   }, [isMoreMenuOpen]);
   const [scriptureTypefaceSetting, setScriptureTypefaceSetting] = useState<'serif' | 'sans' | 'mono'>('sans');
   const [scriptureTextStyleSetting, setScriptureTextStyleSetting] = useState<'normal' | 'elegant' | 'compact' | 'classic'>('normal');
-  const [scriptureFontSizeSetting, setScriptureFontSizeSetting] = useState<'xs' | 'sm' | 'base' | 'lg'>('sm');
   const [plainBold, setPlainBold] = useState<boolean>(false);
   const [plainItalic, setPlainItalic] = useState<boolean>(false);
   const [personalizedBold, setPersonalizedBold] = useState<boolean>(true);
   const [personalizedItalic, setPersonalizedItalic] = useState<boolean>(false);
   const [manuscriptBold, setManuscriptBold] = useState<boolean>(false);
   const [manuscriptItalic, setManuscriptItalic] = useState<boolean>(false);
-  const [isComparisonEnabled, setIsComparisonEnabled] = useState<boolean>(false);
-  const [referenceDisplayMode, setReferenceDisplayMode] = useState<'both' | 'kjv' | 'bsb'>('both');
+  const [translationSearchText, setTranslationSearchText] = useState<string>('');
+
   const [translationDisplayMode, setTranslationDisplayMode] = useState<'both' | 'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>(() => {
     const val = localStorage.getItem('personalized_bible_translation_display_mode');
-    return val === 'interlinear' ? 'kjv' : (val as any) || 'kjv';
+    return (val as any) || 'kjv';
   });
-  const [dualStreamLeft, setDualStreamLeft] = useState<'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>('plain');
-  const [dualStreamRight, setDualStreamRight] = useState<'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>('personalized');
-  const [mainView, setMainView] = useState<'read' | 'interlinear'>('read');
+  const [dualStreamLeft, setDualStreamLeft] = useState<'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>('kjv');
+  const [dualStreamRight, setDualStreamRight] = useState<'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>('bsb');
+  const [mainView, setMainView] = useState<'home' | 'read' | 'interlinear' | 'prayer'>('home');
   const [interlinearThirdLine, setInterlinearThirdLine] = useState<string>('kjv');
+  const [openInterlinearMenuId, setOpenInterlinearMenuId] = useState<number | null>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (openInterlinearMenuId !== null) {
+        const target = e.target as HTMLElement;
+        if (!target.closest('.interlinear-menu-trigger') && !target.closest('.interlinear-menu-content')) {
+          setOpenInterlinearMenuId(null);
+        }
+      }
+    };
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, [openInterlinearMenuId]);
   const [dynamicTranslationData, setDynamicTranslationData] = useState<Record<string, Record<string, string>>>({});
   const translationPickerRef = useRef<HTMLDivElement>(null);
 
@@ -410,7 +355,23 @@ export default function App() {
          }));
       };
 
-      const url = `/api/translation/${shouldFetch}?book=${encodeURIComponent(selectedBook)}&chapter=${selectedChapter}`;
+      const isNative = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform();
+      const url = isNative
+        ? `https://bible-api.com/${encodeURIComponent(selectedBook)}+${selectedChapter}?translation=${shouldFetch}`
+        : `/api/translation/${shouldFetch}?book=${encodeURIComponent(selectedBook)}&chapter=${selectedChapter}`;
+
+      const cacheKey = `trans_v2_${shouldFetch}_${selectedBook}_${selectedChapter}`;
+      const cachedData = localStorage.getItem(cacheKey);
+
+      if (cachedData) {
+        try {
+          const parsed = JSON.parse(cachedData);
+          processVerses(parsed);
+          return;
+        } catch (e) {
+          console.warn('Invalid cache for dynamic translation', e);
+        }
+      }
 
       fetch(url)
         .then(async (res) => {
@@ -422,6 +383,11 @@ export default function App() {
         .then(data => {
            if (data.success && data.data && data.data.verses) {
              processVerses(data.data.verses);
+             localStorage.setItem(cacheKey, JSON.stringify(data.data.verses));
+           } else if (data.verses) {
+             // Direct bible-api.com response
+             processVerses(data.verses);
+             localStorage.setItem(cacheKey, JSON.stringify(data.verses));
            } else {
              throw new Error('Invalid JSON format from backend');
            }
@@ -577,7 +543,7 @@ export default function App() {
 
   // Offline Sync Manager states
   const [isOfflineSyncOpen, setIsOfflineSyncOpen] = useState<boolean>(false);
-  const [isCloudSyncOpen, setIsCloudSyncOpen] = useState<boolean>(false);
+
   const [isProjectionStudioOpen, setIsProjectionStudioOpen] = useState<boolean>(false);
   const [projectionInitialVerseNumber, setProjectionInitialVerseNumber] = useState<number>(1);
 
@@ -594,6 +560,28 @@ export default function App() {
   }, [isProjectionStudioOpen]);
 
   useEffect(() => {
+    // Hide status bar on native mobile app for Immersive experience
+    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+      import('@capacitor/status-bar').then(({ StatusBar }) => {
+        StatusBar.hide().catch(e => console.warn('StatusBar hide failed:', e));
+      }).catch(console.error);
+
+      import('@capgo/capacitor-navigation-bar').then(({ NavigationBar }) => {
+        NavigationBar.hide().catch(e => console.warn('NavigationBar hide failed:', e));
+      }).catch(console.error);
+
+      // Handle general app hardware back button
+      import('@capacitor/app').then(({ App: CapApp }) => {
+        CapApp.addListener('backButton', ({ canGoBack }) => {
+          if (!canGoBack) {
+            CapApp.exitApp();
+          } else {
+            window.history.back();
+          }
+        });
+      }).catch(console.error);
+    }
+    
     // 1. Initial State Load
     try {
       const saved = localStorage.getItem('live_projection_state');
@@ -885,7 +873,7 @@ export default function App() {
   const [playbackSpeed, setPlaybackSpeed] = useState<number>(1.0);
   const synthRef = useRef<SpeechSynthesis | null>(typeof window !== 'undefined' ? window.speechSynthesis : null);
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null);
-  const activeAudioSessionRef = useRef<number>(0);
+  const activeAudioSessionRef = useRef<number | null>(0);
 
   // Smooth scroll to active verse during playback
   useEffect(() => {
@@ -1067,17 +1055,7 @@ export default function App() {
   const [userBlankInput, setUserBlankInput] = useState<Record<number, string>>({});
   const [memorizationCorrectCount, setMemorizationCorrectCount] = useState<number | null>(null);
 
-  // Welcome walk-through guide states
-  const [isWelcomeOpen, setIsWelcomeOpen] = useState<boolean>(false);
 
-  const [welcomeStep, setWelcomeStep] = useState<number>(0);
-  const [selectedWelcomeStyle, setSelectedWelcomeStyle] = useState<'royal' | 'minimal'>(() => {
-    const savedLogo = localStorage.getItem('personalized_app_logo');
-    if (savedLogo === 'cosmic') return 'royal';
-    return 'minimal';
-  });
-  const [welcomePreviewSpeed, setWelcomePreviewSpeed] = useState<number>(0.8);
-  const [welcomeIdiomIndex, setWelcomeIdiomIndex] = useState<number>(0);
 
   // User selected Visual Aura Color theme
   const [auraColor, setAuraColor] = useState<'cyan' | 'sapphire' | 'indigo' | 'ash' | 'amber'>(() => {
@@ -1288,6 +1266,7 @@ export default function App() {
 
   // Handlers for Chapter forward and back
   const handleNextChapter = () => {
+    setSlideDirection('forward');
     const bookIndex = booksList.findIndex((b) => b.name === selectedBook);
     if (selectedChapter < currentBookObj.chapters) {
       setSelectedChapter((prev) => prev + 1);
@@ -1304,6 +1283,7 @@ export default function App() {
   };
 
   const handlePrevChapter = () => {
+    setSlideDirection('backward');
     const bookIndex = booksList.findIndex((b) => b.name === selectedBook);
     if (selectedChapter > 1) {
       setSelectedChapter((prev) => prev - 1);
@@ -1576,9 +1556,11 @@ export default function App() {
       setChapterData(cachedParsed);
       setLoading(false);
     } else {
-      setLoading(true);
-      // Show empty state while loading
-      setChapterData(null);
+      // Don't show full-screen loader, just let background fetch handle it
+      // if this is the very first load, chapterData will be null initially
+      if (!chapterData) {
+         setLoading(true);
+      }
     }
 
     if (needsBackgroundUpgrade) {
@@ -1650,6 +1632,71 @@ export default function App() {
         }
       }
     }
+  };
+
+  // Asynchronous downloader for full translations
+  const handleDownloadTranslation = async (transId: string) => {
+    cancelDownloadRef.current = false;
+    setDownloadingBook(transId.toUpperCase() + ' Translation');
+    setDownloadProgress(0);
+    setDownloadStatusLog([`Initializing offline synchronization for ${transId.toUpperCase()}...`]);
+
+    let totalChaptersCount = 0;
+    BIBLE_BOOKS.forEach(b => { totalChaptersCount += b.chapters; });
+    let chaptersProcessed = 0;
+
+    for (let i = 0; i < BIBLE_BOOKS.length; i++) {
+      const bookObj = BIBLE_BOOKS[i];
+      for (let ch = 1; ch <= bookObj.chapters; ch++) {
+        if (cancelDownloadRef.current) {
+          setDownloadStatusLog((prev) => [...prev, `❌ Synchronization cancelled by user.`]);
+          localStorage.removeItem(`offline_${transId}`); 
+          return;
+        }
+
+        const cacheKey = `trans_v2_${transId}_${bookObj.name}_${ch}`;
+        let isAlreadyCached = false;
+        try {
+          const cachedStr = localStorage.getItem(cacheKey);
+          if (cachedStr) {
+             const parsed = JSON.parse(cachedStr);
+             if (parsed && typeof parsed === 'object') {
+                 isAlreadyCached = true;
+             }
+          }
+        } catch {}
+
+        if (!isAlreadyCached) {
+            setDownloadStatusLog((prev) => [...prev, `Fetching ${bookObj.name} Chapter ${ch}...`]);
+            try {
+               const url = `https://bible-api.com/${encodeURIComponent(bookObj.name)}+${ch}?translation=${transId}`;
+               const res = await fetch(url);
+               if (res.ok) {
+                  const data = await res.json();
+                  const verses = data.verses || (data.data && data.data.verses) || [];
+                  const formattedData: Record<string, string> = {};
+                  verses.forEach((v: any) => {
+                     formattedData[String(v.verse)] = v.text;
+                  });
+                  localStorage.setItem(cacheKey, JSON.stringify(formattedData));
+               }
+            } catch (err) {
+               console.warn(`Failed to cache ${bookObj.name} ${ch} for ${transId}:`, err);
+            }
+            await new Promise(r => setTimeout(r, 250)); // rate limit protection
+        }
+
+        chaptersProcessed++;
+        setDownloadProgress((chaptersProcessed / totalChaptersCount) * 100);
+      }
+    }
+
+    setDownloadStatusLog((prev) => [...prev, `🎉 Synced all 1,189 chapters of ${transId.toUpperCase()} successfully!`, `It is now 100% available offline.`]);
+    localStorage.setItem(`offline_${transId}`, 'true');
+    setTranslationDisplayMode(prev => prev);
+    setTimeout(() => {
+      setDownloadingBook(null);
+    }, 4000);
   };
 
   // Asynchronous downloader to prepare complete books of the Bible one-by-one offline
@@ -2010,18 +2057,23 @@ export default function App() {
   // ==========================================
 
   // Feature 1: Audio Playback (TTS)
-  const stopSpeaking = () => {
-    activeAudioSessionRef.current += 1;
-    if (utteranceRef.current) {
-      utteranceRef.current.onend = null;
-      utteranceRef.current.onerror = null;
-    }
-    if (synthRef.current) {
-      synthRef.current.cancel();
-    }
+  const stopSpeaking = async () => {
+    activeAudioSessionRef.current = null;
     setIsPlayingAudio(false);
     setActiveAudioStream(null);
     setCurrentlyReadingVerse(null);
+    
+    if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+      try {
+        await TextToSpeech.stop();
+      } catch (e) {
+        console.warn('Native TTS stop failed:', e);
+      }
+    } else {
+      if (typeof window !== 'undefined' && window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+      }
+    }
   };
 
   const getSpeechTextForVerse = (v: Verse, overrideTransType?: 'plain' | 'pers' | 'kjv' | 'bsb') => {
@@ -2048,15 +2100,7 @@ export default function App() {
     // Default 'dynamic' mode matches display settings dynamically
     const textParts: string[] = [];
 
-    // Include Manuscript References if enabled
-    if (isComparisonEnabled) {
-      if (referenceDisplayMode === 'both' || referenceDisplayMode === 'kjv') {
-        textParts.push(`King James Version: ${v.kjvText}`);
-      }
-      if (referenceDisplayMode === 'both' || referenceDisplayMode === 'bsb') {
-        textParts.push(`Berean Standard Bible: ${v.bsbText}`);
-      }
-    }
+
 
     // Include theological interpretations/translations based on settings
     if (translationDisplayMode === 'plain') {
@@ -2072,15 +2116,12 @@ export default function App() {
   };
 
   const playTranslationStream = (transType: 'plain' | 'pers' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe') => {
-    if (!chapterData || !synthRef.current) return;
+    if (!chapterData) return;
     stopSpeaking();
     
-    // setActiveAudioStream might not trigger immediately due to how React batches, 
-    // but setting it here is good.
-    setActiveAudioStream(transType);
-
     const activeVerses = [...chapterData.verses];
     let currentIndex = 0;
+    activeAudioSessionRef.current = Date.now();
     const sessionId = activeAudioSessionRef.current;
 
     const playNext = () => {
@@ -2095,6 +2136,7 @@ export default function App() {
       const v = activeVerses[currentIndex];
       setCurrentlyReadingVerse(v.verseNumber);
       setIsPlayingAudio(true);
+      setActiveAudioStream(transType);
 
       let text = '';
       if (transType === 'plain') text = v.contemporary;
@@ -2106,27 +2148,46 @@ export default function App() {
       }
 
       const utteranceText = `Verse ${v.verseNumber}, ${text}`;
-      const utterance = new SpeechSynthesisUtterance(utteranceText);
-      utterance.rate = playbackSpeed;
 
-      const voices = synthRef.current?.getVoices() || [];
-      const preferred = voices.find(vo => vo.lang.startsWith('en-US')) || voices.find(vo => vo.lang.startsWith('en')) || voices[0];
-      if (preferred) utterance.voice = preferred;
+      if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+        TextToSpeech.speak({
+          text: utteranceText,
+          lang: 'en-US',
+          rate: playbackSpeed,
+          pitch: 1.0,
+          category: 'ambient'
+        }).then(() => {
+          if (sessionId !== activeAudioSessionRef.current) return;
+          currentIndex++;
+          playNext();
+        }).catch((e) => {
+          console.warn('Native TTS speak failed:', e);
+          if (sessionId !== activeAudioSessionRef.current) return;
+          currentIndex++;
+          playNext();
+        });
+      } else {
+        const utterance = new SpeechSynthesisUtterance(utteranceText);
+        utterance.rate = playbackSpeed;
 
-      utterance.onend = () => {
-        if (sessionId !== activeAudioSessionRef.current) return;
-        currentIndex++;
-        playNext();
-      };
-      
-      utterance.onerror = () => {
-        if (sessionId !== activeAudioSessionRef.current) return;
-        currentIndex++;
-        playNext();
-      };
+        const voices = synthRef.current?.getVoices() || [];
+        const preferred = voices.find(vo => vo.lang.startsWith('en-US')) || voices.find(vo => vo.lang.startsWith('en')) || voices[0];
+        if (preferred) utterance.voice = preferred;
 
-      utteranceRef.current = utterance;
-      synthRef.current?.speak(utterance);
+        utterance.onend = () => {
+          if (sessionId !== activeAudioSessionRef.current) return;
+          currentIndex++;
+          playNext();
+        };
+        
+        utterance.onerror = () => {
+          if (sessionId !== activeAudioSessionRef.current) return;
+          currentIndex++;
+          playNext();
+        };
+
+        synthRef.current?.speak(utterance);
+      }
     };
 
     playNext();
@@ -2509,7 +2570,7 @@ export default function App() {
 
       {/* FIXED NAV BAR (COLLAPSIBLE & STICKY) */}
       <AnimatePresence initial={false}>
-        {!isHeaderCollapsed && (
+        {mainView !== 'home' && mainView !== 'interlinear' && !isHeaderCollapsed && (
           <motion.header
             initial={{ height: 0, opacity: 0 }}
             animate={{ height: 'auto', opacity: 1 }}
@@ -2571,17 +2632,26 @@ export default function App() {
                 
               </div>
               
-              {/* Top Right Study Options button */}
-              <div className="flex items-center">
+              <div className="flex items-center gap-2">
                 <button
                   onClick={() => {
                     setFullPageMenu('versions');
                     playWebAudioBeep(440, 'sine', 0.05);
                   }}
                   className={`p-2 transition-all hover:scale-105 active:scale-95 group ${theme === 'light' ? 'text-slate-700 hover:text-cyan-600' : 'text-slate-300 hover:text-cyan-400'}`}
-                  title="Study Options"
+                  title="Library"
                 >
-                  <Settings2 className="w-6 h-6 transition-transform group-hover:rotate-45" />
+                  <Library className="w-6 h-6 transition-transform group-hover:scale-110" />
+                </button>
+                <button
+                  onClick={() => {
+                    setFullPageMenu('settings');
+                    playWebAudioBeep(440, 'sine', 0.05);
+                  }}
+                  className={`p-2 transition-all hover:scale-105 active:scale-95 group ${theme === 'light' ? 'text-slate-700 hover:text-cyan-600' : 'text-slate-300 hover:text-cyan-400'}`}
+                  title="Settings"
+                >
+                  <Settings className="w-6 h-6 transition-transform group-hover:rotate-90" />
                 </button>
               </div>
 
@@ -2592,7 +2662,7 @@ export default function App() {
 
       {/* FLOAT POP TRIGGERS WHEN HEADER COLLAPSED */}
       <AnimatePresence>
-      {isHeaderCollapsed && (
+      {mainView !== 'home' && mainView !== 'interlinear' && isHeaderCollapsed && (
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -2618,18 +2688,6 @@ export default function App() {
           </span>
           {/* Collapsed Theme Switcher */}
           <div className="flex items-center space-x-1.5 pl-1.5">
-            {/* Collapsed Sync Gate */}
-            <button
-              onClick={() => setIsCloudSyncOpen(true)}
-              className={`p-1.5 rounded transition cursor-pointer ${
-                firebaseUser
-                  ? (theme === 'light' ? 'bg-emerald-50 hover:bg-emerald-100 text-emerald-700' : 'bg-emerald-950 hover:bg-emerald-900 text-emerald-400')
-                  : (theme === 'light' ? 'bg-cyan-50 hover:bg-cyan-100 text-cyan-700' : 'bg-cyan-950 hover:bg-cyan-900 text-cyan-400')
-              }`}
-              title="Open Scholar Cloud Sync Preferences"
-            >
-              <Cloud className={`w-3.5 h-3.5 ${firebaseUser ? '' : 'animate-pulse'}`} />
-            </button>
 
             {/* Collapsed Speech Desk Trigger */}
             <button
@@ -2658,6 +2716,7 @@ export default function App() {
       </AnimatePresence>
 
       {/* FLOATING AUDIO PLAY FAB & TRANSLATION TOGGLE */}
+      {mainView !== 'home' && (
       <div className={`fixed bottom-[76px] left-4 right-4 z-[90] flex items-center ${translationDisplayMode === 'both' ? 'justify-between' : 'justify-start'} pointer-events-none transition-all duration-500 ease-in-out ${isSidePanelHidden ? 'translate-y-24 opacity-0' : 'translate-y-0 opacity-100'}`}>
           <div className="pointer-events-auto">
             <AudioFAB 
@@ -2693,28 +2752,41 @@ export default function App() {
             </div>
           )}
       </div>
+      )}
       
       {/* FLOATING PILL BOTTOM NAVIGATION BAR */}
       <div className={`fixed bottom-2 left-4 right-4 z-[1050] flex items-center justify-around px-2 py-1 rounded-[2rem] shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out ${
         isSidePanelHidden ? 'translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
       } ${
         theme === 'light'
-          ? 'bg-white/95 border border-slate-200 shadow-[0_8px_30px_rgba(0,0,0,0.12)]'
-          : 'bg-[#1c1c1e]/95 border border-[#2d2d2d] shadow-[0_8px_30px_rgba(0,0,0,0.6)]'
+          ? 'bg-gradient-to-r from-zinc-200 via-zinc-300 to-zinc-200 border-t border-amber-400/40 shadow-[0_8px_30px_rgba(217,119,6,0.15)]'
+          : 'bg-gradient-to-r from-zinc-800 via-zinc-700 to-zinc-800 border-t border-amber-500/30 shadow-[0_8px_30px_rgba(251,191,36,0.1)]'
       } `}>
           
         <button
           onClick={() => {
               setFullPageMenu(null);
               setIsProjectionStudioOpen(false);
+              setMainView('home');
+          }}
+          className={`flex flex-col items-center justify-center p-2 rounded-[1.25rem] transition-all group`}
+        >
+          <div className={`p-2 rounded-xl transition-all duration-300 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'home' ? (theme === 'light' ? 'bg-gradient-to-br from-cyan-50 to-white text-cyan-600 shadow-sm border border-cyan-200/60' : 'bg-gradient-to-br from-cyan-900/30 to-black text-cyan-400 shadow-inner border border-cyan-500/30') : (theme === 'light' ? 'text-zinc-500 hover:text-cyan-600 hover:bg-white/40' : 'text-zinc-400 hover:text-cyan-300 hover:bg-black/20')}`}>
+             <Home className="w-6 h-6" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'home' ? 3 : 2} />
+          </div>
+        </button>
+
+        <button
+          onClick={() => {
+              setFullPageMenu(null);
+              setIsProjectionStudioOpen(false);
               setMainView('read');
           }}
-          className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
+          className={`flex flex-col items-center justify-center p-2 rounded-[1.25rem] transition-all group`}
         >
-          <div className={`p-1.5 rounded-xl transition-colors ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'bg-slate-300 text-slate-900' : 'bg-slate-600 text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
-             <BookOpen className="w-[22px] h-[22px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? 4 : 3} />
+          <div className={`p-2 rounded-xl transition-all duration-300 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'bg-gradient-to-br from-emerald-50 to-white text-emerald-600 shadow-sm border border-emerald-200/60' : 'bg-gradient-to-br from-emerald-900/30 to-black text-emerald-400 shadow-inner border border-emerald-500/30') : (theme === 'light' ? 'text-zinc-500 hover:text-emerald-600 hover:bg-white/40' : 'text-zinc-400 hover:text-emerald-300 hover:bg-black/20')}`}>
+             <BookOpen className="w-6 h-6" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? 3 : 2} />
           </div>
-          <span className={`text-[13px] font-black tracking-wide mt-1 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Read</span>
         </button>
 
         <button
@@ -2723,12 +2795,11 @@ export default function App() {
               setIsProjectionStudioOpen(true);
               playWebAudioBeep(520, 'sine', 0.08);
           }}
-          className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
+          className={`flex flex-col items-center justify-center p-2 rounded-[1.25rem] transition-all group`}
         >
-          <div className={`p-1.5 rounded-xl transition-colors ${isProjectionStudioOpen ? (theme === 'light' ? 'bg-slate-300 text-slate-900' : 'bg-slate-600 text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
-             <MonitorPlay className="w-[22px] h-[22px]" strokeWidth={isProjectionStudioOpen ? 4 : 3} />
+          <div className={`p-2 rounded-xl transition-all duration-300 ${isProjectionStudioOpen ? (theme === 'light' ? 'bg-gradient-to-br from-violet-50 to-white text-violet-600 shadow-sm border border-violet-200/60' : 'bg-gradient-to-br from-violet-900/30 to-black text-violet-400 shadow-inner border border-violet-500/30') : (theme === 'light' ? 'text-zinc-500 hover:text-violet-600 hover:bg-white/40' : 'text-zinc-400 hover:text-violet-300 hover:bg-black/20')}`}>
+             <MonitorPlay className="w-6 h-6" strokeWidth={isProjectionStudioOpen ? 3 : 2} />
           </div>
-          <span className={`text-[13px] font-black tracking-wide mt-1 ${isProjectionStudioOpen ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>LiveScreen</span>
         </button>
 
         <button
@@ -2737,26 +2808,28 @@ export default function App() {
               setFullPageMenu(null);
               setMainView('interlinear');
           }}
-          className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
+          className={`flex flex-col items-center justify-center p-2 rounded-[1.25rem] transition-all group`}
         >
-          <div className={`p-1.5 rounded-xl transition-colors ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'bg-slate-300 text-slate-900' : 'bg-slate-600 text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
-             <Layers className="w-[22px] h-[22px]" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? 4 : 3} />
+          <div className={`p-2 rounded-xl transition-all duration-300 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'bg-gradient-to-br from-rose-50 to-white text-rose-600 shadow-sm border border-rose-200/60' : 'bg-gradient-to-br from-rose-900/30 to-black text-rose-400 shadow-inner border border-rose-500/30') : (theme === 'light' ? 'text-zinc-500 hover:text-rose-600 hover:bg-white/40' : 'text-zinc-400 hover:text-rose-300 hover:bg-black/20')}`}>
+             <Layers className="w-6 h-6" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? 3 : 2} />
           </div>
-          <span className={`text-[13px] font-black tracking-wide mt-1 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Interlinear</span>
         </button>
 
         <button
           onClick={() => {
-              setIsProjectionStudioOpen(false);
-              setFullPageMenu('settings');
+            setFullPageMenu(null);
+            setMainView('prayer');
+            setIsProjectionStudioOpen(false);
+            playWebAudioBeep(220, 'sine', 0.05);
           }}
-          className={`flex flex-col items-center justify-center p-1 rounded-[1.25rem] transition-all w-16 group`}
+          className={`flex flex-col items-center justify-center p-2 rounded-[1.25rem] transition-all group`}
         >
-          <div className={`p-1.5 rounded-xl transition-colors ${fullPageMenu === 'settings' ? (theme === 'light' ? 'bg-slate-300 text-slate-900' : 'bg-slate-600 text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>
-             <Settings className="w-[22px] h-[22px]" strokeWidth={fullPageMenu === 'settings' ? 4 : 3} />
+          <div className={`p-2 rounded-xl transition-all duration-300 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'prayer' ? (theme === 'light' ? 'bg-gradient-to-br from-amber-50 to-white text-amber-600 shadow-sm border border-amber-200/60' : 'bg-gradient-to-br from-amber-900/30 to-black text-amber-400 shadow-inner border border-amber-500/30') : (theme === 'light' ? 'text-zinc-500 hover:text-amber-600 hover:bg-white/40' : 'text-zinc-400 hover:text-amber-300 hover:bg-black/20')}`}>
+             <PrayingHandsIcon className="w-6 h-6" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'prayer' ? 2.5 : 2} />
           </div>
-          <span className={`text-[13px] font-black tracking-wide mt-1 ${fullPageMenu === 'settings' ? (theme === 'light' ? 'text-slate-900' : 'text-slate-100') : (theme === 'light' ? 'text-slate-500' : 'text-slate-400')}`}>Settings</span>
         </button>
+
+        {/* End of Bottom Tabs */}
       </div>
 
       {/* FULL PAGE MENU MODAL */}
@@ -2779,7 +2852,7 @@ export default function App() {
                   <ArrowLeft className="w-5 h-5" />
                 </button>
                 <h2 className="text-xl font-bold font-display tracking-tight capitalize">
-                  {fullPageMenu === 'versions' ? 'Study Options' : 'App Settings'}
+                  {fullPageMenu === 'versions' ? 'Library' : 'App Settings'}
                 </h2>
               </div>
             </div>
@@ -2812,17 +2885,6 @@ export default function App() {
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Ref Manuscript Toggle */}
-                      <div className={`flex flex-col space-y-2 p-4 rounded-2xl shadow-sm border ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#121622] border-cyan-950/30'}`}>
-                        <div className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-1">Reference View</div>
-                        <div
-                          onClick={() => setIsComparisonEnabled(!isComparisonEnabled)}
-                          className={`cursor-pointer transition-all px-4 py-3 rounded-xl flex items-center justify-between font-bold hover:scale-[1.02] active:scale-[0.98] ${theme === 'light' ? 'bg-slate-50 text-slate-800' : 'bg-slate-900/50 text-slate-100'}`}
-                        >
-                          <span className="text-sm">Manuscript Context</span>
-                          {isComparisonEnabled ? <ToggleRight className="w-6 h-6 text-cyan-500" /> : <ToggleLeft className="w-6 h-6 text-slate-400" />}
-                        </div>
-                      </div>
 
                       {/* Light/Dark Mode Switcher */}
                       <div className={`flex flex-col space-y-2 p-4 rounded-2xl shadow-sm border ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#121622] border-cyan-950/30'}`}>
@@ -2838,48 +2900,7 @@ export default function App() {
                     </div>
 
                     <div className="grid grid-cols-1 gap-4 mt-2">
-                        {/* Open Scholar Cloud Sync Trigger */}
-                        <div
-                          onClick={() => {
-                            setFullPageMenu(null);
-                            setIsCloudSyncOpen(true);
-                          }}
-                          className={`cursor-pointer transition-all px-5 py-4 rounded-2xl flex items-center justify-between font-bold border shadow-sm hover:scale-[1.01] active:scale-[0.99] ${theme === 'light' ? 'bg-white border-slate-200 text-slate-800' : 'bg-[#121622] border-cyan-950/30 text-slate-100'}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-cyan-100 dark:bg-cyan-900/40 flex items-center justify-center">
-                              <Cloud className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-sm">Cloud Connect</span>
-                              <span className="text-sm text-slate-500 font-normal">Sync notes and bookmarks across devices</span>
-                            </div>
-                          </div>
-                          <span className={`font-mono text-sm font-bold uppercase ${firebaseUser ? 'text-emerald-500' : 'text-slate-400'}`}>
-                            {firebaseUser ? 'Connected' : '➔'}
-                          </span>
-                        </div>
 
-                        {/* Study Guide trigger */}
-                        <div
-                          onClick={() => {
-                            setFullPageMenu(null);
-                            setWelcomeStep(0);
-                            setIsWelcomeOpen(true);
-                          }}
-                          className={`cursor-pointer transition-all px-5 py-4 rounded-2xl flex items-center justify-between font-bold border shadow-sm hover:scale-[1.01] active:scale-[0.99] ${theme === 'light' ? 'bg-white border-slate-200 text-slate-800' : 'bg-[#121622] border-amber-900/30 text-slate-100'}`}
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/40 flex items-center justify-center">
-                              <Compass className="w-4 h-4 text-amber-600 dark:text-amber-500" />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-sm">Walkthrough Guide</span>
-                              <span className="text-sm text-slate-500 font-normal">Replay the introductory tutorial</span>
-                            </div>
-                          </div>
-                          <span className="font-mono text-sm font-bold text-amber-500 uppercase">🌟</span>
-                        </div>
                     </div>
                   </>
                 )}
@@ -2887,100 +2908,100 @@ export default function App() {
                 {fullPageMenu === 'versions' && (
                   <div className="flex flex-col space-y-6">
                     
-                    {/* View Modes Selection */}
-                    <div>
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Single Translations</h3>
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                        {[
-                          { id: 'plain', label: 'Plain English (PET)' },
-                          { id: 'personalized', label: 'Personalised Prayer' },
-                          { id: 'kjv', label: 'King James (KJV)' },
-                          { id: 'bsb', label: 'Berean Standard (BSB)' },
-                          { id: 'asv', label: 'American Standard (ASV)' },
-                          { id: 'ylt', label: 'Young\'s Literal (YLT)' },
-                          { id: 'bbe', label: 'Bible in Basic English' },
-                        ].map(mode => (
-                          <button
+                    <div className="flex flex-col space-y-4">
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-2">Study Layouts</h3>
+                      <button
+                        onClick={() => {
+                          setTranslationDisplayMode('both');
+                          localStorage.setItem('personalized_bible_translation_display_mode', 'both');
+                          playWebAudioBeep(520, 'sine', 0.05);
+                        }}
+                        className={`mb-4 p-4 rounded-xl border transition-all text-left flex flex-col ${translationDisplayMode === 'both' ? (theme === 'light' ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-sm' : 'bg-indigo-900/40 border-indigo-700 text-indigo-300') : (theme === 'light' ? 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50' : 'bg-[#121622] border-slate-800 text-slate-400 hover:bg-[#161a27]')}`}
+                      >
+                        <div className="flex items-center justify-between w-full mb-1">
+                          <span className="font-bold text-sm">Dual-Stream Side-by-Side</span>
+                          {translationDisplayMode === 'both' && <CheckCircle2 className="w-5 h-5 text-indigo-500" />}
+                        </div>
+                        <span className="text-xs opacity-70">Read Plain English alongside Personalised Prayer</span>
+                      </button>
+
+                      {/* Search Bar */}
+                      <div className="relative">
+                        <Search className={`absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`} />
+                        <input
+                          type="text"
+                          placeholder="Search translations..."
+                          value={translationSearchText}
+                          onChange={(e) => setTranslationSearchText(e.target.value)}
+                          className={`w-full pl-9 pr-4 py-3 rounded-xl border text-sm font-medium transition-all ${
+                            theme === 'light'
+                              ? 'bg-white border-slate-200 text-slate-800 placeholder-slate-400 focus:border-cyan-400 focus:ring-4 focus:ring-cyan-500/10'
+                              : 'bg-[#121622] border-slate-800 text-slate-200 placeholder-slate-500 focus:border-cyan-600 focus:ring-4 focus:ring-cyan-500/20'
+                          }`}
+                        />
+                      </div>
+
+                      
+                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mt-4 mb-2">Single Mode</h3>
+                      <div className={`flex flex-col rounded-xl overflow-hidden border ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#121622] border-slate-800'}`}>
+                        {AUDIO_TRANS_OPTIONS.filter(mode => mode.label.toLowerCase().includes(translationSearchText.toLowerCase())).map((mode, index, arr) => {
+                          const isDynamic = ['asv', 'ylt', 'bbe'].includes(mode.id);
+                          const isDownloaded = localStorage.getItem(`offline_${mode.id}`) === 'true';
+                          
+                          return (
+                          <div
                             key={mode.id}
-                            onClick={() => {
-                              setTranslationDisplayMode(mode.id as any);
-                              localStorage.setItem('personalized_bible_translation_display_mode', mode.id);
-                              playWebAudioBeep(520, 'sine', 0.05);
-                            }}
-                            className={`p-3 rounded-xl border text-sm font-bold transition-all text-left ${translationDisplayMode === mode.id ? (theme === 'light' ? 'bg-cyan-50 border-cyan-300 text-cyan-700 shadow-sm' : 'bg-cyan-900/40 border-cyan-700 text-cyan-300') : (theme === 'light' ? 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50' : 'bg-[#121622] border-slate-800 text-slate-400 hover:bg-[#161a27]')}`}
+                            className={`flex items-center justify-between p-4 transition-colors ${
+                              index !== arr.length - 1 ? (theme === 'light' ? 'border-b border-slate-100' : 'border-b border-slate-800/60') : ''
+                            } ${
+                              translationDisplayMode === mode.id 
+                                ? (theme === 'light' ? 'bg-cyan-50/50' : 'bg-cyan-900/10')
+                                : (theme === 'light' ? 'hover:bg-slate-50' : 'hover:bg-slate-800/40')
+                            }`}
                           >
-                            {mode.label}
-                          </button>
-                        ))}
+                            <div 
+                              className="flex-1 cursor-pointer"
+                              onClick={() => {
+                                setTranslationDisplayMode(mode.id as any);
+                                localStorage.setItem('personalized_bible_translation_display_mode', mode.id);
+                                playWebAudioBeep(520, 'sine', 0.05);
+                              }}
+                            >
+                              <span className={`text-sm font-bold ${
+                                translationDisplayMode === mode.id
+                                  ? (theme === 'light' ? 'text-cyan-700' : 'text-cyan-400')
+                                  : (theme === 'light' ? 'text-slate-700' : 'text-slate-300')
+                              }`}>
+                                {mode.label}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-3">
+                              {isDynamic && !isDownloaded && (
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDownloadTranslation(mode.id);
+                                  }}
+                                  className={`p-1.5 rounded-full hover:bg-slate-500/10 transition-colors ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}
+                                  title="Download for Offline Viewing"
+                                >
+                                  <Download className="w-5 h-5" />
+                                </button>
+                              )}
+                              {isDynamic && isDownloaded && (
+                                <div className={`text-[10px] uppercase font-bold tracking-wider px-2 py-0.5 rounded-full ${theme === 'light' ? 'bg-emerald-100 text-emerald-700' : 'bg-emerald-900/30 text-emerald-400'}`}>
+                                  Offline
+                                </div>
+                              )}
+                              {translationDisplayMode === mode.id && (
+                                <CheckCircle2 className={`w-5 h-5 ${theme === 'light' ? 'text-cyan-500' : 'text-cyan-400'}`} />
+                              )}
+                            </div>
+                          </div>
+                        )})}
                       </div>
                     </div>
 
-                    <div>
-                      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-3">Study Layouts</h3>
-                      <div className="grid grid-cols-1 gap-3">
-                        {/* Interlinear option removed to become standalone tab */}
-                        <button
-                          onClick={() => {
-                            setTranslationDisplayMode('both');
-                            localStorage.setItem('personalized_bible_translation_display_mode', 'both');
-                            playWebAudioBeep(520, 'sine', 0.05);
-                          }}
-                          className={`p-4 rounded-xl border transition-all text-left flex flex-col ${translationDisplayMode === 'both' ? (theme === 'light' ? 'bg-indigo-50 border-indigo-300 text-indigo-700 shadow-sm' : 'bg-indigo-900/40 border-indigo-700 text-indigo-300') : (theme === 'light' ? 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50' : 'bg-[#121622] border-slate-800 text-slate-400 hover:bg-[#161a27]')}`}
-                        >
-                          <span className="font-bold text-sm mb-1">Dual-Stream Side-by-Side</span>
-                          <span className="text-xs opacity-70">Read Plain English alongside Personalised Prayer</span>
-                        </button>
-                      </div>
-                    </div>
-
-                    <div className="pt-4 border-t border-slate-200 dark:border-slate-800">
-                      <p className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-4">Study Aids</p>
-                    
-                    <button
-                      onClick={() => {
-                        setFullPageMenu(null);
-                        setScannerInputText('Could you explain what is happening theologically in this chapter, specifically looking at how the core covenants are addressed?');
-                        if (!isSidePanelHidden) { setIsSidePanelHidden(true); }
-                      }}
-                      className={`text-left p-4 rounded-2xl shadow-sm border transition-all hover:scale-[1.01] active:scale-[0.99] ${theme === 'light' ? 'bg-white hover:bg-slate-50 border-slate-200' : 'bg-[#121622] hover:bg-[#161a27] border-indigo-900/30'}`}
-                    >
-                      <div className="flex items-center gap-3 mb-1">
-                        <MessageSquare className="w-4 h-4 text-indigo-500" />
-                        <span className="font-bold text-indigo-600 dark:text-indigo-400">Theological Analysis</span>
-                      </div>
-                      <span className="text-sm text-slate-500 font-medium">Ask for a deep theological breakdown of the current chapter.</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setFullPageMenu(null);
-                        setScannerInputText('Could you generate 5 reflective study questions based on this text for my personal journaling?');
-                        if (!isSidePanelHidden) { setIsSidePanelHidden(true); }
-                      }}
-                      className={`text-left p-4 rounded-2xl shadow-sm border transition-all hover:scale-[1.01] active:scale-[0.99] ${theme === 'light' ? 'bg-white hover:bg-slate-50 border-slate-200' : 'bg-[#121622] hover:bg-[#161a27] border-cyan-900/30'}`}
-                    >
-                      <div className="flex items-center gap-3 mb-1">
-                        <BookOpen className="w-4 h-4 text-cyan-500" />
-                        <span className="font-bold text-cyan-600 dark:text-cyan-400">Study Questions</span>
-                      </div>
-                      <span className="text-sm text-slate-500 font-medium">Generate journaling prompts and reflection questions.</span>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        setFullPageMenu(null);
-                        setScannerInputText('Could you provide a brief historical and cultural context for the events occurring in this text?');
-                        if (!isSidePanelHidden) { setIsSidePanelHidden(true); }
-                      }}
-                      className={`text-left p-4 rounded-2xl shadow-sm border transition-all hover:scale-[1.01] active:scale-[0.99] ${theme === 'light' ? 'bg-white hover:bg-slate-50 border-slate-200' : 'bg-[#121622] hover:bg-[#161a27] border-amber-900/30'}`}
-                    >
-                      <div className="flex items-center gap-3 mb-1">
-                        <Globe className="w-4 h-4 text-amber-500" />
-                        <span className="font-bold text-amber-600 dark:text-amber-500">Cultural Context</span>
-                      </div>
-                      <span className="text-sm text-slate-500 font-medium">Understand the historical background of the passage.</span>
-                    </button>
-                  </div>
                   </div>
                 )}
               </div>
@@ -2991,11 +3012,12 @@ export default function App() {
 
       {/* FLOATING MIDDLE NAV: TRIANGLE IN CIRCLE SLIDE OPTIONS */}
       {/* PREVIOUS CHAPTER FLOATER */}
-      <div className={`fixed left-0 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${isSidePanelHidden ? '-translate-x-24 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
+      {mainView !== 'home' && (
+      <div className={`fixed left-1 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${isSidePanelHidden ? '-translate-x-24 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
         <button
           id="floating-nav-prev-chapter-btn"
           onClick={handlePrevChapter}
-          className={`p-1.5 flex items-center justify-center transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
+          className={`p-1 flex items-center justify-center transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
             theme === 'light'
               ? 'text-slate-700 hover:text-cyan-600'
               : 'text-cyan-500 hover:text-cyan-400'
@@ -3004,16 +3026,18 @@ export default function App() {
           disabled={!prevChapterLabel}
         >
           {/* Animated slider triangle icon */}
-          <ChevronLeft className="w-7 h-7 md:w-8 md:h-8 transition-transform duration-300 group-hover:-translate-x-0.5" strokeWidth={3} />
+          <Play className="w-6 h-6 md:w-8 md:h-8 fill-current rotate-180 transition-transform duration-300 group-hover:-translate-x-1" />
         </button>
       </div>
+      )}
 
       {/* NEXT CHAPTER FLOATER */}
-      <div className={`fixed right-0 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${isSidePanelHidden ? 'translate-x-24 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
+      {mainView !== 'home' && (
+      <div className={`fixed right-1 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${isSidePanelHidden ? 'translate-x-24 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
         <button
           id="floating-nav-next-chapter-btn"
           onClick={handleNextChapter}
-          className={`p-1.5 flex items-center justify-center transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
+          className={`p-1 flex items-center justify-center transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
             theme === 'light'
               ? 'text-slate-700 hover:text-cyan-600'
               : 'text-cyan-500 hover:text-cyan-400'
@@ -3022,9 +3046,10 @@ export default function App() {
           disabled={!nextChapterLabel}
         >
           {/* Animated slider triangle icon */}
-          <ChevronRight className="w-7 h-7 md:w-8 md:h-8 transition-transform duration-300 group-hover:translate-x-0.5" strokeWidth={3} />
+          <Play className="w-6 h-6 md:w-8 md:h-8 fill-current transition-transform duration-300 group-hover:translate-x-1" />
         </button>
       </div>
+      )}
 
       {/* MAIN CONTAINER PANEL */}
       <main 
@@ -3163,9 +3188,19 @@ export default function App() {
             </div>
           </div>
         ) : chapterData ? (
-          <div className="space-y-4">
+          <AnimatePresence mode="wait">
+            <motion.div 
+              key={`${selectedBook}-${selectedChapter}`}
+              initial={{ x: slideDirection === 'forward' ? '100%' : slideDirection === 'backward' ? '-100%' : 0, opacity: 0 }}
+              animate={{ x: 0, opacity: 1 }}
+              exit={{ x: slideDirection === 'forward' ? '-100%' : slideDirection === 'backward' ? '100%' : 0, opacity: 0 }}
+              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
+              className="space-y-4"
+              onAnimationComplete={() => setSlideDirection('none')}
+            >
             
             {/* Chapter Header */}
+            {mainView !== 'home' && (
             <div className={`flex flex-col gap-2 pb-4 mb-4 border-b ${theme === 'light' ? 'border-zinc-200' : 'border-zinc-800'}`}>
               
               {/* Row 1: Title, Fetch state */}
@@ -3186,6 +3221,7 @@ export default function App() {
 
               </div>
             </div>
+            )}
 
             {/* READING SCHEME */}
             <div className="grid grid-cols-1 gap-4 items-start">
@@ -3202,7 +3238,7 @@ export default function App() {
                   className={`scripture-zoom-container relative z-20 transition-all duration-500 antialiased ${
                     scriptureTypefaceSetting === 'serif' ? 'font-serif' : scriptureTypefaceSetting === 'mono' ? 'font-mono' : 'font-sans'
                   } ${
-                    scriptureFontSizeSetting === 'xs' ? 'text-sm' : scriptureFontSizeSetting === 'sm' ? 'text-base' : scriptureFontSizeSetting === 'lg' ? 'text-xl' : 'text-lg'
+                    'text-[18px]'
                   } ${
                     scriptureTextStyleSetting === 'elegant' ? 'font-light tracking-[0.02em] leading-[2.0]' : scriptureTextStyleSetting === 'compact' ? 'tracking-tight leading-snug' : scriptureTextStyleSetting === 'classic' ? 'font-medium leading-[1.9]' : 'font-normal leading-[1.8] tracking-[0.01em]'
                   } ${
@@ -3234,7 +3270,164 @@ export default function App() {
 
 
                   {/* Main Viewer Switch: Interlinear vs Read Mode */}
-                  {mainView === 'interlinear' ? (() => {
+                  {/* Main Viewer Switch: Home vs Interlinear vs Read Mode */}
+                  {mainView === 'home' ? (
+                    <div className="p-6 md:p-10 max-w-5xl mx-auto space-y-8 pb-14 md:pb-20 animate-fade-in-up">
+                      <div className="space-y-2">
+                        <h1 className={`text-3xl md:text-4xl font-black tracking-tight ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'}`}>
+                          Welcome to LogosBridge
+                        </h1>
+                        <p className={`text-lg ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>
+                          A contemporary and highly readable Bible study assistant tailored for non-native English speakers.
+                        </p>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
+                        {/* Read Card */}
+                        <div 
+                          onClick={() => setMainView('read')}
+                          className={`relative overflow-hidden rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 shadow-lg ${
+                            theme === 'light' 
+                              ? 'bg-gradient-to-br from-indigo-50 to-blue-50 border border-blue-100' 
+                              : 'bg-gradient-to-br from-indigo-950/40 to-blue-900/20 border border-indigo-500/20'
+                          }`}
+                        >
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-md ${
+                            theme === 'light' ? 'bg-white text-blue-600' : 'bg-blue-900/50 text-blue-400'
+                          }`}>
+                            <BookOpen className="w-7 h-7" />
+                          </div>
+                          <h3 className={`text-xl font-bold mb-2 ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>Read & Compare</h3>
+                          <p className={`text-sm leading-relaxed ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>
+                            Immerse yourself in a distraction-free, dual-stream reading experience with instantly accessible translations.
+                          </p>
+                        </div>
+
+                        {/* Interlinear Card */}
+                        <div 
+                          onClick={() => setMainView('interlinear')}
+                          className={`relative overflow-hidden rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 shadow-lg ${
+                            theme === 'light' 
+                              ? 'bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100' 
+                              : 'bg-gradient-to-br from-emerald-950/40 to-teal-900/20 border border-emerald-500/20'
+                          }`}
+                        >
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-md ${
+                            theme === 'light' ? 'bg-white text-emerald-600' : 'bg-emerald-900/50 text-emerald-400'
+                          }`}>
+                            <Layers className="w-7 h-7" />
+                          </div>
+                          <h3 className={`text-xl font-bold mb-2 ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>Interlinear Study</h3>
+                          <p className={`text-sm leading-relaxed ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>
+                            Dive deep into the original texts. Break down the manuscript line by line with lexical definitions and concordances.
+                          </p>
+                        </div>
+
+                        {/* LiveScreen Card */}
+                        <div 
+                          onClick={() => {
+                            setIsProjectionStudioOpen(true);
+                            playWebAudioBeep(520, 'sine', 0.08);
+                          }}
+                          className={`relative overflow-hidden rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 shadow-lg ${
+                            theme === 'light' 
+                              ? 'bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100' 
+                              : 'bg-gradient-to-br from-amber-950/40 to-orange-900/20 border border-amber-500/20'
+                          }`}
+                        >
+                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-md ${
+                            theme === 'light' ? 'bg-white text-amber-600' : 'bg-amber-900/50 text-amber-400'
+                          }`}>
+                            <MonitorPlay className="w-7 h-7" />
+                          </div>
+                          <h3 className={`text-xl font-bold mb-2 ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>LiveScreen</h3>
+                          <p className={`text-sm leading-relaxed ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>
+                            Project your study seamlessly. Push beautiful, synchronized verses to an external display or TV in real-time.
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Daily Verse & Study Progress Widget */}
+                      <div className={`mt-10 w-full rounded-[2rem] p-8 relative overflow-hidden transition-all duration-500 shadow-xl group ${
+                        theme === 'light' 
+                          ? 'bg-gradient-to-br from-indigo-900 via-blue-900 to-cyan-900' 
+                          : 'bg-gradient-to-br from-zinc-900 via-slate-900 to-[#121622] border border-slate-800'
+                      }`}>
+                         <div className="absolute -top-12 -right-12 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
+                           <Sparkles className="w-64 h-64 text-white" />
+                         </div>
+                         <div className="relative z-10 flex flex-col lg:flex-row gap-8 items-center justify-between">
+                           <div className="flex-1 space-y-4 w-full">
+                             <h4 className="text-cyan-300/80 font-bold tracking-widest text-xs uppercase flex items-center gap-2">
+                               <Sparkles className="w-4 h-4" /> Daily Bread
+                             </h4>
+                             <p className="text-white font-serif text-2xl md:text-3xl leading-snug">
+                               "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."
+                             </p>
+                             <div className="text-indigo-200 text-sm font-mono tracking-widest">
+                               JOHN 3:16
+                             </div>
+                           </div>
+                           
+                           <div className={`lg:w-72 w-full rounded-2xl p-6 flex flex-col justify-center items-center gap-4 border backdrop-blur-md ${
+                             theme === 'light' ? 'bg-white/10 border-white/20' : 'bg-black/40 border-white/10'
+                           }`}>
+                             <div className="text-white/80 text-xs font-bold uppercase tracking-wider w-full flex justify-between">
+                               <span>Study Progress</span>
+                               <span className="text-cyan-400">42%</span>
+                             </div>
+                             <div className="w-full h-2 rounded-full bg-black/40 overflow-hidden relative shadow-inner">
+                               <div className="absolute top-0 left-0 h-full bg-cyan-400 rounded-full" style={{ width: '42%' }}></div>
+                             </div>
+                             <button 
+                               onClick={() => {
+                                 setSelectedBook('John');
+                                 setSelectedChapter(3);
+                                 setMainView('read');
+                               }}
+                               className="mt-2 w-full py-3 rounded-xl bg-white text-indigo-900 font-bold text-sm hover:bg-cyan-50 transition-all shadow-md hover:shadow-lg active:scale-95"
+                             >
+                               Continue Reading
+                             </button>
+                           </div>
+                         </div>
+                      </div>
+
+                    </div>
+                  ) : mainView === 'prayer' ? (() => {
+                     return (
+                       <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto pb-32">
+                         <div className={`p-6 rounded-2xl border flex flex-col gap-3 text-center ${theme === 'light' ? 'bg-amber-50/40 border-amber-200 shadow-sm' : 'bg-amber-950/10 border-amber-900/30'}`}>
+                            <h2 className={`text-2xl font-serif font-medium tracking-tight ${theme === 'light' ? 'text-amber-900' : 'text-amber-500'}`}>Sacred Dialogue</h2>
+                            <p className={`text-sm ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>Experience the {chapterData.book} as a direct, personal conversation with God.</p>
+                         </div>
+                         <div className="flex flex-col space-y-12 pt-4">
+                           {chapterData.verses.map(v => (
+                             <div key={v.verseNumber} className="relative flex flex-col gap-6">
+                               {/* Verse Indicator */}
+                               <div className="flex justify-center -mb-8 z-10">
+                                 <div className={`px-4 py-1 rounded-full text-xs font-black tracking-tighter ${theme === 'light' ? 'bg-white text-slate-500 border border-slate-200 shadow-sm' : 'bg-[#121622] text-slate-400 border border-slate-700 shadow-sm'}`}>
+                                   {v.verseNumber}
+                                 </div>
+                               </div>
+                               
+                               {/* User to God */}
+                               <div className={`w-[85%] sm:w-4/5 self-end p-5 pt-8 rounded-3xl rounded-tr-none border shadow-sm ${theme === 'light' ? 'bg-indigo-50/80 border-indigo-100 text-indigo-900' : 'bg-indigo-950/20 border-indigo-900/30 text-indigo-100'}`}>
+                                 <div className="text-[10px] font-bold uppercase tracking-widest mb-3 opacity-60 text-right">Your Prayer</div>
+                                 <p className="font-serif leading-relaxed text-[1.1em]">{v.nonNativeEnglish}</p>
+                               </div>
+
+                               {/* God to User */}
+                               <div className={`w-[85%] sm:w-4/5 self-start p-5 pt-8 rounded-3xl rounded-tl-none border shadow-sm ${theme === 'light' ? 'bg-white border-amber-200 text-amber-950' : 'bg-amber-950/20 border-amber-900/30 text-amber-100'}`}>
+                                 <div className="text-[10px] font-bold uppercase tracking-widest mb-3 opacity-60">God's Word</div>
+                                 <p className="font-serif leading-relaxed text-[1.1em]">{v.plainEnglish}</p>
+                               </div>
+                             </div>
+                           ))}
+                         </div>
+                       </div>
+                     );
+                  })() : mainView === 'interlinear' ? (() => {
                      return (
                        <div className="p-5 md:p-8 space-y-8 max-w-4xl mx-auto pb-32">
                          {chapterData.verses.map(v => {
@@ -3262,7 +3455,7 @@ export default function App() {
                                  <div className="flex flex-col border-t border-slate-100 dark:border-slate-800/50 pt-4">
                                    <span className="text-[0.65em] uppercase tracking-widest font-bold text-cyan-600/80 dark:text-cyan-500/80 mb-1.5">Plain English Translation</span>
                                    <div className={`font-sans font-medium text-[17px] leading-relaxed ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
-                                     {v.contemporary ? v.contemporary : <span className="italic opacity-50">[Plain English Translation Not Available]</span>}
+                                     <span className="italic opacity-50">Available soon</span>
                                    </div>
                                  </div>
                                  
@@ -3270,16 +3463,25 @@ export default function App() {
                                  <div className="flex flex-col border-t border-slate-100 dark:border-slate-800/50 pt-4 relative group">
                                    <div className="absolute top-2 right-0 z-20 group/menu flex items-center justify-end">
                                      {/* 3-dot FAB icon, visible by default */}
-                                     <button className={`p-1.5 rounded-full backdrop-blur-md border shadow-lg flex items-center justify-center transition-all ${theme === 'light' ? 'bg-white/90 border-slate-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700' : 'bg-slate-800/90 border-slate-700 text-emerald-400 hover:bg-slate-700 hover:text-emerald-300'} z-20`}>
+                                     <button 
+                                       onClick={(e) => {
+                                         e.stopPropagation();
+                                         setOpenInterlinearMenuId(openInterlinearMenuId === v.verseNumber ? null : v.verseNumber);
+                                       }}
+                                       className={`interlinear-menu-trigger p-1.5 rounded-full backdrop-blur-md border shadow-lg flex items-center justify-center transition-all ${theme === 'light' ? 'bg-white/90 border-slate-200 text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700' : 'bg-slate-800/90 border-slate-700 text-emerald-400 hover:bg-slate-700 hover:text-emerald-300'} z-20`}
+                                     >
                                        <MoreVertical className="w-3.5 h-3.5" />
                                      </button>
 
-                                     {/* Compact horizontal menu fading in on hover */}
-                                     <div className={`absolute right-[32px] top-1/2 -translate-y-1/2 flex items-center rounded-lg shadow-lg border overflow-hidden text-[9px] sm:text-[10px] opacity-0 invisible group-hover/menu:opacity-100 group-hover/menu:visible transition-all translate-x-2 group-hover/menu:translate-x-0 ${theme === 'light' ? 'bg-white/95 border-emerald-200/50' : 'bg-slate-900/95 border-emerald-900/50'} z-10 backdrop-blur-md`}>
+                                     {/* Compact horizontal menu fading in on hover or click */}
+                                     <div className={`interlinear-menu-content absolute right-[32px] top-1/2 -translate-y-1/2 flex items-center rounded-lg shadow-lg border overflow-hidden text-[9px] sm:text-[10px] transition-all duration-300 z-10 backdrop-blur-md ${openInterlinearMenuId === v.verseNumber ? 'opacity-100 visible translate-x-0' : 'opacity-0 invisible translate-x-4 md:group-hover/menu:opacity-100 md:group-hover/menu:visible md:group-hover/menu:translate-x-0'} ${theme === 'light' ? 'bg-white/95 border-emerald-200/50' : 'bg-slate-900/95 border-emerald-900/50'}`}>
                                        {['kjv', 'bsb', 'asv', 'ylt', 'bbe'].map(opt => (
                                          <button
                                            key={opt}
-                                           onClick={() => setInterlinearThirdLine(opt)}
+                                           onClick={() => {
+                                             setInterlinearThirdLine(opt);
+                                             setOpenInterlinearMenuId(null);
+                                           }}
                                            className={`px-2 py-1.5 font-bold uppercase transition-colors ${interlinearThirdLine === opt ? (theme === 'light' ? 'bg-emerald-100 text-emerald-700 shadow-inner' : 'bg-emerald-900/40 text-emerald-400 shadow-inner') : (theme === 'light' ? 'text-slate-500 hover:bg-emerald-50' : 'text-slate-400 hover:bg-slate-800 hover:text-emerald-300')}`}
                                          >
                                            {opt}
@@ -3322,8 +3524,7 @@ export default function App() {
                         playbackSpeed={playbackSpeed}
                         setPlaybackSpeed={setPlaybackSpeed}
                         isHeaderHidden={isHeaderHidden}
-                        isComparisonEnabled={isComparisonEnabled}
-                        referenceDisplayMode={referenceDisplayMode}
+
                         activeDraftVerse={activeDraftVerse}
                         noteDraftText={noteDraftText}
                         setNoteDraftText={setNoteDraftText}
@@ -3357,11 +3558,11 @@ export default function App() {
                     if (isMultiCol) {
                       return (
                         <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 h-[calc(100vh-160px)]">
-                          <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2`}>
+                          <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto pb-32 h-full scroll-smooth ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 rounded-2xl`}>
                             {renderNarrativeStream(dualStreamLeft, undefined, 'left')}
                           </div>
 
-                          <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2`}>
+                          <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto pb-32 h-full scroll-smooth ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 rounded-2xl`}>
                             {renderNarrativeStream(dualStreamRight, undefined, 'right')}
                           </div>
                         </div>
@@ -3373,7 +3574,7 @@ export default function App() {
 
                     return (
                       <div className="p-5 md:p-8 space-y-6">
-                        <div className={`max-w-3xl mx-auto ${scriptureFontSizeSetting === 'xs' ? 'text-[15px]' : scriptureFontSizeSetting === 'sm' ? 'text-[17px]' : scriptureFontSizeSetting === 'base' ? 'text-[19px]' : 'text-[21px]'} ${getScriptureStyleClasses()}`}>
+                        <div className={`max-w-3xl mx-auto text-[18px] ${getScriptureStyleClasses()}`}>
                           {renderNarrativeStream(singleTransType)}
                         </div>
 
@@ -3403,32 +3604,14 @@ export default function App() {
                           let title = '';
                           let fontClasses = '';
 
-                          const renderRefs = () => {
-                              if (!isComparisonEnabled) return null;
-                              return (
-                                  <div className={`my-3 p-3.5 rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col gap-2.5 w-full transition-all ${theme === 'light' ? 'bg-slate-50/70 border border-slate-100' : 'bg-[#121622]/40 border border-cyan-950/20'}`}>
-                                      {(referenceDisplayMode === 'both' || referenceDisplayMode === 'kjv') && (
-                                          <div className={`font-serif text-[0.9em] leading-relaxed font-semibold not-italic ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
-                                              {renderInteractiveText(v.kjvText || '', v.specialWords, `kjv-${v.verseNumber}`)}
-                                          </div>
-                                      )}
-                                      {(referenceDisplayMode === 'both' || referenceDisplayMode === 'bsb') && (
-                                          <div className={`font-serif text-[0.9em] leading-relaxed font-semibold not-italic ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
-                                              {renderInteractiveText(v.bsbText || '', v.specialWords, `bsb-${v.verseNumber}`)}
-                                          </div>
-                                      )}
-                                  </div>
-                              );
-                          };
-
                           if (transType === 'plain') {
                               title = 'PET';
                               fontClasses = `${plainBold ? 'font-extrabold' : 'font-bold'} not-italic`;
-                              textContent = <div className="flex flex-col w-full">{renderRefs()}<div>{v.contemporary}</div></div>;
+                              textContent = <div className="flex flex-col w-full"><div>{v.contemporary}</div></div>;
                           } else if (transType === 'pers') {
                               title = 'PPV';
                               fontClasses = `${personalizedBold ? 'font-extrabold' : 'font-bold'} not-italic`;
-                              textContent = <div className="flex flex-col w-full">{renderRefs()}<div>{v.nonNativeEnglish}</div></div>;
+                              textContent = <div className="flex flex-col w-full"><div>{v.nonNativeEnglish}</div></div>;
                           } else if (transType === 'kjv') {
                               title = 'Reference (KJV)';
                               fontClasses = `${manuscriptBold ? 'font-extrabold' : 'font-bold'} not-italic`;
@@ -3484,7 +3667,7 @@ export default function App() {
                               {/* Right Content Body */}
                               <div className="flex flex-col w-full flex-1">
                                 <div className={`${getScriptureStyleClasses()} ${fontClasses} leading-[1.8] tracking-[0.01em] ${
-                                  scriptureFontSizeSetting === 'xs' ? 'text-[15px]' : scriptureFontSizeSetting === 'sm' ? 'text-[16px]' : scriptureFontSizeSetting === 'base' ? 'text-[18px]' : 'text-[20px]'
+                                  'text-[18px]'
                                 } ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
                                   {textContent}
                                 </div>
@@ -3737,11 +3920,11 @@ export default function App() {
                       if (isMultiCol) {
                         return (
                           <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 h-[calc(100vh-160px)]">
-                            <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative`}>
+                            <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto pb-32 h-full scroll-smooth ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative rounded-2xl`}>
                               {chapterData.verses.map(v => renderVerseCard(v, 'plain'))}
                             </div>
 
-                            <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto hide-scrollbar pb-32 h-full ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative`}>
+                            <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto pb-32 h-full scroll-smooth ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative rounded-2xl`}>
                               {chapterData.verses.map(v => renderVerseCard(v, 'pers'))}
                             </div>
                           </div>
@@ -3764,7 +3947,9 @@ export default function App() {
                 </div>
               </div>
             </div>
-          </div>
+
+            </motion.div>
+          </AnimatePresence>
         ) : (
           <div className={`text-center py-20 border rounded-xl ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-950/35 border-cyan-950'}`}>
             <Compass className="w-12 h-12 text-slate-400 mx-auto mb-3 animate-pulse" />
@@ -3778,785 +3963,6 @@ export default function App() {
       </main>
 
 
-
-      {/* SHALOM INTERACTIVE WELCOME SCREEN */}
-      <AnimatePresence>
-        {isWelcomeOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 backdrop-blur-md bg-slate-900/30 overflow-y-auto">
-            <motion.div
-              initial={{ scale: 0.95, opacity: 0, y: 15 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.95, opacity: 0, y: 15 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className="w-full max-w-xl bg-gradient-to-b from-white via-amber-100/10 to-cyan-50/10 border border-amber-200/50 rounded-[2rem] p-6 md:p-10 shadow-2xl relative overflow-hidden flex flex-col items-center text-center font-sans"
-            >
-              {/* Premium Celestial Design Ornaments */}
-              <div className="absolute top-0 left-0 w-full h-1.5 bg-gradient-to-r from-teal-400 via-amber-300 to-cyan-400" />
-              <div className="absolute -top-12 -right-12 w-48 h-48 bg-amber-200/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute -bottom-16 -left-16 w-52 h-52 bg-cyan-200/10 rounded-full blur-3xl pointer-events-none" />
-              <div className="absolute inset-0 bg-[radial-gradient(#0891b206_1px,transparent_1px)] [background-size:20px_20px] pointer-events-none" />
-
-              {/* Welcome Badge */}
-              <div className="mb-4">
-                <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-mono font-bold tracking-wider bg-cyan-500/10 text-cyan-800 border border-cyan-200/35 shadow-xs">
-                  <span className="relative flex h-1.5 w-1.5 mr-2">
-                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-cyan-500"></span>
-                  </span>
-                  CELESTIAL STUDY COMPANION ACTIVE
-                </span>
-              </div>
-
-              {/* Core App Logo Highlight */}
-              <div className="relative mb-5 group select-none">
-                <div className="absolute -inset-1 rounded-full bg-gradient-to-r from-cyan-400 to-amber-300 opacity-25 blur-md group-hover:opacity-40 transition duration-300" />
-                <div className="relative p-2 bg-white rounded-full border border-amber-100 shadow-sm flex items-center justify-center">
-                  <svg viewBox="0 0 100 100" className="w-20 h-20" xmlns="http://www.w3.org/2000/svg">
-                    <defs>
-                      <linearGradient id="lb-grad" x1="0%" y1="0%" x2="100%" y2="100%">
-                        <stop offset="0%" stopColor="#0891b2" />
-                        <stop offset="100%" stopColor="#0284c7" />
-                      </linearGradient>
-                    </defs>
-                    <rect width="100" height="100" rx="24" fill="#0f172a" />
-                    <path d="M 32 30 L 32 70 L 48 70" fill="none" stroke="url(#lb-grad)" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
-                    <path d="M 52 30 L 52 70 C 62 70 66 65 66 60 C 66 55 62 50 56 50 C 62 50 66 45 66 40 C 66 35 62 30 52 30 Z" fill="none" stroke="url(#lb-grad)" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                </div>
-              </div>
-
-              {/* Title Typography Pairings */}
-              <h1 className="text-xl sm:text-2xl font-black tracking-tight text-slate-800 leading-tight">
-                LogosBridge <span className="text-cyan-600 font-serif italic">(LB)</span>
-              </h1>
-              
-              <h2 className="text-sm sm:text-sm font-bold tracking-[0.22em] text-cyan-600 font-mono mt-1 uppercase">
-                LOGOSBRIDGE
-              </h2>
-
-              <hr className="w-12 border-t border-amber-200/70 my-5" />
-
-              {/* THE MAJOR VISIBLE CONTENT & MODERN DESIGN CALLOUT */}
-              <div className="w-full bg-gradient-to-r from-teal-500/5 via-cyan-500/5 to-amber-500/5 border border-cyan-500/10 rounded-2xl p-5 md:p-6 my-1 transition-all duration-300 hover:border-cyan-500/20 shadow-xs relative overflow-hidden">
-                <div className="absolute top-1/2 left-2 -translate-y-1/2 w-1 h-6 bg-teal-400 rounded-full" />
-                
-                <p className="text-sm px-1 py-1 font-mono tracking-widest text-slate-400 uppercase font-bold mb-1.5">
-                  ✦ Living Codex Companion ✦
-                </p>
-                
-                <h3 className="text-lg sm:text-2xl font-serif italic font-black bg-gradient-to-r from-slate-800 via-teal-950 to-slate-900 bg-clip-text text-transparent leading-snug">
-                  "THE BIBLE THAT TALKS WITH YOU"
-                </h3>
-                
-                {/* Modern Visual Audio Waves representation */}
-                <div className="flex items-center justify-center gap-1 mt-3.5 h-5">
-                  <span className="w-0.5 bg-cyan-400/80 rounded-full animate-[bounce_1.2s_infinite_ease-in-out_100ms] h-2" />
-                  <span className="w-0.5 bg-cyan-500/80 rounded-full animate-[bounce_1.2s_infinite_ease-in-out_200ms] h-4" />
-                  <span className="w-0.5 bg-teal-500/80 rounded-full animate-[bounce_1.2s_infinite_ease-in-out_300ms] h-5" />
-                  <span className="w-0.5 bg-amber-400/80 rounded-full animate-[bounce_1.2s_infinite_ease-in-out_400ms] h-3" />
-                  <span className="w-0.5 bg-teal-500/80 rounded-full animate-[bounce_1.2s_infinite_ease-in-out_500ms] h-4" />
-                  <span className="w-0.5 bg-cyan-500/80 rounded-full animate-[bounce_1.2s_infinite_ease-in-out_600ms] h-5" />
-                  <span className="w-0.5 bg-cyan-400/80 rounded-full animate-[bounce_1.2s_infinite_ease-in-out_700ms] h-2" />
-                </div>
-              </div>
-
-              {/* Spacing spacer instead of countdown bar */}
-              <div className="h-6" />
-
-              {/* Interactive buttons to jump/skip immediately */}
-              <div className="mt-6 flex flex-col sm:flex-row items-center gap-2 w-full max-w-md">
-                <button
-                  onClick={() => {
-                    localStorage.setItem('personalized_bible_welcome_dismissed', 'true');
-                    setIsWelcomeOpen(false);
-                    playWebAudioBeep(580, 'sine', 0.05);
-                  }}
-                  className="w-full py-3 px-5 rounded-xl font-mono text-sm font-bold text-white bg-slate-900 border border-slate-950 transition-all duration-150 transform hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 cursor-pointer flex items-center justify-center gap-2 group animate-pulse"
-                  id="welcome-jump-btn"
-                >
-                  JUMP TO STUDY DESK
-                  <span className="transition-transform group-hover:translate-x-1">➔</span>
-                </button>
-
-                <button
-                  onClick={() => {
-                    localStorage.setItem('personalized_bible_welcome_dismissed', 'true');
-                    setIsWelcomeOpen(false);
-                    playWebAudioBeep(520, 'sine', 0.03);
-                  }}
-                  className="w-full sm:w-auto py-2.5 px-4 rounded-xl font-mono text-sm font-bold text-slate-500 hover:text-slate-800 hover:bg-slate-50 transition-colors border border-transparent hover:border-slate-200 cursor-pointer"
-                  id="welcome-skip-btn"
-                >
-                  Skip
-                </button>
-              </div>
-
-            </motion.div>
-            {false && (
-            <motion.div
-              initial={{ scale: 0.94, opacity: 0, y: 20 }}
-              animate={{ scale: 1, opacity: 1, y: 0 }}
-              exit={{ scale: 0.94, opacity: 0, y: 20 }}
-              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-              className={`w-full max-w-2xl border rounded-3xl overflow-hidden shadow-2xl relative flex flex-col max-h-[95vh] md:max-h-[88vh] transition-all duration-500 ${
-                welcomeStyles[selectedWelcomeStyle].mainBg
-              }`}
-            >
-              {/* Spinning Sacred Auric Rings / Vector Background Panels */}
-              {selectedWelcomeStyle === 'heavenly' && (
-                <>
-                  <div className="absolute -top-16 -right-16 w-64 h-64 bg-amber-400/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
-                  <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-amber-500/5 rounded-full blur-2xl pointer-events-none" />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 border border-amber-200/20 rounded-full pointer-events-none animate-[spin_50s_linear_infinite]" />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-80 h-80 border border-dashed border-amber-300/10 rounded-full pointer-events-none animate-[spin_30s_linear_infinite_reverse]" />
-                </>
-              )}
-              {selectedWelcomeStyle === 'parchment' && (
-                <>
-                  <div className="absolute -top-16 -right-16 w-64 h-64 bg-amber-600/5 rounded-full blur-3xl pointer-events-none animate-pulse" />
-                  <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-amber-700/5 rounded-full blur-2xl pointer-events-none" />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 border border-amber-700/10 rounded-full pointer-events-none animate-[spin_60s_linear_infinite]" />
-                </>
-              )}
-              {selectedWelcomeStyle === 'royal' && (
-                <>
-                  <div className="absolute -top-16 -right-16 w-64 h-64 bg-[#7c3aed]/10 rounded-full blur-3xl pointer-events-none animate-pulse" />
-                  <div className="absolute -bottom-24 -left-24 w-72 h-72 bg-[#a78bfa]/5 rounded-full blur-2xl pointer-events-none" />
-                  <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 border border-indigo-200/10 rounded-full pointer-events-none animate-[spin_40s_linear_infinite]" />
-                </>
-              )}
-              {selectedWelcomeStyle === 'minimal' && (
-                <>
-                  <div className="absolute -top-16 -right-16 w-64 h-64 bg-slate-400/10 rounded-full blur-3xl pointer-events-none" />
-                  <div className="absolute inset-0 bg-[radial-gradient(#00000003_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
-                </>
-              )}
-
-              {/* Modal Top Header Progress indicator */}
-              <div className={`p-4 sm:p-5 border-b flex items-center justify-between select-none relative z-10 ${
-                welcomeStyles[selectedWelcomeStyle].headerBg
-              }`}>
-                <div className="flex items-center space-x-2">
-                  <div className={`w-2.5 h-2.5 rounded-full ${
-                    welcomeStyles[selectedWelcomeStyle].dotBg
-                  }`} />
-                  <span className={`text-sm font-mono tracking-[0.15em] uppercase font-bold ${
-                    welcomeStyles[selectedWelcomeStyle].dotText
-                  }`}>
-                    Scholar Orientation Desk • STEP {welcomeStep + 1} OF 5
-                  </span>
-                </div>
-                <div className="flex items-center space-x-2.5">
-                  <button
-                    onClick={() => {
-                      localStorage.setItem('personalized_bible_welcome_dismissed', 'true');
-                      setIsWelcomeOpen(false);
-                      if ('speechSynthesis' in window) {
-                        window.speechSynthesis.cancel();
-                      }
-                    }}
-                    className="text-[9.5px] font-mono leading-none tracking-wider font-extrabold uppercase hover:underline opacity-65 hover:opacity-100 transition-all cursor-pointer border-r pr-2.5 border-slate-300 dark:border-slate-700/60"
-                    title="Skip tutorial and enter workspace directly"
-                  >
-                    Skip Tutorial ➔
-                  </button>
-                  <button
-                    onClick={() => {
-                      localStorage.setItem('personalized_bible_welcome_dismissed', 'true');
-                      setIsWelcomeOpen(false);
-                      if ('speechSynthesis' in window) {
-                        window.speechSynthesis.cancel();
-                      }
-                    }}
-                    className={`p-1.5 rounded-lg border transition duration-200 cursor-pointer ${
-                      welcomeStyles[selectedWelcomeStyle].closeBtn
-                    }`}
-                    title="Close Guide & Start Studying"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
-
-              {/* Step Carousel Body */}
-              <div className="p-5 sm:p-7 overflow-y-auto flex-1 space-y-4 relative z-10">
-                <AnimatePresence mode="wait">
-                  {welcomeStep === 0 && (
-                    <motion.div
-                      key="step-intro"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.25 }}
-                      className="space-y-4"
-                    >
-                      <div className="flex items-center space-x-3">
-                        <div className={`p-2.5 rounded-2xl border ${
-                          welcomeStyles[selectedWelcomeStyle].iconBg
-                        }`}>
-                          <BookOpen className="w-6 h-6 animate-pulse" />
-                        </div>
-                        <div>
-                          <h2 className={`text-xl font-display font-black tracking-tight ${
-                            welcomeStyles[selectedWelcomeStyle].headingText
-                          }`}>
-                            Shalom! Bridging Scripture with Simple English
-                          </h2>
-                          <p className={`text-[15px] font-mono mt-0.5 ${
-                            welcomeStyles[selectedWelcomeStyle].subText
-                          }`}>
-                            Designed for English Learners, Translation Scholars & Modern Readers
-                          </p>
-                        </div>
-                      </div>
-
-                      <p className={`text-sm sm:text-sm leading-[1.8] tracking-[0.01em] ${
-                        welcomeStyles[selectedWelcomeStyle].descText
-                      }`}>
-                        Classical English translations (like King James Version KJV) are gorgeous, but contain old vocabulary and convoluted syntax. This workspace processes 400-year-old expressions into simple, contemporary vocabulary in parallel—giving you instant theological comprehension.
-                      </p>
-
-                      {/* Dynamic Translator Interactive Mock Card */}
-                      <div className={`p-4 rounded-2xl border ${
-                        welcomeStyles[selectedWelcomeStyle].boxBg
-                      }`}>
-                        <div className="flex items-center justify-between mb-2">
-                          <h3 className={`text-sm font-mono font-bold uppercase tracking-wider ${
-                            welcomeStyles[selectedWelcomeStyle].subText
-                          }`}>
-                            Interactive Classics Translator Preset
-                          </h3>
-                          <span className="text-sm px-1 py-1 px-1.5 py-0.5 rounded bg-emerald-500/10 text-emerald-400 font-mono font-semibold">LIVE TRIAL</span>
-                        </div>
-                        <p className="text-[15px] leading-[1.8] tracking-[0.01em] opacity-70 mb-3">
-                          Tap any classical idiom below to see how our customized <strong>Personalized translation model</strong> refactors the scripture instantly:
-                        </p>
-
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                          {[
-                            { classic: "Beseech you", simple: "Earnestly request you" },
-                            { classic: "Provoke unto love", simple: "Inspire you to feel love" },
-                            { classic: "Thou shalt not covet", simple: "Do not greedily desire what others own" },
-                            { classic: "Suffer thy brother", simple: "Be patient with your brother" }
-                          ].map((idiom, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => setWelcomeIdiomIndex(idx)}
-                              className={`p-2.5 rounded-xl text-left border text-sm transition-all duration-200 cursor-pointer ${
-                                welcomeIdiomIndex === idx
-                                  ? welcomeStyles[selectedWelcomeStyle].itemActiveBg
-                                  : welcomeStyles[selectedWelcomeStyle].itemInactiveBg
-                              }`}
-                            >
-                              <div className="font-semibold flex items-center justify-between">
-                                <span className="truncate">{idiom.classic}</span>
-                                {welcomeIdiomIndex === idx && <Check className="w-3 h-3 text-emerald-500 shrink-0" />}
-                              </div>
-                              <div className={`text-sm mt-0.5 opacity-90 font-mono ${
-                                welcomeIdiomIndex === idx ? 'text-emerald-500 font-semibold' : 'opacity-60'
-                              }`}>
-                                ➔ {idiom.simple}
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {welcomeStep === 1 && (
-                    <motion.div
-                      key="step-theme"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.25 }}
-                      className="space-y-4"
-                    >
-                      <div>
-                        <h2 className={`text-lg sm:text-xl font-display font-black tracking-tight ${
-                          welcomeStyles[selectedWelcomeStyle].headingText
-                        }`}>
-                          Elevate Your Visual Atmosphere
-                        </h2>
-                        <p className={`text-sm mt-1 leading-[1.8] tracking-[0.01em] ${
-                          welcomeStyles[selectedWelcomeStyle].descText
-                        }`}>
-                          Select your desired reading environment. Notice how the underlying interface shifts theme behind this panel instantly!
-                        </p>
-                      </div>
-
-                      {/* Interactive presets buttons */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5 pt-1">
-                        {/* ROYAL LAVANDULA */}
-                        <button
-                          onClick={() => {
-                            setSelectedWelcomeStyle('royal');
-                            setTheme('light');
-                            setAppLogo('cosmic');
-                          }}
-                          className={`p-4 rounded-2xl border text-left transition-all duration-500 ease-in-out hover:scale-[1.02] cursor-pointer flex flex-col justify-between h-36 ${
-                            selectedWelcomeStyle === 'royal'
-                              ? 'bg-indigo-50/80 border-indigo-400 ring-2 ring-indigo-400/20'
-                              : 'bg-stone-50/20 border-stone-200 hover:border-stone-300 hover:bg-stone-100/40'
-                          }`}
-                        >
-                          <div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xl">💜</span>
-                              {selectedWelcomeStyle === 'royal' && (
-                                <span className="text-sm px-1 py-1 font-bold uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-indigo-600 text-white">ACTIVE</span>
-                              )}
-                            </div>
-                            <h4 className="text-sm font-bold text-indigo-950 mt-3.5 uppercase tracking-wide">Royal Lavandula</h4>
-                            <p className="text-sm text-indigo-900/70 mt-1 leading-snug">Soft pale violet with majestic purple velvet highlights.</p>
-                          </div>
-                          <span className="text-[9.5px] font-mono font-bold text-indigo-800">LIGHT • ROYAL</span>
-                        </button>
-
-                        {/* PRISTINE MINIMAL */}
-                        <button
-                          onClick={() => {
-                            setSelectedWelcomeStyle('minimal');
-                            setTheme('light');
-                            setAppLogo('grace');
-                          }}
-                          className={`p-4 rounded-2xl border text-left transition-all duration-500 ease-in-out hover:scale-[1.02] cursor-pointer flex flex-col justify-between h-36 ${
-                            selectedWelcomeStyle === 'minimal'
-                              ? 'bg-slate-100/80 border-slate-300 ring-2 ring-slate-400/25'
-                              : 'bg-stone-50/20 border-stone-200 hover:border-stone-300 hover:bg-stone-100/40'
-                          }`}
-                        >
-                          <div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-xl">📁</span>
-                              {selectedWelcomeStyle === 'minimal' && (
-                                <span className="text-sm px-1 py-1 font-bold uppercase font-mono tracking-wider px-1.5 py-0.5 rounded bg-slate-800 text-white">ACTIVE</span>
-                              )}
-                            </div>
-                            <h4 className="text-sm font-bold text-slate-800 mt-3.5 uppercase tracking-wide">Pristine Minimal</h4>
-                            <p className="text-sm text-slate-600 mt-1 leading-snug">Crisp modern light gray surface highlighting readability.</p>
-                          </div>
-                          <span className="text-[9.5px] font-mono font-bold text-slate-600">LIGHT • MINIMAL</span>
-                        </button>
-                      </div>
-
-                      {/* Interactive Visual Aura Color Accent Selector */}
-                      <div className={`p-4 rounded-2xl border ${
-                        welcomeStyles[selectedWelcomeStyle].boxBg
-                      }`}>
-                        <span className={`text-sm font-mono tracking-wider font-extrabold uppercase block mb-2.5 ${
-                          welcomeStyles[selectedWelcomeStyle].subText
-                        }`}>
-                          ✨ SELECT VISUAL AURA COLOR ACCENT (Blue & Ash Options Included):
-                        </span>
-                        <div className="grid grid-cols-2 xs:grid-cols-3 sm:grid-cols-5 gap-2">
-                          {[
-                            { id: 'cyan', color: '#00d5ff', name: 'Electric Cyan', desc: 'Vibrant Tech' },
-                            { id: 'sapphire', color: '#3b82f6', name: 'Deep Sapphire', desc: 'Royal Blue' },
-                            { id: 'indigo', color: '#8b5cf6', name: 'Royal Scholar Indigo', desc: 'Purple-Blue' },
-                            { id: 'ash', color: '#8a929e', name: 'Misty Mineral Ash', desc: 'Steel Ash Tone' },
-                            { id: 'amber', color: '#fbbf24', name: 'Golden Timber', desc: 'Sunlight Amber' }
-                          ].map((aura) => (
-                            <button
-                              key={aura.id}
-                              onClick={() => {
-                                setAuraColor(aura.id as any);
-                                playWebAudioBeep(700, 'sine', 0.04);
-                              }}
-                              className={`p-2.5 rounded-xl border text-left cursor-pointer transition-all duration-150 flex flex-col justify-between min-h-[64px] ${
-                                auraColor === aura.id
-                                  ? 'bg-cyan-500/10 border-cyan-400 font-bold'
-                                  : 'bg-white/5 dark:bg-black/20 border-transparent hover:border-slate-500/30'
-                              }`}
-                            >
-                              <div className="flex items-center justify-between w-full">
-                                <span className="w-3.5 h-3.5 rounded-full shrink-0" style={{ backgroundColor: aura.color }} />
-                                {auraColor === aura.id && <span className="text-[8px] px-1 py-0.2 rounded bg-cyan-500 text-white font-mono font-extrabold">SET</span>}
-                              </div>
-                              <div className="mt-2.5">
-                                <div className={`text-sm font-bold leading-tight ${auraColor === aura.id ? 'text-cyan-400' : 'text-slate-350'}`}>{aura.name}</div>
-                                <div className="text-sm px-1 py-1 opacity-50 font-mono italic">{aura.desc}</div>
-                              </div>
-                            </button>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* LIVE PREVIEW CONTAINER MOCKUP */}
-                      <div className={`p-4 rounded-2xl border transition-all duration-300 ${
-                        welcomeStyles[selectedWelcomeStyle].mockVerseBg
-                      }`}>
-                        <div className="flex items-center justify-between border-b pb-1.5 mb-2 border-stone-200/40 dark:border-slate-800/40">
-                          <span className="text-[9.5px] font-mono uppercase font-bold tracking-wider opacity-60">Mini Visual Representation Mock</span>
-                          <span className="text-sm px-1 py-1 font-mono text-emerald-500 font-semibold uppercase animate-pulse">● Live Render</span>
-                        </div>
-                        
-                        {/* Simulated verse layout dynamic styling */}
-                        <div className="space-y-1 select-none">
-                          <div className="flex items-start gap-2.5">
-                            <span className={`text-sm font-mono leading-none py-1 px-1.5 rounded-md font-bold text-center ${
-                              welcomeStyles[selectedWelcomeStyle].mockVerseBadge
-                            }`}>
-                              Gen 1:1
-                            </span>
-                            <div className="space-y-1 flex-1">
-                              <p className={`text-[15px] leading-[1.8] tracking-[0.01em] ${
-                                welcomeStyles[selectedWelcomeStyle].mockVerseHeading
-                              }`}>
-                                In the <span className="underline decoration-cyan-400/40 underline-offset-3 cursor-help">beginning</span> God created the heaven...
-                              </p>
-                              <p className="text-sm opacity-60 italic">
-                                Original: In the commencement of all finite creation, the Almighty initiated...
-                              </p>
-                            </div>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                  )}
-
-                  {welcomeStep === 2 && (
-                    <motion.div
-                      key="step-scholarly-actions"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.25 }}
-                      className="space-y-4"
-                    >
-                      <div>
-                        <h2 className={`text-lg sm:text-xl font-display font-black tracking-tight ${
-                          welcomeStyles[selectedWelcomeStyle].headingText
-                        }`}>
-                          Scholarly Reflection Actions
-                        </h2>
-                        <p className={`text-sm mt-1 leading-[1.8] tracking-[0.01em] ${
-                          welcomeStyles[selectedWelcomeStyle].descText
-                        }`}>
-                          We abide by high-quality typography constraints. The verse number indicators remain clean and stationary, while active thematic study buttons appear directly underneath them!
-                        </p>
-                      </div>
-
-                      {/* Interactive Simulation Panel */}
-                      <div className={`p-4 rounded-xl border ${
-                        welcomeStyles[selectedWelcomeStyle].boxBg
-                      }`}>
-                        <div className="flex items-center justify-between mb-3">
-                          <span className={`text-sm font-mono font-bold uppercase tracking-wider ${
-                            welcomeStyles[selectedWelcomeStyle].subText
-                          }`}>
-                            Live Interactive Interface Guide
-                          </span>
-                          <span className="text-sm px-1 py-1 px-1.5 py-0.5 rounded bg-emerald-500/15 text-emerald-500 font-mono font-extrabold animate-pulse">TRY TAP ACTION</span>
-                        </div>
-
-                        <div className="flex flex-col sm:flex-row gap-4 items-center">
-                          {/* Left: simulated verse layout */}
-                          <div className={`p-4 rounded-xl border flex flex-col items-center justify-center min-w-[100px] h-32 ${
-                            welcomeStyles[selectedWelcomeStyle].mockVerseBg
-                          }`}>
-                            <span className="text-sm px-1 py-1 font-mono tracking-wider opacity-50 mb-1 uppercase">Verse Id</span>
-                            {/* Stationary Verse Indicator number */}
-                            <div className={`text-[13px] font-sans font-extrabold select-none h-8 flex items-center justify-center`}>
-                              1
-                            </div>
-                            {/* Standard MoreVertical Menu options icon positioned directly below */}
-                            <button
-                              onClick={() => {
-                                setWelcomeIdiomIndex((prev) => (prev ? 0 : 1));
-                              }}
-                              className={`mt-2 p-1 rounded-lg transition-all duration-150 cursor-pointer flex items-center justify-center relative hover:scale-115 active:scale-95 ${
-                                welcomeIdiomIndex === 1
-                                  ? 'bg-cyan-500/20 text-cyan-500'
-                                  : 'bg-white/80 dark:bg-black/40 text-slate-400 hover:text-indigo-400'
-                              }`}
-                              title="Verse Action Options Menu"
-                            >
-                              <MoreVertical 
-                                className="w-4 h-4 transition-transform" 
-                              />
-                              {welcomeIdiomIndex === 1 && (
-                                <span className="absolute -top-0.5 -right-0.5 flex h-2 w-2">
-                                  <span className="relative inline-flex rounded-full h-2 w-2 bg-amber-500 animate-pulse"></span>
-                                </span>
-                              )}
-                            </button>
-                          </div>
-
-                          {/* Right: Explanatory text description */}
-                          <div className="flex-1 space-y-2">
-                            <h4 className={`text-sm font-bold uppercase tracking-wide flex items-center gap-1.5 ${
-                              welcomeStyles[selectedWelcomeStyle].headingText
-                            }`}>
-                              {welcomeIdiomIndex === 1 ? '🌟 Theological Study Note Active' : '⚙️ Verse Options & Reflection Menu'}
-                            </h4>
-                            <p className="text-base leading-[1.8] tracking-[0.01em] opacity-85">
-                              {welcomeIdiomIndex === 1
-                                ? "Excellent! Tapping the standard options menu icon directly beneath the verse number opens the unified theological diary so you can draft scholarly reflections and key word highlights."
-                                : "Tap the options menu icon on the left. The options icon is situated neatly underneath the stable verse index for clean visual layout and quick diary drafting."
-                              }
-                            </p>
-                            <div className="pt-1 select-none">
-                              <span className="text-sm px-1 py-1 font-mono bg-cyan-700/10 text-cyan-500 dark:text-cyan-400 px-2 py-0.5 rounded border border-cyan-500/15">
-                                ⚡ Allows Easy Navigation & Speed Presets
-                              </span>
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Details specs list */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        <div className="flex gap-2 text-left">
-                          <span className="text-sm">📝</span>
-                          <div>
-                            <h4 className="text-sm font-bold uppercase tracking-wider">Theological Study Journals</h4>
-                            <p className="text-sm opacity-75 mt-0.5 leading-[1.8] tracking-[0.01em]">Highlight scriptures, transcribe reflections, and sync translation presets side-by-side.</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2 text-left">
-                          <span className="text-sm">🎚️</span>
-                          <div>
-                            <h4 className="text-sm font-bold uppercase tracking-wider">Speed Control Inside Notes</h4>
-                            <p className="text-sm opacity-75 mt-0.5 leading-[1.8] tracking-[0.01em]">Adjust your vocal read speed levels directly from study notebooks (ranges from 0.5x to 1.5x) inside active study cards.</p>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {welcomeStep === 3 && (
-                    <motion.div
-                      key="step-features"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.25 }}
-                      className="space-y-4"
-                    >
-                      <div>
-                        <h2 className={`text-lg sm:text-xl font-display font-black tracking-tight ${
-                          welcomeStyles[selectedWelcomeStyle].headingText
-                        }`}>
-                          Vocabulary Study & Speed Pacing Sandbox
-                        </h2>
-                        <p className={`text-sm mt-0.5 leading-[1.8] tracking-[0.01em] ${
-                          welcomeStyles[selectedWelcomeStyle].descText
-                        }`}>
-                          Excellent pronunciation requires customizable speech rate control. Test our voice generator below:
-                        </p>
-                      </div>
-
-                      {/* Live vocal speed preview module widget */}
-                      <div className={`p-4 rounded-2xl border ${
-                        welcomeStyles[selectedWelcomeStyle].boxBg
-                      }`}>
-                        <div className="flex items-center justify-between mb-3.5">
-                          <label className="text-sm font-mono font-bold uppercase tracking-wide flex items-center gap-1.5">
-                            🎙️ ADJUST VOCAL STUDY SPEED
-                          </label>
-                          <span className={`text-sm font-mono font-black border px-2 py-0.5 rounded-lg ${
-                            welcomeStyles[selectedWelcomeStyle].speedBadge
-                          }`}>
-                            {welcomePreviewSpeed.toFixed(1)}x Speed
-                          </span>
-                        </div>
-
-                        {/* Interactive speed radio-pills layout */}
-                        <div className="grid grid-cols-5 gap-1.5 mb-4">
-                          {[0.5, 0.8, 1.0, 1.2, 1.5].map((speedVal) => (
-                            <button
-                              key={speedVal}
-                              onClick={() => {
-                                setWelcomePreviewSpeed(speedVal);
-                                if ('speechSynthesis' in window) {
-                                  window.speechSynthesis.cancel();
-                                }
-                              }}
-                              className={`p-2 rounded-xl text-center text-sm font-mono font-bold transition-all duration-200 border cursor-pointer ${
-                                welcomePreviewSpeed === speedVal
-                                  ? welcomeStyles[selectedWelcomeStyle].speedBtnActive
-                                  : welcomeStyles[selectedWelcomeStyle].speedBtnInactive
-                              }`}
-                            >
-                              {speedVal === 1.0 ? 'Normal' : `${speedVal}x`}
-                            </button>
-                          ))}
-                        </div>
-
-                        {/* Speech synthesis play buttons */}
-                        <div className="flex flex-col sm:flex-row gap-2">
-                          <button
-                            onClick={() => {
-                              if (!('speechSynthesis' in window)) {
-                                alert("Speech synthesis of standard Bible text is currently restricted or unsupported in this browser container context.");
-                                return;
-                              }
-                              try {
-                                window.speechSynthesis.cancel();
-                                const textVal = "Welcome to the Side-by-Side handbook! Use custom speed presets to practice your pronounciations.";
-                                const utterance = new SpeechSynthesisUtterance(textVal);
-                                utterance.rate = welcomePreviewSpeed;
-                                window.speechSynthesis.speak(utterance);
-                              } catch (e) {
-                                console.error("Synthesis trigger issue: ", e);
-                              }
-                            }}
-                            className={`p-3 rounded-2xl text-sm font-mono font-bold cursor-pointer transition-transform duration-100 transform hover:scale-[1.01] active:scale-[0.99] flex-1 flex items-center justify-center gap-1.5 ${
-                              welcomeStyles[selectedWelcomeStyle].speakBtn
-                            }`}
-                          >
-                            <Volume2 className="w-4 h-4" />
-                            🗣️ Play Sample Audio Sentence
-                          </button>
-                          
-                          <button
-                            onClick={() => {
-                              if ('speechSynthesis' in window) {
-                                window.speechSynthesis.cancel();
-                              }
-                            }}
-                            className={`p-3 rounded-2xl text-sm font-mono font-bold cursor-pointer hover:bg-red-500/10 hover:text-red-400 border transition-all duration-200 ${
-                              welcomeStyles[selectedWelcomeStyle].stopBtn
-                            }`}
-                          >
-                            Stop Voice
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Standard Scholar elements lists */}
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
-                        <div className="flex gap-2.5 items-start">
-                          <span className="text-sm">📝</span>
-                          <div>
-                            <h4 className="text-sm font-bold uppercase tracking-wide">Theological Study Journals</h4>
-                            <p className="text-[15px] opacity-70 leading-[1.8] tracking-[0.01em] mt-0.5">Highlight, write scholarly reflections, and save translation indices in local storage securely.</p>
-                          </div>
-                        </div>
-                        <div className="flex gap-2.5 items-start">
-                          <span className="text-sm">📚</span>
-                          <div>
-                            <h4 className="text-sm font-bold uppercase tracking-wide">Parallel Root Codexes</h4>
-                            <p className="text-[15px] opacity-70 leading-[1.8] tracking-[0.01em] mt-0.5">Compare Hebrew or Greek base words on a word-by-word structure instantly by hovering/tapping.</p>
-                          </div>
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {welcomeStep === 4 && (
-                    <motion.div
-                      key="step-ready"
-                      initial={{ opacity: 0, x: 20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -20 }}
-                      transition={{ duration: 0.25 }}
-                      className="space-y-4 text-center py-4"
-                    >
-                      <div className="inline-flex p-4 rounded-full bg-cyan-500/10 text-cyan-450 animate-pulse mb-1">
-                        <Sparkles className="w-10 h-10 text-amber-500 animate-[spin_10s_linear_infinite]" />
-                      </div>
-
-                      <h2 className={`text-xl sm:text-2xl font-display font-black tracking-tight ${
-                        welcomeStyles[selectedWelcomeStyle].headingText
-                      }`}>
-                        Your Intellectual Sanctuary Awaits!
-                      </h2>
-
-                      <p className={`text-sm sm:text-sm max-w-md mx-auto leading-[1.8] tracking-[0.01em] ${
-                        welcomeStyles[selectedWelcomeStyle].descText
-                      }`}>
-                        Configuration complete. You have established a clean and legible study sanctuary. You can re-open this helper modal at any time using the <strong>🌟 SHALOM STUDY GUIDE</strong> top header button.
-                      </p>
-
-                      <p className="text-[15px] font-mono text-emerald-500 uppercase tracking-widest font-bold">
-                        Let us commence the study of the Scrolls.
-                      </p>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Modal Slider Footer Drawer Buttons */}
-              <div className={`p-4 sm:p-5 border-t flex items-center justify-between relative z-10 ${
-                welcomeStyles[selectedWelcomeStyle].headerBg
-              }`}>
-                {/* Dots indicators */}
-                <div className="flex space-x-1.5">
-                   {[0, 1, 2, 3, 4].map((num) => (
-                    <button
-                      key={num}
-                      onClick={() => {
-                        setWelcomeStep(num);
-                        if ('speechSynthesis' in window) {
-                          window.speechSynthesis.cancel();
-                        }
-                      }}
-                      className={`w-2 h-2 rounded-full cursor-pointer transition-all duration-300 ${
-                        welcomeStep === num
-                          ? welcomeStyles[selectedWelcomeStyle].dotActive
-                          : 'bg-slate-600/30 hover:bg-slate-600/60'
-                      }`}
-                    />
-                  ))}
-                </div>
-
-                {/* Back / Next actions */}
-                <div className="flex items-center space-x-2">
-                  {welcomeStep > 0 && (
-                    <button
-                      onClick={() => {
-                        setWelcomeStep(welcomeStep - 1);
-                        if ('speechSynthesis' in window) {
-                          window.speechSynthesis.cancel();
-                        }
-                      }}
-                      className={`px-3 py-1.5 rounded-lg border text-sm font-mono font-bold hover:scale-[1.01] transition-transform duration-100 cursor-pointer ${
-                        welcomeStyles[selectedWelcomeStyle].backBtn
-                      }`}
-                    >
-                      Back
-                    </button>
-                  )}
-
-                  {welcomeStep < 4 ? (
-                    <button
-                      onClick={() => {
-                        setWelcomeStep(welcomeStep + 1);
-                        if ('speechSynthesis' in window) {
-                          window.speechSynthesis.cancel();
-                        }
-                      }}
-                      className={`px-4 py-1.5 rounded-lg text-sm font-mono font-bold hover:scale-[1.01] transition-transform duration-100 cursor-pointer flex items-center gap-1 ${
-                        welcomeStyles[selectedWelcomeStyle].nextBtn
-                      }`}
-                    >
-                      Next <ArrowRight className="w-3.5 h-3.5" />
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => {
-                        localStorage.setItem('personalized_bible_welcome_dismissed', 'true');
-                        setIsWelcomeOpen(false);
-                        if ('speechSynthesis' in window) {
-                          window.speechSynthesis.cancel();
-                        }
-                      }}
-                      className={`px-5 py-1.5 rounded-lg text-sm font-mono font-bold animate-pulse hover:scale-[1.01] transition-transform duration-100 cursor-pointer ${
-                        welcomeStyles[selectedWelcomeStyle].nextBtn
-                      }`}
-                    >
-                      Enter Sanctuary desk
-                    </button>
-                  )}
-                </div>
-              </div>
-            </motion.div>
-          )}
-          </div>
-        )}
-      </AnimatePresence>
 
       {/* PWA MOBILE INSTALLATION DIALOG/MODAL */}
       <AnimatePresence>
@@ -4585,7 +3991,7 @@ export default function App() {
               <div className="flex items-start justify-between pb-3.5 border-b border-rose-100 dark:border-cyan-950/40 mb-4">
                 <div>
                   <h3 className={`text-lg font-display font-bold ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
-                    📱 Install Personalized Bible App
+                    📱 Install LogosBridge App
                   </h3>
                   <p className="text-sm text-slate-500 mt-0.5">
                     Read, search, and study original biblical manuscripts offline directly on your device.
@@ -4706,7 +4112,7 @@ export default function App() {
                         Confirm the prompt dialog to complete your installation safely.
                       </li>
                       <li>
-                        Open the Personalized Bible application directly from your system App Drawer!
+                        Open the LogosBridge application directly from your system App Drawer!
                       </li>
                     </ol>
                   </div>
@@ -4725,7 +4131,7 @@ export default function App() {
                         Click the <strong className="text-cyan-500 font-bold">Install Shortcut Monitor icon</strong> (looks like a computer with a downward arrow) on the right side of the address bar.
                       </li>
                       <li>
-                        Or open Chrome Options (three dots on far-right) and choose <strong className="text-cyan-500 font-bold">"Install Personalized Bible..."</strong>.
+                        Or open Chrome Options (three dots on far-right) and choose <strong className="text-cyan-500 font-bold">"Install LogosBridge..."</strong>.
                       </li>
                     </ol>
                   </div>
@@ -5358,14 +4764,6 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* CLOUD SYNC MANAGER PANEL */}
-      <CloudSyncPanel
-        theme={theme}
-        isOpen={isCloudSyncOpen}
-        onClose={() => setIsCloudSyncOpen(false)}
-        localBookmarks={savedVerses}
-        onSyncBookmarksFromCloud={(reconciledBookmarks) => setSavedVerses(reconciledBookmarks)}
-      />
 
       {/* SCREEN PROJECTION AND BROADCAST STUDY STUDIO */}
       <ProjectionStudio
@@ -5390,7 +4788,7 @@ export default function App() {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 30, scale: 0.95 }}
             transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-            className={`fixed bottom-6 right-6 w-80 sm:w-[400px] rounded-xl border z-40 overflow-hidden flex flex-col shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] ${
+            className={`fixed bottom-28 md:bottom-32 right-4 md:right-6 w-[calc(100vw-2rem)] sm:w-[400px] rounded-xl border z-[110] overflow-hidden flex flex-col shadow-[0_20px_60px_-15px_rgba(0,0,0,0.3)] ${
               theme === 'light' 
                 ? 'bg-white/95 backdrop-blur-md border-zinc-200/80 text-zinc-800' 
                 : 'bg-zinc-950/90 backdrop-blur-xl border-zinc-800/80 text-zinc-100'
@@ -5990,7 +5388,6 @@ export default function App() {
                             <option value="kjv" className={theme === 'light' ? 'text-slate-900 bg-white' : 'text-slate-100 bg-[#080d19]'}>King James (KJV)</option>
                             <option value="bsb" className={theme === 'light' ? 'text-slate-900 bg-white' : 'text-slate-100 bg-[#080d19]'}>Berean Standard (BSB)</option>
                             <option value="plain" className={theme === 'light' ? 'text-slate-900 bg-white' : 'text-slate-100 bg-[#080d19]'}>Plain English (Contemporary)</option>
-                            <option value="personalized" className={theme === 'light' ? 'text-slate-900 bg-white' : 'text-slate-100 bg-[#080d19]'}>Personalised Prayer</option>
                           </select>
                         </div>
                       </div>

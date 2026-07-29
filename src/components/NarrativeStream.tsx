@@ -41,8 +41,6 @@ export interface VerseHighlight {
 }
 
 export interface NarrativeStreamProps {
-  isComparisonEnabled?: boolean;
-  referenceDisplayMode?: 'both' | 'kjv' | 'bsb';
   title: string;
   streamType: 'plain' | 'pers' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe';
   chunks: Verse[][];
@@ -114,8 +112,6 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
   manuscriptBold = false,
   manuscriptItalic = false,
   onOpenProjection,
-  isComparisonEnabled,
-  referenceDisplayMode,
   isHeaderHidden = false,
   dynamicTranslationData = {},
 }) => {
@@ -131,10 +127,10 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
       : manuscriptItalic;
 
   return (
-    <div className="space-y-2 animate-fade-in relative h-full flex flex-col">
+    <div className="space-y-2 animate-fade-in relative h-full flex flex-col pb-40">
       <div className={`${
         theme === 'light' ? 'text-slate-800' : 'text-slate-200'
-      } space-y-3.5 text-justify leading-[1.8] tracking-[0.01em] flex-1`}>
+      } space-y-3.5 text-left leading-[1.8] tracking-[0.01em] flex-1`}>
         {chunks.map((chunk, chunkIdx) => {
           const containsFocused = chunk.some(v => v.verseNumber === focusedVerse?.verseNumber) && (!focusedStreamType || focusedStreamType === streamType);
           const focusedInChunk = containsFocused ? chunk.find(v => v.verseNumber === focusedVerse?.verseNumber) : null;
@@ -144,7 +140,7 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
 
           return (
             <div key={`para-${streamType}-chunk-wrapper-${chunkIdx}`} className="space-y-2.5 mb-4">
-              <div className="text-justify leading-[1.8] tracking-[0.01em]">
+              <div className="text-left leading-[1.8] tracking-[0.01em]">
                 {chunk.map((v) => {
                   const isFocused = focusedVerse?.verseNumber === v.verseNumber;
                   const isReadingThis = currentlyReadingVerse === v.verseNumber;
@@ -176,27 +172,6 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                     textContent = dynamicTranslationData[v.verseNumber.toString()] || <span className="inline-block animate-pulse bg-slate-200 dark:bg-slate-800 h-4 w-3/4 rounded align-middle mx-1"></span>;
                   }
 
-                  const renderRefs = () => {
-                    if (!isComparisonEnabled) return null;
-                    if (streamType === 'kjv' || streamType === 'bsb') return null;
-                    return (
-                      <span className={`block my-3 p-3.5 rounded-xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] flex flex-col gap-2.5 w-full transition-all ${theme === 'light' ? 'bg-slate-50/70 border border-slate-100' : 'bg-[#121622]/40 border border-cyan-950/20'}`}>
-                        {(referenceDisplayMode === 'both' || referenceDisplayMode === 'kjv') && (
-                          <span className={`block font-serif text-[0.85em] leading-relaxed ${theme === 'light' ? 'text-slate-500' : 'text-slate-400/90'}`}>
-                            <span className={`font-mono font-bold text-sm uppercase tracking-widest mr-2.5 px-1.5 py-0.5 rounded-sm ${theme === 'light' ? 'bg-slate-200/50 text-slate-500' : 'bg-cyan-950/30 text-cyan-500/70'}`}>KJV</span>
-                            {v.kjvText}
-                          </span>
-                        )}
-                        {(referenceDisplayMode === 'both' || referenceDisplayMode === 'bsb') && (
-                          <span className={`block font-serif text-[0.85em] leading-relaxed ${theme === 'light' ? 'text-slate-500' : 'text-slate-400/90'}`}>
-                            <span className={`font-mono font-bold text-sm uppercase tracking-widest mr-2.5 px-1.5 py-0.5 rounded-sm ${theme === 'light' ? 'bg-slate-200/50 text-slate-500' : 'bg-cyan-950/30 text-cyan-500/70'}`}>BSB</span>
-                            {v.bsbText}
-                          </span>
-                        )}
-                      </span>
-                    );
-                  };
-
                   return (
                     <span
                       key={`para-${streamType}-${v.verseNumber}`}
@@ -222,9 +197,13 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                       }`}>
                         {v.verseNumber}
                       </sup>
-                      {renderRefs()}
+
                       <span className={isBold ? 'font-extrabold' : `font-medium ${isItalic ? 'italic' : ''}`}>
-                        {textContent}
+                        {typeof textContent === 'string' ? (
+                          <span dangerouslySetInnerHTML={{ __html: textContent }} />
+                        ) : (
+                          textContent
+                        )}
                       </span>
 {focusedVerse?.verseNumber === v.verseNumber && focusedStreamType === streamType && (
                 <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up w-max">
