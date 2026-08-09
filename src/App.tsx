@@ -2970,20 +2970,20 @@ export default function App() {
                             } ${
                               translationDisplayMode === mode.id 
                                 ? (theme === 'light' ? 'bg-cyan-50/50' : 'bg-cyan-900/10')
-                                : (theme === 'light' ? 'hover:bg-slate-50' : 'hover:bg-slate-800/40')
+                                : (theme === 'light' ? 'bg-white' : 'bg-[#121622]')
                             }`}
-                            onClick={() => {
-                              setTranslationDisplayMode(mode.id as any);
-                              localStorage.setItem('personalized_bible_translation_display_mode', mode.id);
-                              playWebAudioBeep(520, 'sine', 0.05);
-                              // Auto-close library and transition to read view with motion physics
-                              setMainView('read');
-                              setIsProjectionStudioOpen(false);
-                              setTimeout(() => setFullPageMenu(null), 150);
-                            }}
                           >
+                            {/* Label — clicking navigates to read view for this translation */}
                             <div 
-                              className="flex-1 cursor-pointer"
+                              className="flex-1 cursor-pointer py-1 pr-2"
+                              onClick={() => {
+                                setTranslationDisplayMode(mode.id as any);
+                                localStorage.setItem('personalized_bible_translation_display_mode', mode.id);
+                                playWebAudioBeep(520, 'sine', 0.05);
+                                setMainView('read');
+                                setIsProjectionStudioOpen(false);
+                                setTimeout(() => setFullPageMenu(null), 150);
+                              }}
                             >
                               <span className={`text-sm font-bold ${
                                 translationDisplayMode === mode.id
@@ -3736,10 +3736,9 @@ export default function App() {
                         personalizedItalic={personalizedItalic}
                         manuscriptBold={manuscriptBold}
                         manuscriptItalic={manuscriptItalic}
-                        onOpenProjection={(verseNo) => {
-                          setProjectionInitialVerseNumber(verseNo);
-                          setIsProjectionStudioOpen(true);
-                          playWebAudioBeep(640, 'sine', 0.08);
+                        onOpenProjection={(_verseNo) => {
+                          // Projection Studio auto-open from verse tap is permanently disabled
+                          // Use the PROJECT tab in the bottom navigation to open it manually
                         }}
                         dynamicTranslationData={dynamicTranslationData[type] || {}}
                       />
