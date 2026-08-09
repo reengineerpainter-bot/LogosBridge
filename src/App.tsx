@@ -156,7 +156,7 @@ const AudioFAB = ({
       </button>
 
       <div className="flex items-center gap-1 px-1">
-        <button onClick={handlePrev} className={`p-1.5 rounded-full transition-colors ${theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-zinc-800 text-zinc-400'}`}>
+        <button onClick={handlePrev} className={`p-1.5 rounded-full transition-colors ${theme === 'light' ? 'hover:bg-emerald-50 text-emerald-600' : 'hover:bg-emerald-900/30 text-emerald-400'}`}>
           <Play className="w-3 h-3 fill-current rotate-180" />
         </button>
         
@@ -164,7 +164,7 @@ const AudioFAB = ({
           <span className="truncate">{currentTrans.label}</span>
         </span>
         
-        <button onClick={handleNext} className={`p-1.5 rounded-full transition-colors ${theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-zinc-800 text-zinc-400'}`}>
+        <button onClick={handleNext} className={`p-1.5 rounded-full transition-colors ${theme === 'light' ? 'hover:bg-emerald-50 text-emerald-600' : 'hover:bg-emerald-900/30 text-emerald-400'}`}>
           <Play className="w-3 h-3 fill-current" />
         </button>
       </div>
@@ -3092,7 +3092,7 @@ export default function App() {
                 {/* Translation Selector */}
                 <div className="flex items-center space-x-0.5">
                   <div
-                    className="p-1 cursor-pointer hover:bg-slate-100 rounded-full transition text-slate-400 hover:text-slate-700"
+                    className={`p-1 cursor-pointer rounded-full transition ${theme === 'light' ? 'hover:bg-emerald-50 text-emerald-600 hover:text-emerald-700' : 'hover:bg-emerald-900/30 text-emerald-400 hover:text-emerald-300'}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       const modes: ('kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe')[] = ['kjv', 'bsb', 'asv', 'ylt', 'bbe'];
@@ -3124,7 +3124,7 @@ export default function App() {
                   </div>
 
                   <div
-                    className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`}
+                    className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700' : 'text-emerald-400 hover:bg-emerald-900/30 hover:text-emerald-300'}`}
                     onClick={(e) => {
                       e.stopPropagation();
                       const modes: ('kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe')[] = ['kjv', 'bsb', 'asv', 'ylt', 'bbe'];
@@ -3210,9 +3210,11 @@ export default function App() {
           id="floating-nav-prev-chapter-btn"
           onClick={handlePrevChapter}
           className={`p-1 flex items-center justify-center transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
-            theme === 'light'
-              ? 'text-slate-700 hover:text-cyan-600'
-              : 'text-cyan-500 hover:text-cyan-400'
+            mainView === 'read'
+              ? (theme === 'light' ? 'text-emerald-600 hover:text-emerald-700' : 'text-emerald-400 hover:text-emerald-300')
+              : mainView === 'interlinear'
+              ? (theme === 'light' ? 'text-rose-600 hover:text-rose-700' : 'text-rose-400 hover:text-rose-300')
+              : (theme === 'light' ? 'text-slate-700 hover:text-cyan-600' : 'text-cyan-500 hover:text-cyan-400')
           }`}
           title={prevChapterLabel ? `Go to ${prevChapterLabel}` : "Previous Chapter"}
           disabled={!prevChapterLabel}
@@ -3230,9 +3232,11 @@ export default function App() {
           id="floating-nav-next-chapter-btn"
           onClick={handleNextChapter}
           className={`p-1 flex items-center justify-center transition-all duration-300 focus:outline-none group transform hover:scale-110 cursor-pointer ${
-            theme === 'light'
-              ? 'text-slate-700 hover:text-cyan-600'
-              : 'text-cyan-500 hover:text-cyan-400'
+            mainView === 'read'
+              ? (theme === 'light' ? 'text-emerald-600 hover:text-emerald-700' : 'text-emerald-400 hover:text-emerald-300')
+              : mainView === 'interlinear'
+              ? (theme === 'light' ? 'text-rose-600 hover:text-rose-700' : 'text-rose-400 hover:text-rose-300')
+              : (theme === 'light' ? 'text-slate-700 hover:text-cyan-600' : 'text-cyan-500 hover:text-cyan-400')
           }`}
           title={nextChapterLabel ? `Go to ${nextChapterLabel}` : "Next Chapter"}
           disabled={!nextChapterLabel}
