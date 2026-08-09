@@ -287,8 +287,11 @@ export default function App() {
   }, [translationDisplayMode]);
 
   // Clear translation data on chapter change to prevent stale data
+  const [loadingTranslations, setLoadingTranslations] = useState<Set<string>>(new Set());
+
   useEffect(() => {
     setDynamicTranslationData({});
+    setLoadingTranslations(new Set());
   }, [selectedBook, selectedChapter]);
 
   useEffect(() => {
@@ -311,6 +314,9 @@ export default function App() {
     }
 
     requiredTranslations.forEach(shouldFetch => {
+      // Mark as loading before fetch starts
+      setLoadingTranslations(prev => new Set(prev).add(shouldFetch));
+
       const processVerses = (versesData: any) => {
          const formattedData: Record<string, string> = {};
          if (Array.isArray(versesData)) {
@@ -324,6 +330,8 @@ export default function App() {
            ...prev,
            [shouldFetch]: formattedData
          }));
+         // Mark as done loading
+         setLoadingTranslations(prev => { const n = new Set(prev); n.delete(shouldFetch); return n; });
       };
 
       const isNative = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform();
@@ -2768,7 +2776,11 @@ export default function App() {
       )}
 
       {mainView === 'read' && !isProjectionStudioOpen && !fullPageMenu && !isBookDropdownOpen && (
-        <div className={`fixed top-3 right-4 z-[1050] flex items-center gap-2 p-1.5 rounded-2xl shadow-lg backdrop-blur-xl transition-all duration-500 ease-in-out ${theme === 'light' ? 'bg-white/80 border border-slate-200' : 'bg-slate-900/80 border border-slate-800'} ${isHeaderHidden ? '-translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
+        <div className={`fixed top-3 right-4 z-[1050] flex items-center gap-2 p-1.5 rounded-2xl shadow-lg transition-all duration-500 ease-in-out ${isHeaderHidden ? '-translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'} ${
+            theme === 'light'
+              ? 'bg-white/30 backdrop-blur-2xl border border-white/60 shadow-[0_8px_32px_rgba(0,0,0,0.10)] ring-1 ring-slate-200/40'
+              : 'bg-slate-900/30 backdrop-blur-2xl border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.40)] ring-1 ring-white/5'
+          }`}>
           <button
             onClick={() => {
               setFullPageMenu('versions');
@@ -3032,7 +3044,7 @@ export default function App() {
                 {/* ── SECTION 1: Book/Chapter Navigator ── */}
                 <div className="flex items-center space-x-0.5">
                   <div
-                    className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`}
+                    className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700' : 'text-emerald-400 hover:bg-emerald-900/30 hover:text-emerald-300'}`}
                     onClick={(e) => { e.stopPropagation(); handlePrevChapter(); }}
                   >
                     <ChevronLeft className="w-7 h-7" strokeWidth={2.5} />
@@ -3048,7 +3060,7 @@ export default function App() {
                   </div>
 
                   <div
-                    className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`}
+                    className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-emerald-600 hover:bg-emerald-50 hover:text-emerald-700' : 'text-emerald-400 hover:bg-emerald-900/30 hover:text-emerald-300'}`}
                     onClick={(e) => { e.stopPropagation(); handleNextChapter(); }}
                   >
                     <ChevronRight className="w-7 h-7" strokeWidth={2.5} />
@@ -3144,7 +3156,7 @@ export default function App() {
               {/* ── SECTION 1: Book/Chapter Navigator ── */}
               <div className="flex items-center space-x-0.5">
                 <div
-                  className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`}
+                  className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-rose-600 hover:bg-rose-50 hover:text-rose-700' : 'text-rose-400 hover:bg-rose-900/30 hover:text-rose-300'}`}
                   onClick={(e) => { e.stopPropagation(); handlePrevChapter(); }}
                 >
                   <ChevronLeft className="w-7 h-7" strokeWidth={2.5} />
@@ -3159,7 +3171,7 @@ export default function App() {
                 </div>
 
                 <div
-                  className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`}
+                  className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-rose-600 hover:bg-rose-50 hover:text-rose-700' : 'text-rose-400 hover:bg-rose-900/30 hover:text-rose-300'}`}
                   onClick={(e) => { e.stopPropagation(); handleNextChapter(); }}
                 >
                   <ChevronRight className="w-7 h-7" strokeWidth={2.5} />
@@ -3858,11 +3870,20 @@ export default function App() {
 
                               {/* Right Content Body */}
                               <div className="flex flex-col w-full flex-1">
-                                <div className={`${getScriptureStyleClasses()} ${fontClasses} leading-[1.8] tracking-[0.01em] ${
-                                  'text-[18px]'
-                                } ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
-                                  {textContent}
-                                </div>
+                                {/* Shimmer skeleton while dynamic translation is loading */}
+                                {!textContent && loadingTranslations.has(transType) ? (
+                                  <div className="flex flex-col gap-1.5 py-1 animate-pulse">
+                                    <div className={`h-3 rounded-full w-[92%] ${theme === 'light' ? 'bg-slate-200' : 'bg-slate-700'}`} />
+                                    <div className={`h-3 rounded-full w-[78%] ${theme === 'light' ? 'bg-slate-200' : 'bg-slate-700'}`} />
+                                    <div className={`h-3 rounded-full w-[60%] ${theme === 'light' ? 'bg-slate-200' : 'bg-slate-700'}`} />
+                                  </div>
+                                ) : (
+                                  <div className={`${getScriptureStyleClasses()} ${fontClasses} leading-[1.8] tracking-[0.01em] ${
+                                    'text-[18px]'
+                                  } ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
+                                    {textContent}
+                                  </div>
+                                )}
 
                                 {/* Inline Note Reply Bubble */}
                                 {activeDraftVerse === v.verseNumber && (
