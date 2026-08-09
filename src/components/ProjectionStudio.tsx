@@ -168,6 +168,7 @@ export default function ProjectionStudio({
   
   
   const startAudioAnalysis = async () => {
+    if (Capacitor.isNativePlatform()) return; // Disable audio visualizer on mobile native to prevent permission crash
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true, video: false });
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
@@ -238,7 +239,7 @@ export default function ProjectionStudio({
 
   useEffect(() => {
     if (isOpen) {
-      if (typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform()) {
+      if (Capacitor.isNativePlatform()) {
         import('@capacitor/app').then(({ App }) => {
           const listener = App.addListener('backButton', () => {
             onCloseRef.current();
@@ -265,37 +266,8 @@ export default function ProjectionStudio({
     }
   }, [isOpen]);
 
-  useEffect(() => {
-    if (isOpen) {
-      // Auto-open projector window when studio opens if not already opened
-      // If running inside Electron, bypass this since the native window is handled by main.cjs
-      if (typeof window !== 'undefined' && (window as any).electronAPI) return;
-
-      const popWindow = async () => {
-         try {
-           await openProjectorStandalone(liveState, true);
-         } catch (e) {
-           console.warn('Failed to auto-open projector', e);
-         }
-      };
-      
-      const timer = setTimeout(() => {
-        if ((window as any).__OPENED_PROJECTOR_WINDOWS__ && (window as any).__OPENED_PROJECTOR_WINDOWS__.length > 0) {
-           let allClosed = true;
-           for (const w of (window as any).__OPENED_PROJECTOR_WINDOWS__) {
-              if (!w.closed) allClosed = false;
-           }
-           if (allClosed) {
-             popWindow();
-           }
-        } else {
-           popWindow();
-        }
-      }, 500);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isOpen]);
+  // The auto-open pop-out window feature has been intentionally completely disabled here
+  // as per the user's request, preventing the "program out" window from intrusively popping up on mobile/PWA.
 
 
   // Audio vocal controls
@@ -754,6 +726,7 @@ export default function ProjectionStudio({
   
   useEffect(() => {
     if (isOpen && !manuallyStoppedRef.current && !isListeningRef.current) {
+      if (Capacitor.isNativePlatform()) return; // Prevent mic auto-start crash on mobile
       isListeningRef.current = true;
       shouldRestartRef.current = false;
       try { recognitionRef.current?.start(); } catch(e) {}
@@ -816,7 +789,7 @@ export default function ProjectionStudio({
           initial={{ scale: 0.95, opacity: 0, y: 20 }}
           animate={{ scale: 1, opacity: 1, y: 0 }}
           exit={{ scale: 0.95, opacity: 0, y: 20 }}
-          className={`w-full max-w-[1200px] h-[100dvh] md:h-[80vh] mb-0 rounded-none md:rounded-[2rem] border-none md:border-solid md:border flex flex-col overflow-hidden shadow-2xl relative ${theme === 'light' ? 'bg-[#fcfcfc] md:bg-white md:border-slate-200' : 'bg-[#0a0d16] md:bg-[#131314] md:border-slate-800'}`}
+          className={`w-full max-w-[1200px] h-full md:h-[80vh] mb-0 rounded-none md:rounded-[2rem] border-none md:border-solid md:border flex flex-col overflow-hidden shadow-2xl relative ${theme === 'light' ? 'bg-[#fcfcfc] md:bg-white md:border-slate-200' : 'bg-[#0a0d16] md:bg-[#131314] md:border-slate-800'}`}
         >
           {/* TOP STATUS BAR */}
           <div className={`p-4 border-b flex items-center justify-between select-none relative z-20 ${theme === 'light' ? 'bg-slate-50 border-slate-200' : 'bg-[#131314]/80 border-white/10 backdrop-blur-md'}`}>
@@ -844,7 +817,7 @@ export default function ProjectionStudio({
                     openProjectorStandalone(liveState);
                   }
                 }}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold tracking-widest uppercase transition-all ${theme === 'light' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}
+                className={`hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold tracking-widest uppercase transition-all ${theme === 'light' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}
                 title="Pop out or reopen standalone projector window"
               >
                 <Monitor className="w-4 h-4" />
@@ -882,7 +855,7 @@ export default function ProjectionStudio({
             
             {/* LEFT SIDEBAR: VERSES */}
             {!isPresentationOnly && (
-              <div className={`w-full md:w-80 border-r flex flex-col shrink-0 ${theme === 'light' ? 'border-slate-200 bg-white' : 'border-white/10 bg-black/40'}`}>
+              <div className={`w-full md:w-80 h-[45%] md:h-full border-b md:border-b-0 md:border-r flex flex-col shrink-0 ${theme === 'light' ? 'border-slate-200 bg-white' : 'border-white/10 bg-black/40'}`}>
                 <div className={`p-4 border-b space-y-3 ${theme === 'light' ? 'border-slate-200' : 'border-white/10'}`}>
                   <div className="flex flex-col gap-3">
                     <h3 className={`text-xs font-black uppercase tracking-widest flex items-center gap-1.5 ${theme === 'light' ? 'text-amber-600' : 'text-amber-500'}`}>
@@ -1040,8 +1013,8 @@ export default function ProjectionStudio({
               </div>
             )}
 
-            {/* CENTER/MAIN: STAGE PREVIEW */}
-            <div className={`flex-1 flex flex-col relative ${theme === 'light' ? 'bg-slate-50' : 'bg-[#0a0a0a]'}`}>
+            {/* CENTER/MAIN: STAGE PREVIEW (hidden on mobile) */}
+            <div className={`hidden md:flex flex-1 flex-col relative ${theme === 'light' ? 'bg-slate-50' : 'bg-[#0a0a0a]'}`}>
               
               {/* STAGE HEADER */}
               <div className={`h-12 border-b flex items-center justify-between px-4 shrink-0 ${theme === 'light' ? 'border-slate-200 bg-white' : 'border-white/10 bg-black/60'}`}>
@@ -1123,7 +1096,7 @@ export default function ProjectionStudio({
 
               {/* STAGE CANVAS */}
               <div className="flex-1 p-4 md:p-8 flex items-center justify-center overflow-hidden">
-                <div className="w-full aspect-video max-w-5xl rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden relative flex flex-col bg-black transition-all">
+                <div className="w-full h-full md:h-auto md:aspect-video max-w-5xl rounded-2xl shadow-[0_20px_60px_-15px_rgba(0,0,0,0.5)] border border-white/10 overflow-hidden relative flex flex-col bg-black transition-all">
                   
                   {/* Theme Background Injector */}
                   {showStageBackground && (

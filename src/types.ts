@@ -28,3 +28,33 @@ export interface BibleBook {
   chapters: number;
   testament: 'Old' | 'New';
 }
+
+// ---------------------------------------------------------
+// Backend Types (Firebase)
+// ---------------------------------------------------------
+
+export interface ReadingHistory {
+  book: string;
+  chapter: number;
+  readAt: number; // timestamp
+}
+
+export interface UserHighlight {
+  id: string; // `${book}-${chapter}-${verse}`
+  book: string;
+  chapter: number;
+  verse: number;
+  color: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface VerseNote {
+  id: string; // `${book}-${chapter}-${verse}`
+  book: string;
+  chapter: number;
+  verse: number;
+  content: string;
+  createdAt: number;
+  updatedAt: number;
+}

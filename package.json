@@ -1,7 +1,7 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "1.0.7",
+  "version": "1.0.8",
   "type": "module",
   "main": "main.cjs",
   "scripts": {
@@ -19,7 +19,8 @@
   "dependencies": {
     "@capacitor-community/text-to-speech": "^8.0.2",
     "@capacitor/app": "^8.1.1",
-    "@capacitor/core": "^8.4.0",
+    "@capacitor/core": "^8.4.2",
+    "@capacitor/local-notifications": "^8.2.1",
     "@capacitor/status-bar": "^8.0.3",
     "@capgo/capacitor-navigation-bar": "^8.2.6",
     "@google/genai": "^2.4.0",
@@ -39,6 +40,7 @@
   },
   "devDependencies": {
     "@capacitor/android": "^8.4.0",
+    "@capacitor/assets": "^3.0.5",
     "@capacitor/cli": "^8.4.0",
     "@types/archiver": "^8.0.0",
     "@types/express": "^4.17.21",

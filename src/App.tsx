@@ -5,62 +5,10 @@
 
 import React, { useState, useEffect, useMemo, useRef, FormEvent, ReactNode, TouchEvent } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import {
-  Menu,
-  Settings,
-  X,
-  Volume2,
-  VolumeX,
-  MonitorPlay,
-  Play,
-  Pause,
-  Maximize2,
-  Minimize2,
-  CheckCircle2,
-  Languages,
-  BookOpen,
-  Search,
-  BookOpenCheck,
-  ChevronDown,
-  Info,
-  MoreVertical,
-  Layers,
-  ChevronRight,
-  ChevronLeft,
-  Sparkles,
-  Loader2,
-  Eye,
-  EyeOff,
-  HelpCircle,
-  ArrowLeft,
-  Check,
-  Compass,
-  RefreshCw,
-  Globe,
-  ArrowRight,
-  MessageSquareOff,
-  PlusSquare,
-  Bookmark,
-  Sun,
-  Moon,
-  Smartphone,
-  Download,
-  Laptop,
-  ExternalLink,
-  Copy,
-  MessageSquare,
-  Award,
-  Square,
-  Tv,
-  Library,
-  Ban,
-  ToggleLeft,
-  ToggleRight,
-  HeartHandshake,
-  Database,
-  Home
-} from 'lucide-react';
+import { Menu, Settings, X, Volume2, VolumeX, MonitorPlay, Play, Pause, Maximize2, Minimize2, CheckCircle2, Languages, BookOpen, Search, BookOpenCheck, ChevronDown, Info, MoreVertical, Layers, ChevronRight, ChevronLeft, Sparkles, Loader2, Eye, EyeOff, HelpCircle, ArrowLeft, Check, Compass, RefreshCw, Globe, ArrowRight, MessageSquareOff, PlusSquare, Bookmark, Sun, Moon, Smartphone, Download, Laptop, ExternalLink, Copy, MessageSquare, Award, Square, Tv, Library, Ban, ToggleLeft, ToggleRight, HeartHandshake, Database, Home, Edit3 } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { LocalNotifications } from '@capacitor/local-notifications';
+
 import { BIBLE_BOOKS } from './bibleMetadata';
 import { STATIC_CHAPTERS } from './staticChapters';
 import { ChapterData, Verse, SpecialWord, BibleBook } from './types';
@@ -97,6 +45,15 @@ import logoGraceAmber from './assets/images/logo_grace_amber_1780920320501.png';
 import logoSacredCrest from './assets/images/logo_sacred_crest_1780920352594.png';
 // @ts-ignore
 import appLogoNew from './assets/images/logo_logosbridge.png';
+
+import openBibleTableImg from './assets/images/open_bible_table.jpg';
+import benefitImg1 from './assets/images/uploaded_image_1.png';
+import benefitImg2 from './assets/images/uploaded_image_2.png';
+import benefitImg3 from './assets/images/uploaded_image_3.png';
+import liveScreenImg from './assets/images/live_screen_1.png';
+import studioPreviewImg from './assets/images/studio_preview.png';
+import silhouettePrayerImg from './assets/images/silhouette_prayer.jpg';
+
 
 const StarryCradleIcon = ({ className = "w-5 h-5", active = false }: { className?: string; active?: boolean }) => {
   return (
@@ -243,7 +200,13 @@ export default function App() {
     return appLogoNew;
   }, []);
   const [selectedBook, setSelectedBook] = useState<string>('Genesis');
+  const [activeNotebookVerse, setActiveNotebookVerse] = useState<number | null>(null);
+  const [highlightedVerses, setHighlightedVerses] = useState<number[]>([]);
+
   const [selectedChapter, setSelectedChapter] = useState<number>(1);
+  const [selectedBookRight, setSelectedBookRight] = useState<string>('John');
+  const [selectedChapterRight, setSelectedChapterRight] = useState<number>(1);
+  const [chapterDataRight, setChapterDataRight] = useState<any>(null);
   const [slideDirection, setSlideDirection] = useState<'forward' | 'backward' | 'none'>('none');
   const [isHeaderCollapsed, setIsHeaderCollapsed] = useState<boolean>(false);
   const [isMoreMenuOpen, setIsMoreMenuOpen] = useState<boolean>(false);
@@ -291,7 +254,9 @@ export default function App() {
   });
   const [dualStreamLeft, setDualStreamLeft] = useState<'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>('kjv');
   const [dualStreamRight, setDualStreamRight] = useState<'plain' | 'personalized' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe'>('bsb');
+  const [activeDualColumn, setActiveDualColumn] = useState<'left' | 'right'>('left');
   const [mainView, setMainView] = useState<'home' | 'read' | 'interlinear' | 'prayer'>('home');
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
   const [interlinearThirdLine, setInterlinearThirdLine] = useState<string>('kjv');
   const [openInterlinearMenuId, setOpenInterlinearMenuId] = useState<number | null>(null);
 
@@ -329,14 +294,20 @@ export default function App() {
   useEffect(() => {
     const requiredTranslations = new Set<string>();
     
-    // Add translations needed by single view
-    if (['asv', 'ylt', 'bbe'].includes(translationDisplayMode)) requiredTranslations.add(translationDisplayMode);
-    if (mainView === 'interlinear' && ['asv', 'ylt', 'bbe'].includes(interlinearThirdLine)) requiredTranslations.add(interlinearThirdLine);
+    // Add translations needed by standard view
+    if (['kjv', 'bsb', 'asv', 'ylt', 'bbe'].includes(translationDisplayMode)) {
+      requiredTranslations.add(translationDisplayMode);
+    }
+    
+    // Add translations needed by interlinear
+    if (mainView === 'interlinear' && ['kjv', 'bsb', 'asv', 'ylt', 'bbe'].includes(interlinearThirdLine)) {
+      requiredTranslations.add(interlinearThirdLine);
+    }
     
     // Add translations needed by dual stream
     if (translationDisplayMode === 'both') {
-      if (['asv', 'ylt', 'bbe'].includes(dualStreamLeft)) requiredTranslations.add(dualStreamLeft);
-      if (['asv', 'ylt', 'bbe'].includes(dualStreamRight)) requiredTranslations.add(dualStreamRight);
+      if (['kjv', 'bsb', 'asv', 'ylt', 'bbe'].includes(dualStreamLeft)) requiredTranslations.add(dualStreamLeft);
+      if (['kjv', 'bsb', 'asv', 'ylt', 'bbe'].includes(dualStreamRight)) requiredTranslations.add(dualStreamRight);
     }
 
     requiredTranslations.forEach(shouldFetch => {
@@ -404,8 +375,8 @@ export default function App() {
     });
   }, [translationDisplayMode, interlinearThirdLine, dualStreamLeft, dualStreamRight, mainView, selectedBook, selectedChapter]);
 
-  const [layoutMode, setLayoutMode] = useState<'formal' | 'paragraph'>(() => {
-    return (localStorage.getItem('personalized_bible_layout_mode') as 'formal' | 'paragraph') || 'paragraph';
+  const [layoutMode, setLayoutMode] = useState<'paragraph'>(() => {
+    return 'paragraph';
   });
   const [audioReadingSelection, setAudioReadingSelection] = useState<'dynamic' | 'kjv' | 'bsb' | 'plain' | 'personalized'>('dynamic');
 
@@ -794,6 +765,11 @@ export default function App() {
   const rawVersesList = useMemo(() => {
     return chapterData?.verses || [];
   }, [chapterData]);
+
+  const paginatedVersesListRight = useMemo(() => {
+    if (!chapterDataRight || !chapterDataRight.verses) return [];
+    return chapterDataRight.verses.slice(0, versesPerPageSetting === 'all' ? chapterDataRight.verses.length : versesPerPageSetting);
+  }, [chapterDataRight, versesPerPageSetting]);
 
   const paginatedVersesList = useMemo(() => {
     if (versesPerPageSetting === 'all') {
@@ -1203,6 +1179,24 @@ export default function App() {
   }, []);
 
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  
+  // Track last scroll position for dual-stream columns
+  const columnLastScrollRef = useRef<number>(0);
+  const handleColumnScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const scrollTop = e.currentTarget.scrollTop;
+    const lastScroll = columnLastScrollRef.current;
+    if (scrollTop <= 20) {
+      setIsHeaderHidden(false);
+      setIsSidePanelHidden(false);
+    } else if (scrollTop > lastScroll && Math.abs(scrollTop - lastScroll) >= 5) {
+      setIsHeaderHidden(true);
+      setIsSidePanelHidden(true);
+    } else if (scrollTop < lastScroll && Math.abs(scrollTop - lastScroll) >= 5) {
+      setIsHeaderHidden(false);
+      setIsSidePanelHidden(false);
+    }
+    columnLastScrollRef.current = scrollTop > 0 ? scrollTop : 0;
+  };
 
   // Load Bible Books
   const booksList = useMemo(() => {
@@ -1265,6 +1259,34 @@ export default function App() {
   }, [booksList, selectedBook, selectedChapter, currentBookObj]);
 
   // Handlers for Chapter forward and back
+  const handlePrevChapterRight = () => {
+    const currentBookObj = booksList.find(b => b.name === selectedBookRight);
+    if (!currentBookObj) return;
+    if (selectedChapterRight > 1) {
+      setSelectedChapterRight(selectedChapterRight - 1);
+    } else {
+      const bookIndex = booksList.findIndex(b => b.name === selectedBookRight);
+      if (bookIndex > 0) {
+        const prevBook = booksList[bookIndex - 1];
+        setSelectedBookRight(prevBook.name);
+        setSelectedChapterRight(prevBook.chapters);
+      }
+    }
+  };
+  const handleNextChapterRight = () => {
+    const currentBookObj = booksList.find(b => b.name === selectedBookRight);
+    if (!currentBookObj) return;
+    if (selectedChapterRight < currentBookObj.chapters) {
+      setSelectedChapterRight(selectedChapterRight + 1);
+    } else {
+      const bookIndex = booksList.findIndex(b => b.name === selectedBookRight);
+      if (bookIndex < booksList.length - 1) {
+        const nextBook = booksList[bookIndex + 1];
+        setSelectedBookRight(nextBook.name);
+        setSelectedChapterRight(1);
+      }
+    }
+  };
   const handleNextChapter = () => {
     setSlideDirection('forward');
     const bookIndex = booksList.findIndex((b) => b.name === selectedBook);
@@ -1497,7 +1519,7 @@ export default function App() {
   }, [selectedWord, selectedBook, selectedChapter]);
 
   // Main chapter loader checking the persistent storage cache first
-  const loadChapter = async (book: string, chapter: number) => {
+  const loadChapter = async (book: string, chapter: number, targetCol: 'left'|'right' = 'left') => {
     // Record current book/chapter state to discard stale network threads
     activeChapterRef.current = { book, chapter };
     
@@ -1512,7 +1534,7 @@ export default function App() {
     // 1. Prioritize local Static chapters (guarantees exquisite academic text instantly)
     if (STATIC_CHAPTERS[book] && STATIC_CHAPTERS[book][chapter]) {
       const staticData = STATIC_CHAPTERS[book][chapter];
-      setChapterData(staticData);
+      (targetCol === 'left' ? setChapterData : setChapterDataRight)(staticData);
       try {
         localStorage.setItem(cacheKey, JSON.stringify(staticData));
         updateCachedStats();
@@ -1553,7 +1575,7 @@ export default function App() {
     const needsBackgroundUpgrade = !cachedParsed;
 
     if (!needsBackgroundUpgrade) {
-      setChapterData(cachedParsed);
+      (targetCol === 'left' ? setChapterData : setChapterDataRight)(cachedParsed);
       setLoading(false);
     } else {
       // Don't show full-screen loader, just let background fetch handle it
@@ -1576,7 +1598,7 @@ export default function App() {
         if (docSnap.exists() && activeChapterRef.current.book === book && activeChapterRef.current.chapter === chapter) {
           const dbChapter = docSnap.data();
           if (dbChapter && dbChapter.verses && dbChapter.verses.length > 0) {
-            setChapterData(dbChapter as any);
+            (targetCol === 'left' ? setChapterData : setChapterDataRight)(dbChapter as any);
             try {
               localStorage.setItem(cacheKey, JSON.stringify(dbChapter));
               updateCachedStats();
@@ -1606,7 +1628,7 @@ export default function App() {
         }
 
         if (responseData.success && responseData.data) {
-          setChapterData(responseData.data);
+          (targetCol === 'left' ? setChapterData : setChapterDataRight)(responseData.data);
           try {
             localStorage.setItem(cacheKey, JSON.stringify(responseData.data));
             updateCachedStats();
@@ -1622,7 +1644,7 @@ export default function App() {
         // Turn off spinner & set readable content if failed so user experiences zero crash
         if (activeChapterRef.current.book === book && activeChapterRef.current.chapter === chapter) {
           const currentData = cachedParsed || { verses: [] };
-          setChapterData(currentData);
+          (targetCol === 'left' ? setChapterData : setChapterDataRight)(currentData);
           setLoading(false);
         }
       } finally {
@@ -1832,7 +1854,9 @@ export default function App() {
       // Dismiss active word details
       setActiveWordId(null);
       setSelectedWord(null);
-
+      // Dismiss focused verse popups when clicking empty space
+      setFocusedVerse(null);
+      setFocusedStreamType(null);
     };
     document.addEventListener('click', handleDocumentClick);
     return () => document.removeEventListener('click', handleDocumentClick);
@@ -2580,56 +2604,13 @@ export default function App() {
           >
             <div className="max-w-7xl mx-auto flex flex-row items-center justify-between gap-3">
               
-              {/* CENTER SELECTORS FOR SELECTING BOOKS */}
+              {/* TOP LEFT: Display-only chapter label — no click/tap interaction */}
               <div className="flex flex-wrap items-center gap-2">
-                {/* Book Thumbnail with Progress Ring */}
-                <div className="relative w-9 h-9 flex items-center justify-center shrink-0">
-                  <svg viewBox="0 0 36 36" className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none">
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="16"
-                      className={`${theme === 'light' ? 'stroke-zinc-200' : 'stroke-zinc-800'}`}
-                      strokeWidth="2.5"
-                      fill="none"
-                    />
-                    <circle
-                      cx="18"
-                      cy="18"
-                      r="16"
-                      className="stroke-cyan-500 transition-all duration-150 ease-out"
-                      strokeWidth="2.5"
-                      fill="none"
-                      strokeDasharray={`${2 * Math.PI * 16}`}
-                      strokeDashoffset={`${2 * Math.PI * 16 * (1 - readPercentage / 100)}`}
-                      strokeLinecap="round"
-                    />
-                  </svg>
-                  <img
-                    src={logoSrc}
-                    alt="Book Thumbnail"
-                    className="w-6 h-6 object-contain rounded-md relative z-10"
-                    referrerPolicy="no-referrer"
-                  />
+                <div 
+                  className={`text-lg font-serif font-bold tracking-tight px-1 select-none ${theme === 'light' ? 'text-zinc-800' : 'text-zinc-100'}`}
+                >
+                  {selectedBook} {selectedChapter}
                 </div>
-                
-                {/* Unified Book & Chapter Selector */}
-                <div>
-                  <button
-                    id="nav-modal-btn"
-                    onClick={() => {
-                      setIsBookDropdownOpen(true);
-                      setIsChapterDropdownOpen(false); // Using this to represent the "book" vs "chapter" step
-                    }}
-                    className={`flex items-center space-x-2 ${theme === 'light' ? 'bg-white border-zinc-200 text-zinc-800 hover:border-zinc-300 hover:bg-zinc-50 shadow-[0_2px_10px_rgb(0,0,0,0.02)]' : 'bg-zinc-900 border-zinc-800 text-zinc-100 hover:border-zinc-700 shadow-lg'} px-4 py-2 rounded-lg text-sm md:text-base transition-all cursor-pointer font-serif justify-between font-bold`}
-                  >
-                    <span>{selectedBook} {selectedChapter}</span>
-                    <ChevronLeft className={`w-4 h-4 -rotate-90 ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`} />
-                  </button>
-
-                </div>
-
-                
               </div>
               
               <div className="flex items-center gap-2">
@@ -2660,100 +2641,41 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* FLOAT POP TRIGGERS WHEN HEADER COLLAPSED */}
-      <AnimatePresence>
-      {mainView !== 'home' && mainView !== 'interlinear' && isHeaderCollapsed && (
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -20 }}
-          transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-          className={`fixed top-3 left-4 z-40 flex items-center space-x-3 backdrop-blur-md p-2 rounded-lg shadow-md transition-all duration-500 ease-in-out ${
-            isHeaderHidden ? '-translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
-          } ${
-            theme === 'light' ? 'bg-white border border-slate-200 text-slate-800' : 'bg-[#0a0f1d]/90 border border-cyan-500/30'
-          }`}
-        >
-          <button
-            id="expand-header-btn"
-            onClick={() => setIsHeaderCollapsed(false)}
-            className={`flex items-center space-x-1.5 text-sm font-mono ${theme === 'light' ? 'text-cyan-700 hover:text-cyan-800' : 'text-cyan-400 hover:text-cyan-300'}`}
-          >
-            <Menu className="w-4 h-4 font-bold" />
-            <span className="uppercase font-semibold tracking-wider">SHOW NAV MENU</span>
-          </button>
-          <div className={`h-4 w-[1px] ${theme === 'light' ? 'bg-slate-200' : 'bg-cyan-950'}`} />
-          <span className={`text-sm font-display font-medium px-1 font-mono ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
+      {/* FIXED TOP RIGHT NAV: LIBRARY & SETTINGS */}
+      {/* TOP LEFT: Display-only chapter label for Study/Interlinear view */}
+      {mainView === 'interlinear' && !fullPageMenu && !isProjectionStudioOpen && (
+        <div className={`fixed top-3 left-4 z-[1050] transition-all duration-500 ease-in-out ${isHeaderHidden ? '-translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
+          <div className={`text-lg font-serif font-bold tracking-tight px-1 select-none ${theme === 'light' ? 'text-zinc-800' : 'text-zinc-100'}`}>
             {selectedBook} {selectedChapter}
-          </span>
-          {/* Collapsed Theme Switcher */}
-          <div className="flex items-center space-x-1.5 pl-1.5">
-
-            {/* Collapsed Speech Desk Trigger */}
-            <button
-              onClick={() => {
-                setIsStudySidebarOpen(true);
-                setActiveSidebarTab('audio');
-                playWebAudioBeep(600, 'sine', 0.05);
-              }}
-              className={`p-1.5 rounded transition cursor-pointer ${
-                theme === 'light' ? 'bg-cyan-50 hover:bg-cyan-100 text-cyan-750' : 'bg-cyan-950/40 hover:bg-cyan-950 text-cyan-400'
-              }`}
-              title="Open Audio Settings"
-            >
-              <Volume2 className="w-3.5 h-3.5 text-cyan-500 animate-pulse" />
-            </button>
-            <button
-              onClick={() => setTheme(theme === 'light' ? 'dark' : 'light')}
-              className={`p-1.5 rounded transition cursor-pointer ${theme === 'light' ? 'bg-slate-100 hover:bg-slate-200' : 'bg-slate-100/10 hover:bg-slate-200/20'}`}
-              title="Toggle Theme"
-            >
-              {theme === 'light' ? <Moon className="w-3.5 h-3.5 text-slate-700" /> : <Sun className="w-3.5 h-3.5 text-amber-400" />}
-            </button>
           </div>
-        </motion.div>
+        </div>
       )}
-      </AnimatePresence>
 
-      {/* FLOATING AUDIO PLAY FAB & TRANSLATION TOGGLE */}
-      {mainView !== 'home' && (
-      <div className={`fixed bottom-[76px] left-4 right-4 z-[90] flex items-center ${translationDisplayMode === 'both' ? 'justify-between' : 'justify-start'} pointer-events-none transition-all duration-500 ease-in-out ${isSidePanelHidden ? 'translate-y-24 opacity-0' : 'translate-y-0 opacity-100'}`}>
-          <div className="pointer-events-auto">
-            <AudioFAB 
-              theme={theme}
-              isPlayingAudio={isPlayingAudio}
-              activeAudioStream={activeAudioStream}
-              stopSpeaking={stopSpeaking}
-              playTranslationStream={playTranslationStream}
-              currentTransId={translationDisplayMode === 'both' ? dualStreamLeft : (['plain', 'kjv', 'bsb', 'pers', 'asv', 'ylt', 'bbe'].includes(translationDisplayMode) ? translationDisplayMode : 'plain')}
-              onTransChange={(newTrans: string) => {
-                if (translationDisplayMode === 'both') {
-                  setDualStreamLeft(newTrans as any);
-                } else {
-                  setTranslationDisplayMode(newTrans as any);
-                  localStorage.setItem('personalized_bible_translation_display_mode', newTrans);
-                }
-              }}
-            />
-          </div>
-          {translationDisplayMode === 'both' && (
-            <div className="pointer-events-auto">
-              <AudioFAB 
-                theme={theme}
-                isPlayingAudio={isPlayingAudio}
-                activeAudioStream={activeAudioStream}
-                stopSpeaking={stopSpeaking}
-                playTranslationStream={playTranslationStream}
-                currentTransId={dualStreamRight}
-                onTransChange={(newTrans: string) => {
-                  setDualStreamRight(newTrans as any);
-                }}
-              />
-            </div>
-          )}
-      </div>
+      {mainView === 'read' && !isProjectionStudioOpen && !fullPageMenu && !isBookDropdownOpen && (
+        <div className={`fixed top-3 right-4 z-[1050] flex items-center gap-2 p-1.5 rounded-2xl shadow-lg backdrop-blur-xl transition-all duration-500 ease-in-out ${theme === 'light' ? 'bg-white/80 border border-slate-200' : 'bg-slate-900/80 border border-slate-800'} ${isHeaderHidden ? '-translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'}`}>
+          <button
+            onClick={() => {
+              setFullPageMenu('versions');
+              playWebAudioBeep(440, 'sine', 0.05);
+            }}
+            className={`p-2 rounded-xl transition-all hover:scale-105 active:scale-95 group ${theme === 'light' ? 'text-slate-700 hover:text-cyan-600 hover:bg-white' : 'text-slate-300 hover:text-cyan-400 hover:bg-slate-800'}`}
+            title="Library"
+          >
+            <Library className="w-5 h-5 transition-transform group-hover:scale-110" />
+          </button>
+          <button
+            onClick={() => {
+              setFullPageMenu('settings');
+              playWebAudioBeep(440, 'sine', 0.05);
+            }}
+            className={`p-2 rounded-xl transition-all hover:scale-105 active:scale-95 group ${theme === 'light' ? 'text-slate-700 hover:text-cyan-600 hover:bg-white' : 'text-slate-300 hover:text-cyan-400 hover:bg-slate-800'}`}
+            title="Settings"
+          >
+            <Settings className="w-5 h-5 transition-transform group-hover:rotate-90" />
+          </button>
+        </div>
       )}
-      
+
       {/* FLOATING PILL BOTTOM NAVIGATION BAR */}
       <div className={`fixed bottom-2 left-4 right-4 z-[1050] flex items-center justify-around px-2 py-1 rounded-[2rem] shadow-2xl backdrop-blur-xl transition-all duration-500 ease-in-out ${
         isSidePanelHidden ? 'translate-y-24 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
@@ -2774,6 +2696,7 @@ export default function App() {
           <div className={`p-2 rounded-xl transition-all duration-300 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'home' ? (theme === 'light' ? 'bg-gradient-to-br from-cyan-50 to-white text-cyan-600 shadow-sm border border-cyan-200/60' : 'bg-gradient-to-br from-cyan-900/30 to-black text-cyan-400 shadow-inner border border-cyan-500/30') : (theme === 'light' ? 'text-zinc-500 hover:text-cyan-600 hover:bg-white/40' : 'text-zinc-400 hover:text-cyan-300 hover:bg-black/20')}`}>
              <Home className="w-6 h-6" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'home' ? 3 : 2} />
           </div>
+          <span className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 transition-colors ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'home' ? (theme === 'light' ? 'text-cyan-600' : 'text-cyan-400') : (theme === 'light' ? 'text-zinc-400' : 'text-zinc-500')}`}>Home</span>
         </button>
 
         <button
@@ -2787,6 +2710,7 @@ export default function App() {
           <div className={`p-2 rounded-xl transition-all duration-300 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'bg-gradient-to-br from-emerald-50 to-white text-emerald-600 shadow-sm border border-emerald-200/60' : 'bg-gradient-to-br from-emerald-900/30 to-black text-emerald-400 shadow-inner border border-emerald-500/30') : (theme === 'light' ? 'text-zinc-500 hover:text-emerald-600 hover:bg-white/40' : 'text-zinc-400 hover:text-emerald-300 hover:bg-black/20')}`}>
              <BookOpen className="w-6 h-6" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? 3 : 2} />
           </div>
+          <span className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 transition-colors ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'read' ? (theme === 'light' ? 'text-emerald-600' : 'text-emerald-400') : (theme === 'light' ? 'text-zinc-400' : 'text-zinc-500')}`}>Read</span>
         </button>
 
         <button
@@ -2800,6 +2724,7 @@ export default function App() {
           <div className={`p-2 rounded-xl transition-all duration-300 ${isProjectionStudioOpen ? (theme === 'light' ? 'bg-gradient-to-br from-violet-50 to-white text-violet-600 shadow-sm border border-violet-200/60' : 'bg-gradient-to-br from-violet-900/30 to-black text-violet-400 shadow-inner border border-violet-500/30') : (theme === 'light' ? 'text-zinc-500 hover:text-violet-600 hover:bg-white/40' : 'text-zinc-400 hover:text-violet-300 hover:bg-black/20')}`}>
              <MonitorPlay className="w-6 h-6" strokeWidth={isProjectionStudioOpen ? 3 : 2} />
           </div>
+          <span className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 transition-colors ${isProjectionStudioOpen ? (theme === 'light' ? 'text-violet-600' : 'text-violet-400') : (theme === 'light' ? 'text-zinc-400' : 'text-zinc-500')}`}>Project</span>
         </button>
 
         <button
@@ -2813,20 +2738,7 @@ export default function App() {
           <div className={`p-2 rounded-xl transition-all duration-300 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'bg-gradient-to-br from-rose-50 to-white text-rose-600 shadow-sm border border-rose-200/60' : 'bg-gradient-to-br from-rose-900/30 to-black text-rose-400 shadow-inner border border-rose-500/30') : (theme === 'light' ? 'text-zinc-500 hover:text-rose-600 hover:bg-white/40' : 'text-zinc-400 hover:text-rose-300 hover:bg-black/20')}`}>
              <Layers className="w-6 h-6" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? 3 : 2} />
           </div>
-        </button>
-
-        <button
-          onClick={() => {
-            setFullPageMenu(null);
-            setMainView('prayer');
-            setIsProjectionStudioOpen(false);
-            playWebAudioBeep(220, 'sine', 0.05);
-          }}
-          className={`flex flex-col items-center justify-center p-2 rounded-[1.25rem] transition-all group`}
-        >
-          <div className={`p-2 rounded-xl transition-all duration-300 ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'prayer' ? (theme === 'light' ? 'bg-gradient-to-br from-amber-50 to-white text-amber-600 shadow-sm border border-amber-200/60' : 'bg-gradient-to-br from-amber-900/30 to-black text-amber-400 shadow-inner border border-amber-500/30') : (theme === 'light' ? 'text-zinc-500 hover:text-amber-600 hover:bg-white/40' : 'text-zinc-400 hover:text-amber-300 hover:bg-black/20')}`}>
-             <PrayingHandsIcon className="w-6 h-6" strokeWidth={!fullPageMenu && !isProjectionStudioOpen && mainView === 'prayer' ? 2.5 : 2} />
-          </div>
+          <span className={`text-[9px] font-bold uppercase tracking-wider mt-0.5 transition-colors ${!fullPageMenu && !isProjectionStudioOpen && mainView === 'interlinear' ? (theme === 'light' ? 'text-rose-600' : 'text-rose-400') : (theme === 'light' ? 'text-zinc-400' : 'text-zinc-500')}`}>Study</span>
         </button>
 
         {/* End of Bottom Tabs */}
@@ -2838,8 +2750,8 @@ export default function App() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: 20 }}
-            transition={{ duration: 0.2, ease: "easeOut" }}
+            exit={{ opacity: 0, y: 40, scale: 0.97 }}
+            transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 0.8 }}
             className={`fixed inset-0 z-[800] flex flex-col overflow-hidden ${theme === 'light' ? 'bg-[#fcfcfc]' : 'bg-[#0a0d16]'}`}
           >
             {/* Modal Header */}
@@ -2862,30 +2774,8 @@ export default function App() {
               <div className="w-full max-w-2xl flex flex-col space-y-6">
                 
                 {fullPageMenu === 'settings' && (
-                  <>
+                  <div className="flex flex-col space-y-6">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {/* Layout Mode Toggle */}
-                      <div className={`flex flex-col space-y-2 p-4 rounded-2xl shadow-sm border ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#121622] border-cyan-950/30'}`}>
-                        <div className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-1">Layout Mode</div>
-                        <select
-                          value={layoutMode}
-                          onChange={(e) => {
-                            const mode = e.target.value;
-                            setLayoutMode(mode);
-                            localStorage.setItem('personalized_bible_layout_mode', mode);
-                          }}
-                          className={`w-full text-sm font-medium border-0 rounded-xl p-3 focus:outline-none focus:ring-2 focus:ring-cyan-500 ${
-                            theme === 'light' ? 'bg-slate-50 text-slate-800' : 'bg-slate-900/50 text-slate-200'
-                          }`}
-                        >
-                          <option value="paragraph">Paragraph</option>
-                          <option value="formal">Formal</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-
                       {/* Light/Dark Mode Switcher */}
                       <div className={`flex flex-col space-y-2 p-4 rounded-2xl shadow-sm border ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#121622] border-cyan-950/30'}`}>
                         <div className="text-sm font-bold uppercase tracking-wider text-slate-500 mb-1">Theme</div>
@@ -2898,11 +2788,7 @@ export default function App() {
                         </div>
                       </div>
                     </div>
-
-                    <div className="grid grid-cols-1 gap-4 mt-2">
-
-                    </div>
-                  </>
+                  </div>
                 )}
 
                 {fullPageMenu === 'versions' && (
@@ -2958,14 +2844,18 @@ export default function App() {
                                 ? (theme === 'light' ? 'bg-cyan-50/50' : 'bg-cyan-900/10')
                                 : (theme === 'light' ? 'hover:bg-slate-50' : 'hover:bg-slate-800/40')
                             }`}
+                            onClick={() => {
+                              setTranslationDisplayMode(mode.id as any);
+                              localStorage.setItem('personalized_bible_translation_display_mode', mode.id);
+                              playWebAudioBeep(520, 'sine', 0.05);
+                              // Auto-close library and transition to read view with motion physics
+                              setMainView('read');
+                              setIsProjectionStudioOpen(false);
+                              setTimeout(() => setFullPageMenu(null), 150);
+                            }}
                           >
                             <div 
                               className="flex-1 cursor-pointer"
-                              onClick={() => {
-                                setTranslationDisplayMode(mode.id as any);
-                                localStorage.setItem('personalized_bible_translation_display_mode', mode.id);
-                                playWebAudioBeep(520, 'sine', 0.05);
-                              }}
                             >
                               <span className={`text-sm font-bold ${
                                 translationDisplayMode === mode.id
@@ -3010,7 +2900,173 @@ export default function App() {
         )}
       </AnimatePresence>
 
-      {/* FLOATING MIDDLE NAV: TRIANGLE IN CIRCLE SLIDE OPTIONS */}
+      
+        {/* UNIFIED BOTTOM FLOATING READER CONTROLS (FAB) - Read View */}
+        {mainView === 'read' && (
+          <div className={`fixed bottom-[80px] left-1/2 -translate-x-1/2 z-40 transition-all duration-500 ease-in-out ${isHeaderHidden ? "translate-y-32 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
+             <div className={`backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] border rounded-2xl flex items-center p-2 space-x-1 transition-transform ${theme === 'light' ? 'bg-white/95 border-slate-100' : 'bg-slate-900/95 border-slate-700'}`}>
+                {/* ── SECTION 1: Book/Chapter Navigator ── */}
+                <div className="flex items-center space-x-0.5">
+                  <div
+                    className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`}
+                    onClick={(e) => { e.stopPropagation(); handlePrevChapter(); }}
+                  >
+                    <ChevronLeft className="w-7 h-7" strokeWidth={2.5} />
+                  </div>
+
+                  {/* Book/Chapter label — opens book dropdown */}
+                  <div
+                    className={`flex flex-col items-center justify-center px-2 cursor-pointer rounded-xl transition min-w-[64px] ${theme === 'light' ? 'hover:bg-slate-50 text-slate-900' : 'hover:bg-slate-800 text-slate-100'}`}
+                    onClick={() => { setIsBookDropdownOpen(true); setIsChapterDropdownOpen(false); }}
+                  >
+                    <span className="text-[11px] font-black tracking-tight leading-tight">{selectedBook}</span>
+                    <span className="text-[11px] font-black leading-tight">{selectedChapter}</span>
+                  </div>
+
+                  <div
+                    className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`}
+                    onClick={(e) => { e.stopPropagation(); handleNextChapter(); }}
+                  >
+                    <ChevronRight className="w-7 h-7" strokeWidth={2.5} />
+                  </div>
+                </div>
+
+                {/* Thin divider */}
+                <div className={`w-px h-8 mx-1 ${theme === 'light' ? 'bg-slate-200' : 'bg-slate-700'}`} />
+
+                {/* Audio Play Button */}
+                <button 
+                  className={`w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg hover:scale-105 active:scale-95 transition-all ${
+                    isPlayingAudio ? 'bg-rose-500 shadow-rose-500/30' : 'bg-[#0d9488] shadow-teal-500/30'
+                  }`}
+                  onClick={(e) => {
+                     e.stopPropagation();
+                     if (isPlayingAudio) {
+                       stopSpeaking();
+                     } else {
+                       playTranslationStream(
+                         translationDisplayMode === 'both' ? dualStreamLeft : (['plain', 'kjv', 'bsb', 'pers', 'asv', 'ylt', 'bbe'].includes(translationDisplayMode) ? translationDisplayMode : 'plain')
+                       );
+                     }
+                  }}
+                >
+                  {isPlayingAudio ? <Square className="w-5 h-5 fill-current" /> : <Play className="w-6 h-6 ml-1 fill-current" />}
+                </button>
+
+                {/* Translation Selector */}
+                <div className="flex items-center space-x-0.5">
+                  <div
+                    className="p-1 cursor-pointer hover:bg-slate-100 rounded-full transition text-slate-400 hover:text-slate-700"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const modes: ('kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe')[] = ['kjv', 'bsb', 'asv', 'ylt', 'bbe'];
+                      const currentMode = translationDisplayMode === 'both' ? (activeDualColumn === 'left' ? dualStreamLeft : dualStreamRight) : translationDisplayMode;
+                      const currentIndex = modes.indexOf(currentMode as any);
+                      const prevIndex = (currentIndex - 1 + modes.length) % modes.length;
+                      if (translationDisplayMode === 'both') {
+                        if (activeDualColumn === 'left') setDualStreamLeft(modes[prevIndex]);
+                        else setDualStreamRight(modes[prevIndex]);
+                      } else {
+                        setTranslationDisplayMode(modes[prevIndex]);
+                        localStorage.setItem('personalized_bible_translation_display_mode', modes[prevIndex]);
+                      }
+                      playWebAudioBeep(520, 'sine', 0.05);
+                    }}
+                  >
+                    <ChevronLeft className="w-7 h-7" strokeWidth={2.5} />
+                  </div>
+                  
+                  <div 
+                    className="px-1 cursor-pointer transition text-[12px] font-bold text-slate-700 truncate max-w-[100px] hover:text-cyan-600 text-center uppercase"
+                    onClick={(e) => { e.stopPropagation(); setFullPageMenu('versions'); }}
+                  >
+                    {(() => {
+                      const map: Record<string, string> = { kjv: 'King James Version', bsb: 'Berean Standard Bible', asv: 'American Standard Version', ylt: 'Youngs Literal Translation', bbe: 'Bible in Basic English' };
+                      const currentMode = translationDisplayMode === 'both' ? (activeDualColumn === 'left' ? dualStreamLeft : dualStreamRight) : translationDisplayMode;
+                      return map[currentMode] || currentMode.toUpperCase();
+                    })()}
+                  </div>
+
+                  <div
+                    className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const modes: ('kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe')[] = ['kjv', 'bsb', 'asv', 'ylt', 'bbe'];
+                      const currentMode = translationDisplayMode === 'both' ? (activeDualColumn === 'left' ? dualStreamLeft : dualStreamRight) : translationDisplayMode;
+                      const currentIndex = modes.indexOf(currentMode as any);
+                      const nextIndex = (currentIndex + 1) % modes.length;
+                      if (translationDisplayMode === 'both') {
+                        if (activeDualColumn === 'left') setDualStreamLeft(modes[nextIndex]);
+                        else setDualStreamRight(modes[nextIndex]);
+                      } else {
+                        setTranslationDisplayMode(modes[nextIndex]);
+                        localStorage.setItem('personalized_bible_translation_display_mode', modes[nextIndex]);
+                      }
+                      playWebAudioBeep(520, 'sine', 0.05);
+                    }}
+                  >
+                    <ChevronRight className="w-7 h-7" strokeWidth={2.5} />
+                  </div>
+                </div>
+             </div>
+          </div>
+        )}
+
+        {/* UNIFIED BOTTOM FLOATING READER CONTROLS (FAB) - Study/Interlinear View */}
+        {mainView === 'interlinear' && (
+          <div className={`fixed bottom-[80px] left-1/2 -translate-x-1/2 z-40 transition-all duration-500 ease-in-out ${isHeaderHidden ? "translate-y-32 opacity-0 pointer-events-none" : "translate-y-0 opacity-100"}`}>
+            <div className={`backdrop-blur-md shadow-[0_8px_30px_rgb(0,0,0,0.12)] border rounded-2xl flex items-center p-2 space-x-1 transition-transform ${theme === 'light' ? 'bg-white/95 border-slate-100' : 'bg-slate-900/95 border-slate-700'}`}>
+
+              {/* ── SECTION 1: Book/Chapter Navigator ── */}
+              <div className="flex items-center space-x-0.5">
+                <div
+                  className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`}
+                  onClick={(e) => { e.stopPropagation(); handlePrevChapter(); }}
+                >
+                  <ChevronLeft className="w-7 h-7" strokeWidth={2.5} />
+                </div>
+
+                <div
+                  className={`flex flex-col items-center justify-center px-2 cursor-pointer rounded-xl transition min-w-[64px] ${theme === 'light' ? 'hover:bg-slate-50 text-slate-900' : 'hover:bg-slate-800 text-slate-100'}`}
+                  onClick={() => { setIsBookDropdownOpen(true); setIsChapterDropdownOpen(false); }}
+                >
+                  <span className="text-[11px] font-black tracking-tight leading-tight">{selectedBook}</span>
+                  <span className="text-[11px] font-black leading-tight">{selectedChapter}</span>
+                </div>
+
+                <div
+                  className={`p-1.5 cursor-pointer rounded-full transition ${theme === 'light' ? 'text-slate-500 hover:bg-slate-100 hover:text-slate-800' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100'}`}
+                  onClick={(e) => { e.stopPropagation(); handleNextChapter(); }}
+                >
+                  <ChevronRight className="w-7 h-7" strokeWidth={2.5} />
+                </div>
+              </div>
+
+              {/* Thin divider */}
+              <div className={`w-px h-8 mx-1 ${theme === 'light' ? 'bg-slate-200' : 'bg-slate-700'}`} />
+
+              {/* ── SECTION 2: Audio Play Button only (no translation menu on Study view) ── */}
+              <button
+                className={`w-11 h-11 rounded-full flex items-center justify-center text-white shadow-lg hover:scale-105 active:scale-95 transition-all ${
+                  isPlayingAudio ? 'bg-rose-500 shadow-rose-500/30' : 'bg-[#0d9488] shadow-teal-500/30'
+                }`}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (isPlayingAudio) {
+                    stopSpeaking();
+                  } else {
+                    playTranslationStream(interlinearThirdLine as any || 'kjv');
+                  }
+                }}
+              >
+                {isPlayingAudio ? <Square className="w-4 h-4 fill-current" /> : <Play className="w-5 h-5 ml-0.5 fill-current" />}
+              </button>
+
+            </div>
+          </div>
+        )}
+
+{/* FLOATING MIDDLE NAV: TRIANGLE IN CIRCLE SLIDE OPTIONS */}
       {/* PREVIOUS CHAPTER FLOATER */}
       {mainView !== 'home' && (
       <div className={`fixed left-1 top-1/2 -translate-y-1/2 z-40 flex items-center justify-center transition-all duration-500 ease-in-out ${isSidePanelHidden ? '-translate-x-24 opacity-0 pointer-events-none' : 'translate-x-0 opacity-100'}`}>
@@ -3199,29 +3255,6 @@ export default function App() {
               onAnimationComplete={() => setSlideDirection('none')}
             >
             
-            {/* Chapter Header */}
-            {mainView !== 'home' && (
-            <div className={`flex flex-col gap-2 pb-4 mb-4 border-b ${theme === 'light' ? 'border-zinc-200' : 'border-zinc-800'}`}>
-              
-              {/* Row 1: Title, Fetch state */}
-              <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-2">
-                <div className="space-y-1">
-
-                  <h2 className={`text-xl md:text-2xl font-serif font-medium tracking-tight ${theme === 'light' ? 'text-zinc-900' : 'text-zinc-50'} flex items-baseline flex-wrap gap-x-3 gap-y-1`}>
-                    <span>{chapterData.book}</span>
-                    <span className={`text-base md:text-lg font-mono font-bold ${theme === 'light' ? 'text-zinc-400' : 'text-zinc-500'}`}>Ch. {chapterData.chapter}</span>
-                    {isBackgroundFetching && (
-                      <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-sm px-1 py-1 font-sans font-semibold tracking-wider uppercase border animate-pulse sm:ml-2 transform -translate-y-0.5 ${theme === 'light' ? 'bg-zinc-100 border-zinc-200 text-zinc-500' : 'bg-zinc-800 border-zinc-700 text-zinc-400'}`}>
-                        <RefreshCw className="w-2.5 h-2.5 animate-spin" />
-                        Refining
-                      </span>
-                    )}
-                  </h2>
-                </div>
-
-              </div>
-            </div>
-            )}
 
             {/* READING SCHEME */}
             <div className="grid grid-cols-1 gap-4 items-start">
@@ -3272,162 +3305,174 @@ export default function App() {
                   {/* Main Viewer Switch: Interlinear vs Read Mode */}
                   {/* Main Viewer Switch: Home vs Interlinear vs Read Mode */}
                   {mainView === 'home' ? (
-                    <div className="p-6 md:p-10 max-w-5xl mx-auto space-y-8 pb-14 md:pb-20 animate-fade-in-up">
-                      <div className="space-y-2">
-                        <h1 className={`text-3xl md:text-4xl font-black tracking-tight ${theme === 'light' ? 'text-slate-900' : 'text-slate-100'}`}>
-                          Welcome to LogosBridge
-                        </h1>
-                        <p className={`text-lg ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>
-                          A contemporary and highly readable Bible study assistant tailored for non-native English speakers.
-                        </p>
-                      </div>
+  <div className={`w-full pb-32 animate-fade-in-up font-serif ${theme === 'light' ? 'bg-[#fdfdfd]' : 'bg-[#0a0a0a]'}`}>
+    
+    {/* HERO SECTION */}
+    <div className="pt-16 pb-8 px-6 md:px-12 max-w-2xl mx-auto">
+      <h1 className="text-[3.2rem] md:text-[4rem] leading-[1.05] font-black tracking-tight mb-8">
+        <span className={`${theme === 'light' ? 'text-[#0f172a]' : 'text-slate-100'}`}>Bridge the gap<br/>between </span>
+        <span className="text-[#f97316]">evidence<br/>and assurance.</span>
+      </h1>
+    </div>
 
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-8">
-                        {/* Read Card */}
-                        <div 
-                          onClick={() => setMainView('read')}
-                          className={`relative overflow-hidden rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 shadow-lg ${
-                            theme === 'light' 
-                              ? 'bg-gradient-to-br from-indigo-50 to-blue-50 border border-blue-100' 
-                              : 'bg-gradient-to-br from-indigo-950/40 to-blue-900/20 border border-indigo-500/20'
-                          }`}
-                        >
-                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-md ${
-                            theme === 'light' ? 'bg-white text-blue-600' : 'bg-blue-900/50 text-blue-400'
-                          }`}>
-                            <BookOpen className="w-7 h-7" />
-                          </div>
-                          <h3 className={`text-xl font-bold mb-2 ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>Read & Compare</h3>
-                          <p className={`text-sm leading-relaxed ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>
-                            Immerse yourself in a distraction-free, dual-stream reading experience with instantly accessible translations.
-                          </p>
-                        </div>
+    <div className="w-full max-w-4xl mx-auto mb-16">
+       <img src={openBibleTableImg} alt="Open Bible" className="w-full h-auto object-cover" />
+    </div>
 
-                        {/* Interlinear Card */}
-                        <div 
-                          onClick={() => setMainView('interlinear')}
-                          className={`relative overflow-hidden rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 shadow-lg ${
-                            theme === 'light' 
-                              ? 'bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-100' 
-                              : 'bg-gradient-to-br from-emerald-950/40 to-teal-900/20 border border-emerald-500/20'
-                          }`}
-                        >
-                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-md ${
-                            theme === 'light' ? 'bg-white text-emerald-600' : 'bg-emerald-900/50 text-emerald-400'
-                          }`}>
-                            <Layers className="w-7 h-7" />
-                          </div>
-                          <h3 className={`text-xl font-bold mb-2 ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>Interlinear Study</h3>
-                          <p className={`text-sm leading-relaxed ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>
-                            Dive deep into the original texts. Break down the manuscript line by line with lexical definitions and concordances.
-                          </p>
-                        </div>
+    {/* CORE FEATURE */}
+    <div className="px-6 md:px-12 max-w-2xl mx-auto mb-16 space-y-4">
+      <div className="text-[#dc2626] font-sans font-bold text-sm tracking-[0.15em] uppercase">Core Feature</div>
+      <h2 className={`text-3xl md:text-4xl font-bold tracking-tight font-sans ${theme === 'light' ? 'text-[#0f172a]' : 'text-slate-100'}`}>Read & Compare</h2>
+      <p className={`text-[1.25rem] md:text-[1.35rem] leading-relaxed ${theme === 'light' ? 'text-[#475569]' : 'text-slate-400'}`}>
+        Immerse yourself in a distraction-free, dual-stream reading experience with instantly accessible translations.
+      </p>
+    </div>
 
-                        {/* LiveScreen Card */}
-                        <div 
-                          onClick={() => {
-                            setIsProjectionStudioOpen(true);
-                            playWebAudioBeep(520, 'sine', 0.08);
-                          }}
-                          className={`relative overflow-hidden rounded-3xl p-6 cursor-pointer transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 shadow-lg ${
-                            theme === 'light' 
-                              ? 'bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-100' 
-                              : 'bg-gradient-to-br from-amber-950/40 to-orange-900/20 border border-amber-500/20'
-                          }`}
-                        >
-                          <div className={`w-14 h-14 rounded-2xl flex items-center justify-center mb-6 shadow-md ${
-                            theme === 'light' ? 'bg-white text-amber-600' : 'bg-amber-900/50 text-amber-400'
-                          }`}>
-                            <MonitorPlay className="w-7 h-7" />
-                          </div>
-                          <h3 className={`text-xl font-bold mb-2 ${theme === 'light' ? 'text-slate-800' : 'text-slate-100'}`}>LiveScreen</h3>
-                          <p className={`text-sm leading-relaxed ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>
-                            Project your study seamlessly. Push beautiful, synchronized verses to an external display or TV in real-time.
-                          </p>
-                        </div>
-                      </div>
+    {/* TOOLS - WORD SCANNER */}
+    <div className="w-full max-w-2xl mx-auto mb-10 px-6">
+       <img src={benefitImg2} alt="Word Scanner snippet" className="w-full h-auto object-contain" />
+    </div>
 
-                      {/* Daily Verse & Study Progress Widget */}
-                      <div className={`mt-10 w-full rounded-[2rem] p-8 relative overflow-hidden transition-all duration-500 shadow-xl group ${
-                        theme === 'light' 
-                          ? 'bg-gradient-to-br from-indigo-900 via-blue-900 to-cyan-900' 
-                          : 'bg-gradient-to-br from-zinc-900 via-slate-900 to-[#121622] border border-slate-800'
-                      }`}>
-                         <div className="absolute -top-12 -right-12 p-12 opacity-5 pointer-events-none group-hover:scale-110 transition-transform duration-1000">
-                           <Sparkles className="w-64 h-64 text-white" />
-                         </div>
-                         <div className="relative z-10 flex flex-col lg:flex-row gap-8 items-center justify-between">
-                           <div className="flex-1 space-y-4 w-full">
-                             <h4 className="text-cyan-300/80 font-bold tracking-widest text-xs uppercase flex items-center gap-2">
-                               <Sparkles className="w-4 h-4" /> Daily Bread
-                             </h4>
-                             <p className="text-white font-serif text-2xl md:text-3xl leading-snug">
-                               "For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."
-                             </p>
-                             <div className="text-indigo-200 text-sm font-mono tracking-widest">
-                               JOHN 3:16
-                             </div>
-                           </div>
-                           
-                           <div className={`lg:w-72 w-full rounded-2xl p-6 flex flex-col justify-center items-center gap-4 border backdrop-blur-md ${
-                             theme === 'light' ? 'bg-white/10 border-white/20' : 'bg-black/40 border-white/10'
-                           }`}>
-                             <div className="text-white/80 text-xs font-bold uppercase tracking-wider w-full flex justify-between">
-                               <span>Study Progress</span>
-                               <span className="text-cyan-400">42%</span>
-                             </div>
-                             <div className="w-full h-2 rounded-full bg-black/40 overflow-hidden relative shadow-inner">
-                               <div className="absolute top-0 left-0 h-full bg-cyan-400 rounded-full" style={{ width: '42%' }}></div>
-                             </div>
-                             <button 
-                               onClick={() => {
-                                 setSelectedBook('John');
-                                 setSelectedChapter(3);
-                                 setMainView('read');
-                               }}
-                               className="mt-2 w-full py-3 rounded-xl bg-white text-indigo-900 font-bold text-sm hover:bg-cyan-50 transition-all shadow-md hover:shadow-lg active:scale-95"
-                             >
-                               Continue Reading
-                             </button>
-                           </div>
-                         </div>
-                      </div>
+    <div className="px-6 md:px-12 max-w-2xl mx-auto mb-16 space-y-4">
+      <div className="text-[#059669] font-sans font-bold text-sm tracking-[0.15em] uppercase">Tools</div>
+      <h2 className={`text-2xl md:text-3xl font-bold tracking-tight font-sans ${theme === 'light' ? 'text-[#0f172a]' : 'text-slate-100'}`}>Word Scanner</h2>
+      <p className={`text-lg md:text-xl leading-relaxed ${theme === 'light' ? 'text-[#475569]' : 'text-slate-400'}`}>
+        The core study engine. It dynamically scans verses and automatically shades dictionary words.
+      </p>
+    </div>
+    
+    <div className="px-6 md:px-12 max-w-2xl mx-auto mb-16">
+       <div className={`w-full h-px ${theme === 'light' ? 'bg-slate-200' : 'bg-slate-800'}`}></div>
+    </div>
 
-                    </div>
-                  ) : mainView === 'prayer' ? (() => {
-                     return (
-                       <div className="p-4 md:p-8 space-y-6 max-w-4xl mx-auto pb-32">
-                         <div className={`p-6 rounded-2xl border flex flex-col gap-3 text-center ${theme === 'light' ? 'bg-amber-50/40 border-amber-200 shadow-sm' : 'bg-amber-950/10 border-amber-900/30'}`}>
-                            <h2 className={`text-2xl font-serif font-medium tracking-tight ${theme === 'light' ? 'text-amber-900' : 'text-amber-500'}`}>Sacred Dialogue</h2>
-                            <p className={`text-sm ${theme === 'light' ? 'text-slate-600' : 'text-slate-400'}`}>Experience the {chapterData.book} as a direct, personal conversation with God.</p>
-                         </div>
-                         <div className="flex flex-col space-y-12 pt-4">
-                           {chapterData.verses.map(v => (
-                             <div key={v.verseNumber} className="relative flex flex-col gap-6">
-                               {/* Verse Indicator */}
-                               <div className="flex justify-center -mb-8 z-10">
-                                 <div className={`px-4 py-1 rounded-full text-xs font-black tracking-tighter ${theme === 'light' ? 'bg-white text-slate-500 border border-slate-200 shadow-sm' : 'bg-[#121622] text-slate-400 border border-slate-700 shadow-sm'}`}>
-                                   {v.verseNumber}
-                                 </div>
-                               </div>
-                               
-                               {/* User to God */}
-                               <div className={`w-[85%] sm:w-4/5 self-end p-5 pt-8 rounded-3xl rounded-tr-none border shadow-sm ${theme === 'light' ? 'bg-indigo-50/80 border-indigo-100 text-indigo-900' : 'bg-indigo-950/20 border-indigo-900/30 text-indigo-100'}`}>
-                                 <div className="text-[10px] font-bold uppercase tracking-widest mb-3 opacity-60 text-right">Your Prayer</div>
-                                 <p className="font-serif leading-relaxed text-[1.1em]">{v.nonNativeEnglish}</p>
-                               </div>
+    {/* QUICK ACCESS - TAP TO REVEAL */}
+    <div className="px-6 md:px-12 max-w-2xl mx-auto mb-8 space-y-4">
+      <div className="text-[#6d28d9] font-sans font-bold text-sm tracking-[0.15em] uppercase">Quick Access</div>
+      <h2 className={`text-2xl md:text-3xl font-bold tracking-tight font-sans ${theme === 'light' ? 'text-[#0f172a]' : 'text-slate-100'}`}>Tap-to-Reveal</h2>
+      <p className={`text-lg md:text-xl leading-relaxed ${theme === 'light' ? 'text-[#475569]' : 'text-slate-400'}`}>
+        Bridge the gap to original languages. Tap on translated words to instantly reveal their Hebrew or Greek origins.
+      </p>
+    </div>
 
-                               {/* God to User */}
-                               <div className={`w-[85%] sm:w-4/5 self-start p-5 pt-8 rounded-3xl rounded-tl-none border shadow-sm ${theme === 'light' ? 'bg-white border-amber-200 text-amber-950' : 'bg-amber-950/20 border-amber-900/30 text-amber-100'}`}>
-                                 <div className="text-[10px] font-bold uppercase tracking-widest mb-3 opacity-60">God's Word</div>
-                                 <p className="font-serif leading-relaxed text-[1.1em]">{v.plainEnglish}</p>
-                               </div>
-                             </div>
-                           ))}
-                         </div>
-                       </div>
-                     );
-                  })() : mainView === 'interlinear' ? (() => {
+    <div className="w-full max-w-2xl mx-auto mb-20 px-6">
+       <img src={benefitImg3} alt="Tap to reveal definition" className="w-full h-auto object-contain shadow-lg rounded-xl border border-slate-100" />
+    </div>
+
+    {/* ORIGINAL TEXTS - INTERLINEAR */}
+    <div className="w-full max-w-2xl mx-auto mb-10 px-6">
+       <img src={benefitImg1} alt="Original manuscript" className={`w-full h-auto object-contain ${theme === 'light' ? 'mix-blend-multiply' : ''}`} />
+    </div>
+
+    <div className="px-6 md:px-12 max-w-2xl mx-auto mb-16 space-y-4">
+      <div className="text-[#2563eb] font-sans font-bold text-sm tracking-[0.15em] uppercase">Original Texts</div>
+      <h2 className={`text-2xl md:text-3xl font-bold tracking-tight font-sans ${theme === 'light' ? 'text-[#0f172a]' : 'text-slate-100'}`}>Interlinear Study</h2>
+      <p className={`text-lg md:text-xl leading-relaxed ${theme === 'light' ? 'text-[#475569]' : 'text-slate-400'}`}>
+        Dive deep into the original texts. Break down the manuscript line by line with lexical definitions.
+      </p>
+    </div>
+
+    <div className="px-6 md:px-12 max-w-2xl mx-auto mb-16">
+       <div className={`w-full h-px ${theme === 'light' ? 'bg-slate-200' : 'bg-slate-800'}`}></div>
+    </div>
+
+    {/* PROJECTION - LIVESCREEN */}
+    <div className="w-full max-w-3xl mx-auto mb-10">
+       <img src={liveScreenImg} alt="LiveScreen output" className="w-full h-auto object-cover" />
+    </div>
+
+    <div className="px-6 md:px-12 max-w-2xl mx-auto mb-20 space-y-4">
+      <div className="text-[#d97706] font-sans font-bold text-sm tracking-[0.15em] uppercase">Projection</div>
+      <h2 className={`text-2xl md:text-3xl font-bold tracking-tight font-sans ${theme === 'light' ? 'text-[#0f172a]' : 'text-slate-100'}`}>LiveScreen</h2>
+      <p className={`text-lg md:text-xl leading-relaxed ${theme === 'light' ? 'text-[#475569]' : 'text-slate-400'}`}>
+        Project your study seamlessly. Push beautiful, synchronized verses to an external display.
+      </p>
+    </div>
+
+    {/* CONTROL - STUDIO PREVIEW */}
+    <div className="w-full max-w-3xl mx-auto px-6 mb-10 overflow-hidden">
+       <img src={studioPreviewImg} alt="Studio Preview Interface" className="w-full h-auto object-contain rounded-xl shadow-lg border border-slate-200/60" />
+    </div>
+
+    <div className="px-6 md:px-12 max-w-2xl mx-auto mb-16 space-y-4">
+      <div className="text-[#b45309] font-sans font-bold text-sm tracking-[0.15em] uppercase">Control</div>
+      <h2 className={`text-2xl md:text-3xl font-bold tracking-tight font-sans ${theme === 'light' ? 'text-[#0f172a]' : 'text-slate-100'}`}>Studio Preview</h2>
+      <p className={`text-lg md:text-xl leading-relaxed ${theme === 'light' ? 'text-[#475569]' : 'text-slate-400'}`}>
+        Manage and monitor your presentation with the powerful built-in studio interface.
+      </p>
+    </div>
+
+    {/* SPIRITUAL - SACRED DIALOGUE */}
+    <div className="w-full max-w-3xl mx-auto mb-10">
+       <img src={silhouettePrayerImg} alt="Sacred Dialogue" className="w-full h-auto object-cover" />
+    </div>
+
+    <div className="px-6 md:px-12 max-w-2xl mx-auto mb-20 space-y-4">
+      <div className="text-[#9333ea] font-sans font-bold text-sm tracking-[0.15em] uppercase">Spiritual</div>
+      <h2 className={`text-2xl md:text-3xl font-bold tracking-tight font-sans ${theme === 'light' ? 'text-[#0f172a]' : 'text-slate-100'}`}>Sacred Dialogue</h2>
+      <p className={`text-lg md:text-xl leading-relaxed ${theme === 'light' ? 'text-[#475569]' : 'text-slate-400'}`}>
+        Engage in a personalized conversational connection with God. Turn scriptures into prayer.
+      </p>
+    </div>
+
+    {/* DAILY BREAD CARD */}
+    <div className="px-6 md:px-12 max-w-2xl mx-auto mb-8">
+       <div className="bg-gradient-to-b from-[#1e293b] to-[#0f172a] rounded-[2rem] p-8 md:p-10 shadow-2xl border border-slate-700/50 relative overflow-hidden">
+         <div className="flex items-center space-x-2 text-[#fbbf24] mb-8 font-sans">
+           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" /></svg>
+           <span className="font-bold tracking-[0.2em] text-[10px] uppercase">Daily Bread</span>
+         </div>
+         
+         <p className="text-[#f8fafc] text-2xl md:text-3xl font-serif leading-snug mb-8">
+           "Be strong and of a good courage, fear not, nor be afraid of them: for the LORD thy God, he it is that doth go with thee; he will not fail thee, nor forsake thee."
+         </p>
+         
+         <div className="flex items-center justify-between mb-12">
+           <div>
+             <div className="text-[#fbbf24] tracking-[0.2em] text-[10px] font-bold font-sans uppercase mb-1">Deuteronomy</div>
+             <div className="text-[#fbbf24] text-sm font-sans font-medium">31:6</div>
+           </div>
+           <button 
+             onClick={() => setMainView('read')}
+             className="px-6 py-2 rounded-full border border-[#fbbf24]/30 text-[#fbbf24] text-xs tracking-widest font-bold uppercase hover:bg-[#fbbf24]/10 transition-colors"
+           >
+             Read
+           </button>
+         </div>
+
+         {/* Progress Card Inside Daily Bread */}
+         <div className="bg-[#0f172a] rounded-3xl p-6 border border-slate-700/50 shadow-inner">
+            <div className="flex justify-between items-center mb-4">
+              <span className="text-slate-300 text-[10px] font-bold tracking-[0.2em] uppercase font-sans">Study Progress</span>
+              <span className="text-[#fbbf24] text-sm font-bold font-sans">42%</span>
+            </div>
+            <div className="w-full bg-slate-800 rounded-full h-2 mb-6 overflow-hidden">
+              <div className="bg-[#fbbf24] h-full rounded-full" style={{ width: '42%' }}></div>
+            </div>
+            <button 
+              onClick={() => setMainView('read')}
+              className="w-full bg-white text-[#0f172a] rounded-xl py-4 font-bold text-[15px] font-sans hover:bg-slate-100 transition-colors shadow-lg active:scale-[0.98]"
+            >
+              Continue Reading
+            </button>
+         </div>
+       </div>
+    </div>
+
+    {/* CONTACT CARD */}
+    <div className="px-6 md:px-12 max-w-2xl mx-auto pb-10">
+       <div className="bg-[#fffbeb] rounded-[2rem] p-8 md:p-10 shadow-sm border border-[#fef3c7]">
+          <h3 className="text-[#78350f] text-2xl font-bold mb-3 font-sans">Need Help,Have a feedback or want to Seed and Partner with us on this Project mission</h3>
+          <p className="text-[#92400e] text-base mb-8 font-sans">
+            We'd love to hear from you. Reach out to our team directly.
+          </p>
+          <button className="w-full bg-[#f59e0b] text-white rounded-xl py-4 font-bold text-[15px] font-sans flex items-center justify-center space-x-2 shadow-md hover:bg-[#d97706] transition-colors active:scale-[0.98]">
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
+            <span>Contact Us</span>
+          </button>
+       </div>
+    </div>
+  </div>
+) : mainView === 'interlinear' ? (() => {
                      return (
                        <div className="p-5 md:p-8 space-y-8 max-w-4xl mx-auto pb-32">
                          {chapterData.verses.map(v => {
@@ -3448,14 +3493,6 @@ export default function App() {
                                    </span>
                                    <div className={`font-serif font-medium text-[19px] leading-relaxed tracking-wide ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>
                                      {v.manuscriptText ? v.manuscriptText : <span className="italic opacity-50">[Original Manuscript Not Available]</span>}
-                                   </div>
-                                 </div>
-                                 
-                                 {/* Line 2: PET */}
-                                 <div className="flex flex-col border-t border-slate-100 dark:border-slate-800/50 pt-4">
-                                   <span className="text-[0.65em] uppercase tracking-widest font-bold text-cyan-600/80 dark:text-cyan-500/80 mb-1.5">Plain English Translation</span>
-                                   <div className={`font-sans font-medium text-[17px] leading-relaxed ${theme === 'light' ? 'text-slate-700' : 'text-slate-300'}`}>
-                                     <span className="italic opacity-50">Available soon</span>
                                    </div>
                                  </div>
                                  
@@ -3520,6 +3557,19 @@ export default function App() {
                         setFocusedVerse={setFocusedVerse}
                         setFocusedStreamType={setFocusedStreamType}
                         currentlyReadingVerse={currentlyReadingVerse}
+                        getVerseHighlightColor={(vNo) => highlightedVerses[`${currentBookObj.name}-${selectedChapter}-${vNo}`]}
+                        setVerseHighlightColor={(vNo, color) => {
+                           const vId = `${currentBookObj.name}-${selectedChapter}-${vNo}`;
+                           setHighlightedVerses(prev => {
+                               const next = { ...prev };
+                               if (color === 'none' || next[vId] === color) delete next[vId];
+                               else next[vId] = color;
+                               return next;
+                           });
+                        }}
+                        openContextualNotebook={(vNo) => {
+                           startEditingNote(vNo, getVerseHighlight(vNo)?.notes || '');
+                        }}
                         theme={theme}
                         playbackSpeed={playbackSpeed}
                         setPlaybackSpeed={setPlaybackSpeed}
@@ -3558,11 +3608,11 @@ export default function App() {
                     if (isMultiCol) {
                       return (
                         <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 h-[calc(100vh-160px)]">
-                          <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto pb-32 h-full scroll-smooth ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 rounded-2xl`}>
+                          <div className={`dual-stream-column w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto pb-32 h-full scroll-smooth ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 rounded-2xl`}>
                             {renderNarrativeStream(dualStreamLeft, undefined, 'left')}
                           </div>
 
-                          <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto pb-32 h-full scroll-smooth ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 rounded-2xl`}>
+                          <div className={`dual-stream-column w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto pb-32 h-full scroll-smooth ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 rounded-2xl`}>
                             {renderNarrativeStream(dualStreamRight, undefined, 'right')}
                           </div>
                         </div>
@@ -3596,6 +3646,24 @@ export default function App() {
                           let highlightClasses = '';
                           if (isFocused) {
                             highlightClasses = theme === 'light' ? 'bg-cyan-50/20 border-l-2 border-cyan-600' : 'bg-cyan-950/10 border-l-2 border-cyan-500';
+                            
+                            // CONTEXTUAL NOTEBOOK FAB
+                            const notebookFab = isFocused ? (
+                              <button 
+                                onClick={(e) => { 
+                                  e.stopPropagation(); 
+                                  startEditingNote(v.verseNumber, getVerseHighlight(v.verseNumber)?.notes || '');
+                                  // Auto-close the focus palette
+                                  setFocusedVerse(null);
+                                  setFocusedStreamType(null);
+                                }}
+                                className={`absolute -right-3 -top-3 z-50 p-2 rounded-full shadow-xl transition-all duration-300 animate-fade-in-up ${theme === 'light' ? 'bg-white text-slate-700 hover:bg-slate-50 border border-slate-200' : 'bg-slate-800 text-slate-200 hover:bg-slate-700 border border-slate-700'} ${isHeaderHidden ? 'opacity-0 scale-75 pointer-events-none' : 'opacity-100 scale-100'}`}
+                                title="Open Theological Notebook for this verse"
+                              >
+                                <Edit3 className="w-5 h-5 text-cyan-600 dark:text-cyan-400" />
+                              </button>
+                            ) : null;
+
                           } else if (hasNotes) {
                             highlightClasses = theme === 'light' ? 'bg-amber-50/15 border-l-2 border-amber-500/50' : 'bg-amber-950/5 border-l-2 border-amber-500/30';
                           }
@@ -3671,238 +3739,68 @@ export default function App() {
                                 } ${theme === 'light' ? 'text-slate-900' : 'text-white'}`}>
                                   {textContent}
                                 </div>
-                              </div>
-                              {isFocused ? (
-                                <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up w-max">
-                                  <div 
-                                    className="flex items-center overflow-x-auto hide-scrollbar shadow-lg rounded-full backdrop-blur-md" 
-                                    onClick={(e) => e.stopPropagation()}
+
+                                {/* Inline Note Reply Bubble */}
+                                {activeDraftVerse === v.verseNumber && (
+                                  <div className={`mt-3 rounded-2xl border shadow-lg overflow-hidden animate-fade-in-up ${
+                                    theme === 'light' 
+                                      ? 'bg-white border-slate-200' 
+                                      : 'bg-[#0f1420] border-slate-700'
+                                  }`}
+                                  onClick={(e) => e.stopPropagation()}
                                   >
-                                  <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full border shadow-sm transition-all ${
-                                    theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#18181b] border-zinc-800'
-                                  }`}>
-                                    {/* Minimal Verse Indicator */}
-                                    <div className={`flex items-center px-1.5 py-0.5 rounded-full shrink-0 ${
-                                      theme === 'light' ? 'bg-slate-100 text-slate-500' : 'bg-white/5 text-slate-400'
+                                    {/* Note Header */}
+                                    <div className={`flex items-center justify-between px-3 py-2 ${
+                                      theme === 'light' ? 'bg-gradient-to-r from-emerald-50 to-cyan-50 border-b border-slate-100' : 'bg-gradient-to-r from-emerald-950/40 to-cyan-950/30 border-b border-slate-700/50'
                                     }`}>
-                                      <span className="text-sm px-1 py-1 font-mono font-bold uppercase tracking-widest">v.{v.verseNumber}</span>
-                                    </div>
-
-                                    <div className={`w-[1px] h-3 mx-0.5 shrink-0 ${theme === 'light' ? 'bg-slate-200' : 'bg-zinc-800'}`} />
-
-                                    {/* Reflect (Notes Composer toggle) */}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        if (activeDraftVerse === v.verseNumber) {
-                                          handleCancelNote();
-                                        } else {
-                                          startEditingNote(v.verseNumber, verseHighlight?.notes || '');
-                                        }
-                                      }}
-                                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
-                                        activeDraftVerse === v.verseNumber
-                                          ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400'
-                                          : hasNotes
-                                            ? (theme === 'light' ? 'bg-amber-100 text-amber-800' : 'bg-amber-955/20 text-amber-400')
-                                            : (theme === 'light' ? 'hover:bg-slate-100 text-slate-600' : 'hover:bg-white/10 text-slate-400')
-                                      }`}
-                                      title="Reflect / Note"
-                                    >
-                                      <StarryCradleIcon className="w-3.5 h-3.5" active={hasNotes} />
-                                    </button>
-
-                                    {/* Bookmark Index */}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleSaveVerse(v.verseNumber);
-                                      }}
-                                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
-                                        isSaved
-                                          ? 'bg-emerald-500/15 text-emerald-500'
-                                          : (theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-white/10 text-slate-400')
-                                      }`}
-                                      title="Index"
-                                    >
-                                      <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current text-emerald-500' : ''}`} />
-                                    </button>
-
-                                    {/* Copy Verse */}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        const textToCopy = transType === 'plain'
-                                          ? v.contemporary
-                                          : transType === 'pers'
-                                            ? v.nonNativeEnglish
-                                            : transType === 'kjv'
-                                              ? (v.kjvText || '')
-                                              : (v.bsbText || '');
-                                        const transName = transType === 'plain' ? 'Plain English' : transType === 'pers' ? 'Personalised' : transType === 'kjv' ? 'KJV' : 'BSB';
-                                        navigator.clipboard.writeText(`[v.${v.verseNumber}] ${textToCopy} (${transName})`);
-                                      }}
-                                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
-                                        theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-white/10 text-slate-400'
-                                      }`}
-                                      title="Copy verse text"
-                                    >
-                                      <Copy className="w-3.5 h-3.5" />
-                                    </button>
-
-                                    {/* Project button */}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setProjectionInitialVerseNumber(v.verseNumber);
-                                        setIsProjectionStudioOpen(true);
-                                        playWebAudioBeep(640, 'sine', 0.08);
-                                      }}
-                                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
-                                        theme === 'light' ? 'hover:bg-amber-50 text-amber-700' : 'hover:bg-amber-955/20 text-amber-400'
-                                      }`}
-                                      title="Project"
-                                    >
-                                      <Tv className="w-3.5 h-3.5" />
-                                    </button>
-
-                                    <div className={`w-[1px] h-3 mx-0.5 shrink-0 ${theme === 'light' ? 'bg-slate-200' : 'bg-zinc-800'}`} />
-
-                                    {/* Dismiss Close Focus */}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        setFocusedVerse(null);
-                                      }}
-                                      className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
-                                        theme === 'light' ? 'hover:bg-rose-50 text-rose-500' : 'hover:bg-rose-955/20 text-rose-400'
-                                      }`}
-                                      title="Dismiss"
-                                    >
-                                      <X className="w-3.5 h-3.5" />
-                                    </button>
-                                  </div>
-                                </div>
-
-                                {/* Speed Control Tuning Slider */}
-                                {isReadingThis && (
-                                  <div className="mt-2 flex items-center justify-between bg-slate-100 dark:bg-slate-950/40 p-1.5 rounded-lg border border-slate-205 dark:border-cyan-950/30">
-                                    <span className="text-sm font-mono text-slate-400 dark:text-cyan-650 flex items-center gap-1">
-                                      ⚙️ Playback Speed:
-                                    </span>
-                                    <div className="flex items-center space-x-2">
-                                      <input
-                                        type="range"
-                                        min="0.5"
-                                        max="1.5"
-                                        step="0.1"
-                                        value={playbackSpeed}
-                                        onChange={(e) => {
-                                          e.stopPropagation();
-                                          setPlaybackSpeed(parseFloat(e.target.value));
-                                        }}
-                                        className="w-20 h-1 bg-slate-205 dark:bg-cyan-955 rounded-lg appearance-none cursor-pointer accent-cyan-500"
-                                      />
-                                      <span className="text-sm font-mono font-bold text-cyan-600">
-                                        {playbackSpeed.toFixed(1)}x
+                                      <span className={`text-xs font-bold uppercase tracking-wider ${theme === 'light' ? 'text-emerald-700' : 'text-emerald-400'}`}>
+                                        📝 Verse {v.verseNumber} — Note
                                       </span>
+                                      <button 
+                                        onClick={(e) => { e.stopPropagation(); handleCancelNote(); }}
+                                        className={`p-1 rounded-full transition-colors ${theme === 'light' ? 'hover:bg-slate-200 text-slate-500' : 'hover:bg-slate-700 text-slate-400'}`}
+                                      >
+                                        <X className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                    {/* Note Input Area */}
+                                    <div className="px-3 py-2">
+                                      <textarea
+                                        value={noteDraftText}
+                                        onChange={(e) => setNoteDraftText(e.target.value)}
+                                        placeholder="Write your reflection..."
+                                        autoFocus
+                                        rows={2}
+                                        className={`w-full text-sm resize-none rounded-lg px-3 py-2 focus:outline-none focus:ring-1 ${
+                                          theme === 'light'
+                                            ? 'bg-slate-50 text-slate-800 placeholder:text-slate-400 focus:ring-emerald-400 border border-slate-200'
+                                            : 'bg-slate-800/50 text-slate-100 placeholder:text-slate-500 focus:ring-emerald-500/50 border border-slate-700'
+                                        }`}
+                                      />
+                                    </div>
+                                    {/* Note Actions */}
+                                    <div className={`flex items-center justify-between px-3 py-2 ${
+                                      theme === 'light' ? 'border-t border-slate-100' : 'border-t border-slate-700/50'
+                                    }`}>
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handleCancelNote(); }}
+                                        className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                                          theme === 'light' ? 'text-slate-500 hover:bg-slate-100' : 'text-slate-400 hover:bg-slate-700'
+                                        }`}
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        onClick={(e) => { e.stopPropagation(); handleSaveNote(v.verseNumber); }}
+                                        className="text-xs font-bold px-4 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm transition-all active:scale-95"
+                                      >
+                                        💾 Save
+                                      </button>
                                     </div>
                                   </div>
                                 )}
-
                               </div>
-                            ) : hasNotes ? (
-                              <div className={`mt-2.5 p-3.5 rounded-xl border text-sm leading-[1.8] tracking-[0.01em] transition-all relative ${
-                                theme === 'light' 
-                                  ? 'bg-amber-100/10 border-amber-200/50 text-slate-800 shadow-sm' 
-                                  : 'bg-[#1e150c]/20 border-amber-900/35 text-amber-100/95 shadow-sm'
-                              }`} onClick={(e) => e.stopPropagation()}>
-                                <div className="flex items-center justify-between mb-1.5 border-b pb-1 border-dashed border-amber-500/10">
-                                  <div className={`text-sm px-1 py-1 font-mono uppercase tracking-widest font-extrabold flex items-center gap-1.5 ${
-                                    theme === 'light' ? 'text-amber-700/85' : 'text-amber-500/80'
-                                  }`}>
-                                    <span className="w-1.5 h-1.5 rounded-full bg-amber-500/70" />
-                                    <span>📝 Personal Theological Study Diary</span>
-                                  </div>
-                                  <div className="flex items-center space-x-2.5">
-                                    {/* Custom Audio Speed Regulator Dial Slider */}
-                                    <div className="flex items-center space-x-1 bg-slate-100/40 dark:bg-[#050912] px-1.5 py-1 rounded-md border border-slate-200/30 dark:border-cyan-950/20 scale-95 origin-left">
-                                      <input
-                                        type="range"
-                                        min="0.5"
-                                        max="1.5"
-                                        step="0.1"
-                                        title="Audio Tuning Speed Knob"
-                                        value={playbackSpeed}
-                                        onChange={(e) => {
-                                          e.stopPropagation();
-                                          setPlaybackSpeed(parseFloat(e.target.value));
-                                        }}
-                                        className="w-12 h-0.5 bg-slate-205 dark:bg-cyan-950 rounded appearance-none cursor-pointer accent-cyan-500"
-                                      />
-                                      <span className="text-sm px-1 py-1 font-mono font-bold text-cyan-600 dark:text-cyan-400">
-                                        {playbackSpeed.toFixed(1)}x
-                                      </span>
-                                    </div>
-
-                                    {/* Toggle Index direct check */}
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        toggleSaveVerse(v.verseNumber);
-                                      }}
-                                      className={`text-sm font-mono font-bold flex items-center gap-1 cursor-pointer transition-colors ${
-                                        isSaved 
-                                          ? 'text-emerald-555 hover:text-emerald-400' 
-                                          : (theme === 'light' ? 'text-slate-500 hover:text-slate-700' : 'text-slate-400 hover:text-slate-200')
-                                      }`}
-                                      title={isSaved ? "Remove from quiet reflections" : "Index/Bookmark verse"}
-                                    >
-                                      <Bookmark className={`w-3 h-3 ${isSaved ? 'fill-current' : ''}`} />
-                                      <span>{isSaved ? "Indexed" : "Index"}</span>
-                                    </button>
-
-                                    <button
-                                      onClick={() => startEditingNote(v.verseNumber, verseHighlight?.notes || '')}
-                                      className={`text-[9.5px] font-mono font-bold transition-colors cursor-pointer ${
-                                        theme === 'light' ? 'text-cyan-600 hover:text-cyan-500' : 'text-cyan-400 hover:text-cyan-300'
-                                      }`}
-                                    >
-                                      ✏️ Edit
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        updateVerseProfileNotes(v.verseNumber, '');
-                                        if (!isSaved) {
-                                          setSavedVerses((prev) => prev.filter(sv => !(sv.book === selectedBook && sv.chapter === selectedChapter && sv.verse === v.verseNumber)));
-                                        }
-                                        playWebAudioBeep(330, 'triangle', 0.1);
-                                      }}
-                                      className="text-[9.5px] font-mono text-rose-500 hover:text-rose-450 font-bold transition-colors cursor-pointer"
-                                      title="Delete reflection notes"
-                                    >
-                                      ✕ Delete
-                                    </button>
-                                  </div>
-                                </div>
-                                <div className="font-sans whitespace-pre-wrap select-text leading-[1.8] tracking-[0.01em] font-normal pr-2">
-                                  "{verseHighlight?.notes}"
-                                </div>
-                              </div>
-                            ) : isSaved ? (
-                              <div className="mt-2" onClick={(e) => e.stopPropagation()}>
-                                <button
-                                  onClick={() => startEditingNote(v.verseNumber, '')}
-                                  className={`text-sm font-mono font-bold px-2.5 py-1.5 rounded-lg border border-dashed transition-all flex items-center gap-1 cursor-pointer ${
-                                    theme === 'light'
-                                      ? 'border-slate-200 text-slate-500 bg-slate-50/50 hover:bg-slate-100 hover:text-slate-800'
-                                      : 'border-cyan-950/40 text-cyan-600 bg-slate-950/10 hover:bg-slate-950/40 hover:text-cyan-400'
-                                  }`}
-                                >
-                                  <span>+ Write Theological Notes</span>
-                                </button>
-                              </div>
-                            ) : null}
+                              
                           
                             </div>
                           );
@@ -3920,11 +3818,11 @@ export default function App() {
                       if (isMultiCol) {
                         return (
                           <div className="flex overflow-x-auto hide-scrollbar snap-x snap-mandatory gap-4 h-[calc(100vh-160px)]">
-                            <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto pb-32 h-full scroll-smooth ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative rounded-2xl`}>
+                            <div className={`dual-stream-column w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto pb-32 h-full scroll-smooth ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative rounded-2xl`}>
                               {chapterData.verses.map(v => renderVerseCard(v, 'plain'))}
                             </div>
 
-                            <div className={`w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto pb-32 h-full scroll-smooth ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative rounded-2xl`}>
+                            <div className={`dual-stream-column w-[90vw] md:w-[48%] shrink-0 snap-center overflow-y-auto pb-32 h-full scroll-smooth ${theme === 'light' ? 'bg-white/50' : 'bg-[#080d19]/40'} p-2 relative rounded-2xl`}>
                               {chapterData.verses.map(v => renderVerseCard(v, 'pers'))}
                             </div>
                           </div>
@@ -4901,20 +4799,6 @@ export default function App() {
                     <Settings className="w-3 h-3" /> Config
                   </button>
                   <button
-                    onClick={async () => {
-                      playWebAudioBeep(880, 'sine', 0.1);
-                      await openProjectorStandalone(liveScreenState);
-                    }}
-                    className={`px-2 py-2 rounded-lg text-sm px-1 py-1 font-sans font-semibold tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 ${
-                      theme === 'light' 
-                        ? 'bg-zinc-100 hover:bg-zinc-200 text-zinc-700' 
-                        : 'bg-zinc-900 border border-zinc-800 hover:bg-zinc-800 text-zinc-300'
-                    }`}
-                    title="Pop standalone slide presenter page out"
-                  >
-                    <MonitorPlay className="w-3 h-3" /> Pop Out
-                  </button>
-                  <button
                     onClick={handleClearLiveScreen}
                     className="px-2 py-2 rounded-lg text-sm px-1 py-1 font-sans font-semibold tracking-widest uppercase transition-all cursor-pointer flex items-center justify-center gap-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-600 dark:text-red-400 border border-red-500/20"
                     title="Instantly black out standard screen to default standby wallpaper"
@@ -5805,50 +5689,7 @@ export default function App() {
           </>
         )}
       </AnimatePresence>
-      {/* Deep Journaling Bottom Drawer */}
-      {activeDraftVerse !== null && (
-        <div className={`fixed bottom-0 left-0 right-0 z-[100] p-4 md:p-6 border-t shadow-2xl animate-fade-in-up ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-slate-950 border-slate-800'}`}>
-          <div className="max-w-4xl mx-auto">
-            <div className="flex items-center justify-between mb-3">
-              <h3 className={`text-sm font-bold font-sans flex items-center gap-2 ${theme === 'light' ? 'text-slate-800' : 'text-slate-200'}`}>
-                <StarryCradleIcon className="w-5 h-5" active={true} />
-                Deep Theological Journaling — Verse {activeDraftVerse}
-              </h3>
-              <button onClick={handleCancelNote} className={`p-1.5 rounded-full hover:bg-slate-500/10 ${theme === 'light' ? 'text-slate-500' : 'text-slate-400'}`}>
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-            <textarea
-              value={noteDraftText}
-              onChange={(e) => setNoteDraftText(e.target.value)}
-              placeholder="Write down personal theological reflections or spiritual notes connected with this verse..."
-              className={`w-full text-sm p-3 rounded-xl border focus:outline-none focus:ring-2 focus:ring-cyan-500/30 ${
-                theme === 'light'
-                  ? 'bg-slate-50 text-slate-800 border-slate-200'
-                  : 'bg-slate-900/50 text-slate-100 border-cyan-900/40'
-              }`}
-              rows={4}
-              autoFocus
-            />
-            <div className="mt-3 flex items-center justify-end space-x-3">
-              <button
-                onClick={handleCancelNote}
-                className={`text-sm uppercase font-mono tracking-wider font-extrabold px-4 py-2 rounded-lg transition-colors cursor-pointer ${
-                  theme === 'light' ? 'bg-slate-100 text-slate-600 hover:bg-slate-200' : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
-                }`}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={() => handleSaveNote(activeDraftVerse)}
-                className="text-sm uppercase font-mono tracking-wider font-extrabold px-6 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white shadow-md transition-colors cursor-pointer"
-              >
-                💾 Save Entry
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
 
 

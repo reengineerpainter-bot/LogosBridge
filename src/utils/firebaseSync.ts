@@ -308,3 +308,46 @@ export async function recordQuizScore(userId: string, score: Omit<QuizScoreData,
     handleFirestoreError(error, OperationType.WRITE, path);
   }
 }
+
+
+export async function saveUserNote(userId: string, verseNote: { book: string; chapter: number; verse: number; notes: string }): Promise<void> {
+  const docId = `${verseNote.book}_${verseNote.chapter}_${verseNote.verse}`;
+  const noteDocRef = doc(db, 'users', userId, 'notes', docId);
+  const now = new Date();
+  
+  if (!verseNote.notes || verseNote.notes.trim() === '') {
+    try {
+      const docSnap = await getDoc(noteDocRef);
+      if (docSnap.exists()) {
+        await deleteDoc(noteDocRef);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return;
+  }
+
+  try {
+    const docSnap = await getDoc(noteDocRef);
+    if (docSnap.exists()) {
+      await updateDoc(noteDocRef, {
+        content: verseNote.notes,
+        updatedAt: Timestamp.fromDate(now),
+      });
+    } else {
+      await setDoc(noteDocRef, {
+        id: docId,
+        userId,
+        book: verseNote.book,
+        chapter: Number(verseNote.chapter),
+        verse: Number(verseNote.verse),
+        content: verseNote.notes,
+        createdAt: Timestamp.fromDate(now),
+        updatedAt: Timestamp.fromDate(now),
+      });
+    }
+  } catch (err) {
+    handleFirestoreError(err, OperationType.WRITE, `users/${userId}/notes/${docId}`);
+    throw err;
+  }
+}

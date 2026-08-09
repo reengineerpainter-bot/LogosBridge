@@ -1,4 +1,14 @@
+import { Capacitor } from '@capacitor/core';
+
 export async function openProjectorStandalone(liveState: any = null, autoTrigger: boolean = false): Promise<Window | null> {
+  // Never attempt to open a popup window in a native mobile app.
+  if (Capacitor.isNativePlatform()) {
+    if (!autoTrigger) {
+      alert("LiveScreen projection to a separate window is not supported on mobile devices. Please use a desktop browser or TV casting.");
+    }
+    return null;
+  }
+
   const url = window.location.origin + window.location.pathname + '?projector=true';
   let left = 0;
   let top = 0;

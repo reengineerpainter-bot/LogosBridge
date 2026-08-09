@@ -61,6 +61,9 @@ export interface NarrativeStreamProps {
   isVerseSaved: (verseNo: number) => boolean;
   getVerseHighlight: (verseNo: number) => VerseHighlight | undefined;
   stopSpeaking: () => void;
+  getVerseHighlightColor?: (verseNo: number) => string | undefined;
+  setVerseHighlightColor?: (verseNo: number, color: string) => void;
+  openContextualNotebook?: (verseNo: number) => void;
   playSingleVerse: (verseNo: number, text: string) => void;
   playTranslationStream?: (transType: 'plain' | 'pers' | 'kjv' | 'bsb' | 'asv' | 'ylt' | 'bbe') => void;
   isPlayingAudio?: boolean;
@@ -99,6 +102,9 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
   isVerseSaved,
   getVerseHighlight,
   stopSpeaking,
+  getVerseHighlightColor,
+  setVerseHighlightColor,
+  openContextualNotebook,
   playSingleVerse,
   playTranslationStream,
   isPlayingAudio,
@@ -146,17 +152,25 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                   const isReadingThis = currentlyReadingVerse === v.verseNumber;
                   const holdsNotes = !!getVerseHighlight(v.verseNumber)?.notes;
 
+                  const hColor = getVerseHighlightColor?.(v.verseNumber);
                   let highlightClasses = '';
+                  if (hColor === 'yellow') highlightClasses += (theme === 'light' ? 'bg-yellow-100/80 ' : 'bg-yellow-900/50 ');
+                  else if (hColor === 'green') highlightClasses += (theme === 'light' ? 'bg-green-100/80 ' : 'bg-green-900/50 ');
+                  else if (hColor === 'blue') highlightClasses += (theme === 'light' ? 'bg-blue-100/80 ' : 'bg-blue-900/50 ');
+                  else if (hColor === 'pink') highlightClasses += (theme === 'light' ? 'bg-pink-100/80 ' : 'bg-pink-900/50 ');
+
                   if (isFocused) {
-                    highlightClasses = theme === 'light' 
-                      ? 'bg-cyan-100/60 dark:bg-cyan-950/25 border-b border-cyan-500/80 text-slate-900 dark:text-white rounded-sm px-1 py-0.5 font-medium' 
-                      : 'bg-cyan-500/10 border-b border-cyan-400/50 text-white rounded-sm px-1 py-0.5 font-medium';
+                    highlightClasses += theme === 'light' 
+                      ? 'bg-cyan-100/60 dark:bg-cyan-950/25 border-b border-cyan-500/80 text-slate-900 dark:text-white rounded-sm px-1 py-0.5 font-medium ' 
+                      : 'bg-cyan-500/10 border-b border-cyan-400/50 text-white rounded-sm px-1 py-0.5 font-medium ';
                   } else if (holdsNotes) {
-                    highlightClasses = theme === 'light' 
-                      ? 'bg-amber-105/40 border-b border-amber-400/40 text-slate-900 rounded-sm px-1 py-0.5' 
-                      : 'bg-amber-955/20 border-b border-amber-500/20 text-amber-200 rounded-sm px-1 py-0.5';
+                    highlightClasses += theme === 'light' 
+                      ? 'bg-amber-105/40 border-b border-amber-400/40 text-slate-900 rounded-sm px-1 py-0.5 ' 
+                      : 'bg-amber-955/20 border-b border-amber-500/20 text-amber-200 rounded-sm px-1 py-0.5 ';
+                  } else if (!hColor) {
+                    highlightClasses += 'px-1 py-0.5 rounded-sm hover:bg-slate-500/5 dark:hover:bg-cyan-500/5 transition-colors duration-155 ';
                   } else {
-                    highlightClasses = 'px-1 py-0.5 rounded-sm hover:bg-slate-500/5 dark:hover:bg-cyan-500/5 transition-colors duration-155';
+                    highlightClasses += 'px-1 py-0.5 rounded-sm transition-colors duration-155 text-slate-900 dark:text-white ';
                   }
 
                   let textContent: React.ReactNode = '';
@@ -165,9 +179,9 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                   } else if (streamType === 'pers') {
                     textContent = v.nonNativeEnglish;
                   } else if (streamType === 'kjv') {
-                    textContent = v.kjvText || '';
+                    textContent = v.kjvText || dynamicTranslationData[v.verseNumber.toString()] || '';
                   } else if (streamType === 'bsb') {
-                    textContent = v.bsbText || '';
+                    textContent = v.bsbText || dynamicTranslationData[v.verseNumber.toString()] || '';
                   } else if (['asv', 'ylt', 'bbe'].includes(streamType)) {
                     textContent = dynamicTranslationData[v.verseNumber.toString()] || <span className="inline-block animate-pulse bg-slate-200 dark:bg-slate-800 h-4 w-3/4 rounded align-middle mx-1"></span>;
                   }
@@ -177,152 +191,55 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                       key={`para-${streamType}-${v.verseNumber}`}
                       id={`narrative-verse-${streamType}-${v.verseNumber}`}
                       onDoubleClick={() => {
-                        if (focusedVerse?.verseNumber === v.verseNumber && focusedStreamType === streamType) {
-                          setFocusedVerse(null);
-                          if (setFocusedStreamType) setFocusedStreamType(null);
+                        if (activeDraftVerse === v.verseNumber) {
+                          handleCancelNote();
                         } else {
-                          setFocusedVerse(v);
-                          if (setFocusedStreamType) setFocusedStreamType(streamType);
+                          if (openContextualNotebook) openContextualNotebook(v.verseNumber);
                         }
                       }}
-                      className={`inline relative cursor-pointer transition-all duration-150 ${highlightClasses} ${
+                      onClick={() => {
+                        if (activeDraftVerse !== null && activeDraftVerse !== v.verseNumber) {
+                          handleCancelNote();
+                        }
+                      }}
+                      className={`inline-block relative cursor-pointer transition-all duration-150 ${highlightClasses} ${
                         isReadingThis ? 'ring-1.5 ring-cyan-500/40 animate-pulse-slow' : ''
-                      } mr-1`}
-                      title={`Double-click to focus study on Verse ${v.verseNumber}`}
+                      } mr-1 mb-1`}
+                      title={`Double-click to open notebook`}
                     >
-                      <sup className={`text-sm font-mono leading-none select-none font-black mr-0.5 ${
-                        isReadingThis 
-                          ? 'text-cyan-500 animate-bounce' 
-                          : theme === 'light' ? 'text-slate-400' : 'text-cyan-600/70'
-                      }`}>
+                      {/* Verse Number Badge - tap for color palette */}
+                      <sup
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          if (focusedVerse?.verseNumber === v.verseNumber && focusedStreamType === streamType) {
+                            setFocusedVerse(null);
+                            if (setFocusedStreamType) setFocusedStreamType(null);
+                          } else {
+                            setFocusedVerse(v);
+                            if (setFocusedStreamType) setFocusedStreamType(streamType);
+                          }
+                        }}
+                        className={`text-sm font-mono leading-none select-none font-black mr-0.5 cursor-pointer transition-all inline-flex items-center justify-center rounded-full ${
+                          focusedVerse?.verseNumber === v.verseNumber && focusedStreamType === streamType
+                            ? (theme === 'light' ? 'bg-cyan-500 text-white px-1.5 py-0.5 scale-110' : 'bg-cyan-600 text-white px-1.5 py-0.5 scale-110')
+                            : isReadingThis 
+                              ? 'text-cyan-500 animate-bounce' 
+                              : theme === 'light' ? 'text-slate-400 hover:text-cyan-500' : 'text-cyan-600/70 hover:text-cyan-400'
+                        }`}
+                      >
                         {v.verseNumber}
                       </sup>
 
-                      <span className={isBold ? 'font-extrabold' : `font-medium ${isItalic ? 'italic' : ''}`}>
-                        {typeof textContent === 'string' ? (
-                          <span dangerouslySetInnerHTML={{ __html: textContent }} />
-                        ) : (
-                          textContent
-                        )}
-                      </span>
-{focusedVerse?.verseNumber === v.verseNumber && focusedStreamType === streamType && (
-                <div className="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 z-50 animate-fade-in-up w-max">
-                  <div 
-                    className="flex items-center overflow-x-auto hide-scrollbar shadow-lg rounded-full backdrop-blur-md" 
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div className={`flex items-center gap-1.5 px-2 py-1.5 rounded-full border shadow-sm transition-all ${
-                      theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#18181b] border-zinc-800'
-                    }`}>
-                      {/* Minimal Verse Indicator */}
-                      <div className={`flex items-center px-1.5 py-0.5 rounded-full shrink-0 ${
-                        theme === 'light' ? 'bg-slate-100 text-slate-500' : 'bg-white/5 text-slate-400'
-                      }`}>
-                        <span className="text-sm font-mono font-bold uppercase tracking-widest">v.{v.verseNumber}</span>
-                      </div>
+                      {/* Verse text content */}
+                      {textContent}
 
-                      <div className={`w-[1px] h-3 mx-0.5 shrink-0 ${theme === 'light' ? 'bg-slate-200' : 'bg-zinc-800'}`} />
-
-                      {/* Theological Note Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          if (activeDraftVerse === v.verseNumber) {
-                            handleCancelNote();
-                          } else {
-                            startEditingNote(v.verseNumber, verseHighlight?.notes || '');
-                          }
-                        }}
-                        className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
-                          activeDraftVerse === v.verseNumber
-                            ? 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400'
-                            : hasNotes
-                              ? (theme === 'light' ? 'bg-amber-100 text-amber-800' : 'bg-amber-955/20 text-amber-400')
-                              : (theme === 'light' ? 'hover:bg-slate-100 text-slate-600' : 'hover:bg-white/10 text-slate-400')
-                        }`}
-                        title="Write or edit theological note reflection"
-                      >
-                        <StarryCradleIcon className="w-3.5 h-3.5" active={hasNotes} />
-                      </button>
-
-                      {/* Bookmark Toggle */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          toggleSaveVerse(v.verseNumber);
-                        }}
-                        className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
-                          isSavedInChunk
-                            ? 'bg-emerald-500/15 text-emerald-500'
-                            : (theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-white/10 text-slate-400')
-                        }`}
-                        title="Bookmark verse"
-                      >
-                        <Bookmark className={`w-3.5 h-3.5 ${isSavedInChunk ? 'fill-current text-emerald-500' : ''}`} />
-                      </button>
-
-                      {/* Copy Verse */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          const textToCopy = streamType === 'plain'
-                            ? v.contemporary
-                            : streamType === 'pers'
-                              ? v.nonNativeEnglish
-                              : streamType === 'kjv'
-                                ? (v.kjvText || '')
-                                : (v.bsbText || '');
-                          const transName = streamType === 'plain' ? 'Plain English' : streamType === 'pers' ? 'Personalised' : streamType === 'kjv' ? 'KJV' : 'BSB';
-                          navigator.clipboard.writeText(`[v.${v.verseNumber}] ${textToCopy} (${transName})`);
-                        }}
-                        className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
-                          theme === 'light' ? 'hover:bg-slate-100 text-slate-500' : 'hover:bg-white/10 text-slate-400'
-                        }`}
-                        title="Copy verse text"
-                      >
-                        <Copy className="w-3.5 h-3.5" />
-                      </button>
-
-                      {/* Direct Project indicator button */}
-                      {onOpenProjection && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onOpenProjection(v.verseNumber);
-                          }}
-                          className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
-                            theme === 'light' ? 'hover:bg-amber-50 text-amber-700' : 'hover:bg-amber-955/20 text-amber-400'
-                          }`}
-                          title={`Project verse ${v.verseNumber}`}
-                        >
-                          <Tv className="w-3.5 h-3.5" />
-                        </button>
-                      )}
-
-                      <div className={`w-[1px] h-3 mx-0.5 shrink-0 ${theme === 'light' ? 'bg-slate-200' : 'bg-zinc-800'}`} />
-
-                      {/* Close Button */}
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          setFocusedVerse(null);
-                          if (setFocusedStreamType) setFocusedStreamType(null);
-                        }}
-                        className={`p-1.5 rounded-full transition-all flex items-center justify-center shrink-0 hover:scale-110 ${
-                          theme === 'light' ? 'hover:bg-rose-50 text-rose-500' : 'hover:bg-rose-955/20 text-rose-400'
-                        }`}
-                        title="Dismiss"
-                      >
-                        <X className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                  {currentlyReadingVerse === v.verseNumber && (
-                    <div className="mt-2 flex items-center justify-between bg-slate-100 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-250 dark:border-cyan-950/30">
+                      {/* Color Palette Popup - appears to the right of the badge */}
+                                        {currentlyReadingVerse === v.verseNumber && (
+                    <span className="block mt-2 mb-1 flex items-center justify-between bg-slate-100 dark:bg-slate-950 p-1.5 rounded-lg border border-slate-250 dark:border-cyan-950/30">
                       <span className="text-sm font-mono text-slate-400 dark:text-cyan-650 flex items-center gap-1">
                         ⚙️ Playback Speed:
                       </span>
-                      <div className="flex items-center space-x-2">
+                      <span className="flex items-center space-x-2">
                         <input
                           type="range"
                           min="0.5"
@@ -338,11 +255,42 @@ export const NarrativeStream: React.FC<NarrativeStreamProps> = ({
                         <span className="text-sm font-mono font-bold text-cyan-600">
                           {playbackSpeed.toFixed(1)}x
                         </span>
-                      </div>
-                    </div>
-                  )}
-                  </div>)}
+                      </span>
+                    </span>
+                      )}
 
+                      {/* Inline Note Reply Bubble */}
+                      {activeDraftVerse === v.verseNumber && (
+                        <span
+                          className={`block mt-2 mb-2 rounded-2xl shadow-lg overflow-hidden animate-fade-in-up w-full ${
+                            theme === 'light' 
+                              ? 'bg-slate-50 border border-slate-200' 
+                              : 'bg-[#0c1018] border border-slate-700'
+                          }`}
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <span className="flex items-end gap-2 p-2">
+                            <textarea
+                              value={noteDraftText}
+                              onChange={(e) => setNoteDraftText(e.target.value)}
+                              placeholder="Write your reflection..."
+                              autoFocus
+                              rows={2}
+                              className={`flex-1 text-sm resize-none rounded-xl px-3 py-2 focus:outline-none ${
+                                theme === 'light'
+                                  ? 'bg-white text-slate-800 placeholder:text-slate-400 border border-slate-200'
+                                  : 'bg-slate-800/60 text-slate-100 placeholder:text-slate-500 border border-slate-700'
+                              }`}
+                            />
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleSaveNote(v.verseNumber); }}
+                              className="shrink-0 px-5 h-10 rounded-full bg-emerald-600 hover:bg-emerald-500 text-white text-sm font-bold shadow-md flex items-center justify-center transition-all active:scale-95"
+                            >
+                              Save
+                            </button>
+                          </span>
+                        </span>
+                      )}
                     </span>
                   );
                 })}
