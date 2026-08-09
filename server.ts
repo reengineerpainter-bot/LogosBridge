@@ -265,37 +265,82 @@ interface BibleApiResult {
   verses: BibleApiVerse[];
 }
 
+// Book name → getbible.net book number mapping (1=Genesis ... 66=Revelation)
+const GETBIBLE_BOOK_NUMBERS: Record<string, number> = {
+  'genesis':1,'exodus':2,'leviticus':3,'numbers':4,'deuteronomy':5,'joshua':6,'judges':7,'ruth':8,
+  '1 samuel':9,'2 samuel':10,'1 kings':11,'2 kings':12,'1 chronicles':13,'2 chronicles':14,
+  'ezra':15,'nehemiah':16,'esther':17,'job':18,'psalms':19,'psalm':19,'proverbs':20,
+  'ecclesiastes':21,'song of solomon':22,'song of songs':22,'isaiah':23,'jeremiah':24,
+  'lamentations':25,'ezekiel':26,'daniel':27,'hosea':28,'joel':29,'amos':30,'obadiah':31,
+  'jonah':32,'micah':33,'nahum':34,'habakkuk':35,'zephaniah':36,'haggai':37,'zechariah':38,
+  'malachi':39,'matthew':40,'mark':41,'luke':42,'john':43,'acts':44,'romans':45,
+  '1 corinthians':46,'2 corinthians':47,'galatians':48,'ephesians':49,'philippians':50,
+  'colossians':51,'1 thessalonians':52,'2 thessalonians':53,'1 timothy':54,'2 timothy':55,
+  'titus':56,'philemon':57,'hebrews':58,'james':59,'1 peter':60,'2 peter':61,
+  '1 john':62,'2 john':63,'3 john':64,'jude':65,'revelation':66
+};
+
+// Translation ID map: app ID → getbible.net abbreviation
+const GETBIBLE_TRANS_MAP: Record<string, string> = {
+  'kjv': 'kjv', 'asv': 'asv', 'bbe': 'basicenglish', 'ylt': 'ylt',
+  'bsb': 'kjv'  // BSB not on getbible.net — fallback to KJV via getbible then swap
+};
+
+async function fetchFromGetBible(book: string, chapter: number, translation: string): Promise<BibleApiVerse[]> {
+  const bookNum = GETBIBLE_BOOK_NUMBERS[book.toLowerCase()];
+  if (!bookNum) throw new Error(`Unknown book for getbible.net: ${book}`);
+  const transCode = GETBIBLE_TRANS_MAP[translation.toLowerCase()] || translation.toLowerCase();
+  const url = `https://cdn.getbible.net/v2/${transCode}/${bookNum}/${chapter}.json`;
+  console.log(`[getbible.net] Fetching: ${url}`);
+  const res = await fetch(url, { signal: AbortSignal.timeout(6000) });
+  if (!res.ok) throw new Error(`getbible.net HTTP ${res.status}`);
+  const data: any = await res.json();
+  // getbible.net format: { book_nr, chapter, verses: { "1": { verse:1, text:"..." }, ... } }
+  if (!data || !data.verses) throw new Error('getbible.net: unexpected response format');
+  const verses: BibleApiVerse[] = Object.values(data.verses).map((v: any) => ({
+    verse: Number(v.verse),
+    text: String(v.text).trim()
+  }));
+  if (verses.length === 0) throw new Error('getbible.net: empty verses array');
+  return verses;
+}
+
 async function fetchFromBibleApi(book: string, chapter: number, translation: string): Promise<BibleApiVerse[]> {
+  // ── Source 1: getbible.net CDN (free, reliable, no key needed) ──
+  try {
+    const verses = await fetchFromGetBible(book, chapter, translation);
+    console.log(`[Translation] ✓ getbible.net served ${book} ${chapter} (${translation})`);
+    return verses;
+  } catch (gbErr: any) {
+    console.warn(`[getbible.net Failed] ${gbErr.message} — trying bible-api.com fallback`);
+  }
+
+  // ── Source 2: bible-api.com (legacy fallback) ──
   const urlBook = encodeURIComponent(book.toLowerCase());
   const url = `https://bible-api.com/${urlBook}+${chapter}?translation=${translation}`;
-  
   let attempts = 0;
-  const maxAttempts = 3;
+  const maxAttempts = 2;
   let lastError: any = null;
-  
   while (attempts < maxAttempts) {
     try {
       attempts++;
-      console.log(`[HTTP GET / Server API Helper - Attempt ${attempts}] ${url}`);
-      const res = await fetch(url);
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}: ${res.statusText}`);
-      }
+      console.log(`[bible-api.com Attempt ${attempts}] ${url}`);
+      const res = await fetch(url, { signal: AbortSignal.timeout(8000) });
+      if (!res.ok) throw new Error(`HTTP ${res.status}: ${res.statusText}`);
       const data = await res.json() as BibleApiResult;
       if (data && data.verses) {
+        console.log(`[Translation] ✓ bible-api.com served ${book} ${chapter} (${translation})`);
         return data.verses;
       }
-      throw new Error(`Invalid response format from Bible API`);
+      throw new Error('Invalid response format from bible-api.com');
     } catch (err: any) {
       lastError = err;
-      if (attempts < maxAttempts) {
-        console.warn(`[Bible API Attempt ${attempts} Failed] ${err.message || err}. Retrying in 400ms...`);
-        await new Promise(resolve => setTimeout(resolve, 400));
-      }
+      if (attempts < maxAttempts) await new Promise(resolve => setTimeout(resolve, 500));
     }
   }
-  throw new Error(`Failed to fetch ${book} ${chapter} (${translation}) after ${maxAttempts} attempts. Last error: ${lastError.message || lastError}`);
+  throw new Error(`All sources failed for ${book} ${chapter} (${translation}). Last: ${lastError?.message}`);
 }
+
 
 function generateContemporaryText(text: string): string {
   let mod = text
@@ -1473,20 +1518,29 @@ app.get('/api/translation/:translationId', async (req, res) => {
 
     // Local JSON Fallback
     try {
+      // For BSB (no local file), use KJV as the closest fallback
+      const effectiveId = translationId.toLowerCase() === 'bsb' ? 'kjv' : translationId.toLowerCase();
+
       const fallbackPaths = [
-        path.join(process.cwd(), 'node_modules', '.cache', `temp_${translationId.toLowerCase()}.json`),
-        path.join(process.cwd(), 'data', `en_${translationId.toLowerCase()}.json`)
+        path.join(process.cwd(), 'node_modules', '.cache', `temp_${effectiveId}.json`),
+        path.join(process.cwd(), 'data', `en_${effectiveId}.json`)
       ];
       
-      let fileContent = null;
+      let fileContent: string | null = null;
       for (const p of fallbackPaths) {
         if (fs.existsSync(p)) {
-          fileContent = fs.readFileSync(p, 'utf8');
+          // Read as buffer so we can strip BOM if present
+          const buf = fs.readFileSync(p);
+          fileContent = (buf[0] === 0xEF && buf[1] === 0xBB && buf[2] === 0xBF)
+            ? buf.slice(3).toString('utf8')   // strip UTF-8 BOM
+            : buf.toString('utf8');
+          console.log(`[Local Fallback] Loaded ${effectiveId.toUpperCase()} from: ${p}`);
           break;
         }
       }
 
       if (fileContent) {
+
         const bibleData = JSON.parse(fileContent);
         
         let targetBook = null;

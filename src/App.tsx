@@ -327,9 +327,35 @@ export default function App() {
       };
 
       const isNative = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform();
-      const url = isNative
+
+      // getbible.net book number map (for direct Android/native fetches)
+      const GB_BOOK_NUMS: Record<string, number> = {
+        'genesis':1,'exodus':2,'leviticus':3,'numbers':4,'deuteronomy':5,'joshua':6,'judges':7,'ruth':8,
+        '1 samuel':9,'2 samuel':10,'1 kings':11,'2 kings':12,'1 chronicles':13,'2 chronicles':14,
+        'ezra':15,'nehemiah':16,'esther':17,'job':18,'psalms':19,'psalm':19,'proverbs':20,
+        'ecclesiastes':21,'song of solomon':22,'song of songs':22,'isaiah':23,'jeremiah':24,
+        'lamentations':25,'ezekiel':26,'daniel':27,'hosea':28,'joel':29,'amos':30,'obadiah':31,
+        'jonah':32,'micah':33,'nahum':34,'habakkuk':35,'zephaniah':36,'haggai':37,'zechariah':38,
+        'malachi':39,'matthew':40,'mark':41,'luke':42,'john':43,'acts':44,'romans':45,
+        '1 corinthians':46,'2 corinthians':47,'galatians':48,'ephesians':49,'philippians':50,
+        'colossians':51,'1 thessalonians':52,'2 thessalonians':53,'1 timothy':54,'2 timothy':55,
+        'titus':56,'philemon':57,'hebrews':58,'james':59,'1 peter':60,'2 peter':61,
+        '1 john':62,'2 john':63,'3 john':64,'jude':65,'revelation':66
+      };
+      const GB_TRANS: Record<string, string> = { kjv:'kjv', asv:'asv', bbe:'basicenglish', ylt:'ylt', bsb:'kjv' };
+      const bookNum = GB_BOOK_NUMS[selectedBook.toLowerCase()];
+      const gbTrans = GB_TRANS[shouldFetch] || shouldFetch;
+
+      // Primary URL: getbible.net CDN (free, reliable, no key)
+      const gbUrl = bookNum
+        ? `https://cdn.getbible.net/v2/${gbTrans}/${bookNum}/${selectedChapter}.json`
+        : null;
+      // Fallback URL: bible-api.com OR server proxy for web
+      const fallbackUrl = isNative
         ? `https://bible-api.com/${encodeURIComponent(selectedBook)}+${selectedChapter}?translation=${shouldFetch}`
         : `/api/translation/${shouldFetch}?book=${encodeURIComponent(selectedBook)}&chapter=${selectedChapter}`;
+      const url = fallbackUrl; // will be overridden below if getbible succeeds
+
 
       const cacheKey = `trans_v2_${shouldFetch}_${selectedBook}_${selectedChapter}`;
       const cachedData = localStorage.getItem(cacheKey);
@@ -344,35 +370,55 @@ export default function App() {
         }
       }
 
-      fetch(url)
-        .then(async (res) => {
-           if (!res.ok || res.headers.get('content-type')?.includes('text/html')) {
-               throw new Error('Backend endpoint unavailable or returned HTML');
-           }
-           return res.json();
-        })
-        .then(data => {
-           if (data.success && data.data && data.data.verses) {
-             processVerses(data.data.verses);
-             localStorage.setItem(cacheKey, JSON.stringify(data.data.verses));
-           } else if (data.verses) {
-             // Direct bible-api.com response
-             processVerses(data.verses);
-             localStorage.setItem(cacheKey, JSON.stringify(data.verses));
-           } else {
-             throw new Error('Invalid JSON format from backend');
-           }
-        })
-        .catch(err => {
-           console.error(`[Translation Fetch] Failed to fetch from backend database:`, err.message);
-           const offlineData: Record<string, string> = {};
-           for (let i = 1; i <= 200; i++) offlineData[String(i)] = '[Translation Offline]';
-           setDynamicTranslationData(prev => ({
-             ...prev,
-             [shouldFetch]: offlineData
-           }));
-        });
+      // ── Try getbible.net CDN first (works on both web and Android) ──
+      const tryGetBible = gbUrl
+        ? fetch(gbUrl, { signal: AbortSignal.timeout(6000) })
+            .then(async r => {
+              if (!r.ok) throw new Error(`getbible.net ${r.status}`);
+              const d: any = await r.json();
+              if (!d?.verses) throw new Error('bad getbible format');
+              // getbible.net format: { verses: { "1": { verse, text }, ... } }
+              const verses = Object.values(d.verses).map((v: any) => ({
+                verse: Number(v.verse), text: String(v.text).trim()
+              }));
+              processVerses(verses);
+              localStorage.setItem(cacheKey, JSON.stringify(verses));
+            })
+        : Promise.reject(new Error('no book number'));
+
+      tryGetBible.catch(() => {
+        // ── Fallback: server proxy (web) or bible-api.com (Android) ──
+        fetch(url)
+          .then(async (res) => {
+             if (!res.ok || res.headers.get('content-type')?.includes('text/html')) {
+                 throw new Error('Backend endpoint unavailable or returned HTML');
+             }
+             return res.json();
+          })
+          .then(data => {
+             if (data.success && data.data && data.data.verses) {
+               processVerses(data.data.verses);
+               localStorage.setItem(cacheKey, JSON.stringify(data.data.verses));
+             } else if (data.verses) {
+               // Direct bible-api.com or getbible format
+               processVerses(data.verses);
+               localStorage.setItem(cacheKey, JSON.stringify(data.verses));
+             } else {
+               throw new Error('Invalid JSON format from backend');
+             }
+          })
+          .catch(err => {
+             console.error(`[Translation Fetch] All sources failed:`, err.message);
+             const offlineData: Record<string, string> = {};
+             for (let i = 1; i <= 200; i++) offlineData[String(i)] = '[Offline - Check Connection]';
+             setDynamicTranslationData(prev => ({
+               ...prev,
+               [shouldFetch]: offlineData
+             }));
+          });
+      });
     });
+
   }, [translationDisplayMode, interlinearThirdLine, dualStreamLeft, dualStreamRight, mainView, selectedBook, selectedChapter]);
 
   const [layoutMode, setLayoutMode] = useState<'paragraph'>(() => {
@@ -1690,22 +1736,92 @@ export default function App() {
 
         if (!isAlreadyCached) {
             setDownloadStatusLog((prev) => [...prev, `Fetching ${bookObj.name} Chapter ${ch}...`]);
-            try {
-               const url = `https://bible-api.com/${encodeURIComponent(bookObj.name)}+${ch}?translation=${transId}`;
-               const res = await fetch(url);
-               if (res.ok) {
+
+            const isNativePlatform = typeof window !== 'undefined' && (window as any).Capacitor?.isNativePlatform();
+            let fetched = false;
+
+            // ── Source 1: Server proxy /api/translation (reads local JSON files — no internet needed) ──
+            // This is the most reliable source for web. It uses the local data/ and node_modules/.cache/ files.
+            if (!isNativePlatform) {
+              try {
+                const proxyUrl = `/api/translation/${transId}?book=${encodeURIComponent(bookObj.name)}&chapter=${ch}`;
+                const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(8000) });
+                if (res.ok) {
                   const data = await res.json();
-                  const verses = data.verses || (data.data && data.data.verses) || [];
+                  const rawVerses = data.verses || (data.data && data.data.verses) || [];
                   const formattedData: Record<string, string> = {};
-                  verses.forEach((v: any) => {
-                     formattedData[String(v.verse)] = v.text;
-                  });
-                  localStorage.setItem(cacheKey, JSON.stringify(formattedData));
-               }
-            } catch (err) {
-               console.warn(`Failed to cache ${bookObj.name} ${ch} for ${transId}:`, err);
+                  if (Array.isArray(rawVerses)) {
+                    rawVerses.forEach((v: any) => { formattedData[String(v.verse)] = String(v.text || '').trim(); });
+                  } else if (typeof rawVerses === 'object') {
+                    Object.assign(formattedData, rawVerses);
+                  }
+                  if (Object.keys(formattedData).length > 0) {
+                    localStorage.setItem(cacheKey, JSON.stringify(formattedData));
+                    fetched = true;
+                  }
+                }
+              } catch { /* fall through */ }
             }
-            await new Promise(r => setTimeout(r, 250)); // rate limit protection
+
+            // ── Source 2: getbible.net CDN (for Android/native, or if server proxy fails) ──
+            if (!fetched) {
+              const DL_BOOK_NUMS: Record<string, number> = {
+                'genesis':1,'exodus':2,'leviticus':3,'numbers':4,'deuteronomy':5,'joshua':6,'judges':7,'ruth':8,
+                '1 samuel':9,'2 samuel':10,'1 kings':11,'2 kings':12,'1 chronicles':13,'2 chronicles':14,
+                'ezra':15,'nehemiah':16,'esther':17,'job':18,'psalms':19,'psalm':19,'proverbs':20,
+                'ecclesiastes':21,'song of solomon':22,'song of songs':22,'isaiah':23,'jeremiah':24,
+                'lamentations':25,'ezekiel':26,'daniel':27,'hosea':28,'joel':29,'amos':30,'obadiah':31,
+                'jonah':32,'micah':33,'nahum':34,'habakkuk':35,'zephaniah':36,'haggai':37,'zechariah':38,
+                'malachi':39,'matthew':40,'mark':41,'luke':42,'john':43,'acts':44,'romans':45,
+                '1 corinthians':46,'2 corinthians':47,'galatians':48,'ephesians':49,'philippians':50,
+                'colossians':51,'1 thessalonians':52,'2 thessalonians':53,'1 timothy':54,'2 timothy':55,
+                'titus':56,'philemon':57,'hebrews':58,'james':59,'1 peter':60,'2 peter':61,
+                '1 john':62,'2 john':63,'3 john':64,'jude':65,'revelation':66
+              };
+              const DL_GB_TRANS: Record<string, string> = { kjv:'kjv', asv:'asv', bbe:'basicenglish', ylt:'ylt', bsb:'kjv' };
+              const dlBookNum = DL_BOOK_NUMS[bookObj.name.toLowerCase()];
+              const dlGbTrans = DL_GB_TRANS[transId] || transId;
+              if (dlBookNum) {
+                try {
+                  const gbUrl = `https://api.getbible.net/v2/${dlGbTrans}/${dlBookNum}/${ch}.json`;
+                  const gbRes = await fetch(gbUrl, { signal: AbortSignal.timeout(7000) });
+                  if (gbRes.ok) {
+                    const gbData: any = await gbRes.json();
+                    if (gbData?.verses) {
+                      const formattedData: Record<string, string> = {};
+                      Object.values(gbData.verses).forEach((v: any) => {
+                        formattedData[String(v.verse)] = String(v.text).trim();
+                      });
+                      localStorage.setItem(cacheKey, JSON.stringify(formattedData));
+                      fetched = true;
+                    }
+                  }
+                } catch { /* fall through */ }
+              }
+            }
+
+            // ── Source 3: bible-api.com (last resort) ──
+            if (!fetched) {
+              try {
+                const bibleApiUrl = `https://bible-api.com/${encodeURIComponent(bookObj.name)}+${ch}?translation=${transId}`;
+                const res = await fetch(bibleApiUrl, { signal: AbortSignal.timeout(10000) });
+                if (res.ok) {
+                  const data = await res.json();
+                  const verses = data.verses || [];
+                  const formattedData: Record<string, string> = {};
+                  verses.forEach((v: any) => { formattedData[String(v.verse)] = String(v.text || '').trim(); });
+                  if (Object.keys(formattedData).length > 0) {
+                    localStorage.setItem(cacheKey, JSON.stringify(formattedData));
+                    fetched = true;
+                  }
+                }
+              } catch (err) {
+                console.warn(`Failed to cache ${bookObj.name} ${ch} for ${transId}:`, err);
+              }
+            }
+
+            // Small delay: faster if fetch succeeded, slower if failed to avoid hammering
+            await new Promise(r => setTimeout(r, fetched ? 50 : 300));
         }
 
         chaptersProcessed++;
@@ -2831,7 +2947,7 @@ export default function App() {
                       <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500 mt-4 mb-2">Single Mode</h3>
                       <div className={`flex flex-col rounded-xl overflow-hidden border ${theme === 'light' ? 'bg-white border-slate-200' : 'bg-[#121622] border-slate-800'}`}>
                         {AUDIO_TRANS_OPTIONS.filter(mode => mode.label.toLowerCase().includes(translationSearchText.toLowerCase())).map((mode, index, arr) => {
-                          const isDynamic = ['asv', 'ylt', 'bbe'].includes(mode.id);
+                          const isDynamic = ['kjv', 'bsb', 'asv', 'ylt', 'bbe'].includes(mode.id);
                           const isDownloaded = localStorage.getItem(`offline_${mode.id}`) === 'true';
                           
                           return (
@@ -2866,14 +2982,22 @@ export default function App() {
                               </span>
                             </div>
                             <div className="flex items-center gap-3">
-                              {isDynamic && !isDownloaded && (
+                              {/* Download icon — always shown for all 5 translations.
+                                  Shows ⬇ when not downloaded, 🔄 (re-sync) when already offline */}
+                              {isDynamic && (
                                 <button
                                   onClick={(e) => {
                                     e.stopPropagation();
+                                    // Clear stale flag so progress dialog always opens
+                                    localStorage.removeItem(`offline_${mode.id}`);
                                     handleDownloadTranslation(mode.id);
                                   }}
-                                  className={`p-1.5 rounded-full hover:bg-slate-500/10 transition-colors ${theme === 'light' ? 'text-slate-400' : 'text-slate-500'}`}
-                                  title="Download for Offline Viewing"
+                                  className={`p-1.5 rounded-full hover:bg-slate-500/10 transition-colors ${
+                                    isDownloaded
+                                      ? (theme === 'light' ? 'text-emerald-500' : 'text-emerald-400')
+                                      : (theme === 'light' ? 'text-slate-400 hover:text-cyan-600' : 'text-slate-500 hover:text-cyan-400')
+                                  }`}
+                                  title={isDownloaded ? 'Re-sync Offline Data' : 'Download for Offline Reading'}
                                 >
                                   <Download className="w-5 h-5" />
                                 </button>
