@@ -3073,7 +3073,7 @@ export default function App() {
                 {/* Audio Play Button */}
                 <button 
                   className={`w-12 h-12 rounded-full flex items-center justify-center text-white shadow-lg hover:scale-105 active:scale-95 transition-all ${
-                    isPlayingAudio ? 'bg-rose-500 shadow-rose-500/30' : 'bg-[#0d9488] shadow-teal-500/30'
+                    isPlayingAudio ? 'bg-rose-500 shadow-rose-500/30' : 'bg-emerald-500 shadow-emerald-500/30'
                   }`}
                   onClick={(e) => {
                      e.stopPropagation();
@@ -3184,7 +3184,7 @@ export default function App() {
               {/* ── SECTION 2: Audio Play Button only (no translation menu on Study view) ── */}
               <button
                 className={`w-11 h-11 rounded-full flex items-center justify-center text-white shadow-lg hover:scale-105 active:scale-95 transition-all ${
-                  isPlayingAudio ? 'bg-rose-500 shadow-rose-500/30' : 'bg-[#0d9488] shadow-teal-500/30'
+                  isPlayingAudio ? 'bg-rose-700 shadow-rose-700/30' : 'bg-rose-500 shadow-rose-500/30'
                 }`}
                 onClick={(e) => {
                   e.stopPropagation();
