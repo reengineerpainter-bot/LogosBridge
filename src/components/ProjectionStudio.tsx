@@ -808,6 +808,7 @@ export default function ProjectionStudio({
             </div>
 
             <div className="flex items-center space-x-3">
+              {/* Pop Screen button permanently disabled — obstructs mobile UI */}
               <button type="button"
                 onClick={() => {
                   playLocalBeep();
@@ -817,7 +818,7 @@ export default function ProjectionStudio({
                     openProjectorStandalone(liveState);
                   }
                 }}
-                className={`hidden md:flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold tracking-widest uppercase transition-all ${theme === 'light' ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}
+                className="hidden"
                 title="Pop out or reopen standalone projector window"
               >
                 <Monitor className="w-4 h-4" />
