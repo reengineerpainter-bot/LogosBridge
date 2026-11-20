@@ -10,8 +10,8 @@ WORKDIR /app
 # Copy dependency manifests
 COPY package.json package-lock.json ./
 
-# Install dependencies (including build devDependencies)
-RUN npm ci
+# Install dependencies (fallback to npm install if optional dependencies mismatch cross-platform)
+RUN npm ci || npm install --include=optional
 
 # Copy application source
 COPY . .

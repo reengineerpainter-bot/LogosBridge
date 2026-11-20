@@ -70,6 +70,15 @@
     "typescript": "~5.8.2",
     "vite": "^6.2.3"
   },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "optionalDependencies": {
+    "@tailwindcss/oxide-linux-x64-gnu": "4.3.0",
+    "@tailwindcss/oxide-linux-x64-musl": "4.3.0",
+    "@tailwindcss/oxide-win32-x64-msvc": "4.3.0",
+    "@rollup/rollup-linux-x64-gnu": "^4.34.8"
+  },
   "repository": {
     "type": "git",
     "url": "https://github.com/reengineerpainter-bot/LogosBridge.git"
