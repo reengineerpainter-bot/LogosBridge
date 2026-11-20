@@ -67,7 +67,7 @@ const getThemeStyles = (preset: string, isLowerThird: boolean) => {
         container: `bg-[#fcf8f2] text-zinc-900 ${
           isLowerThird ? 'border-t-4 border-b-0 border-x-0 rounded-none' : 'border-0 rounded-3xl'
         } shadow-[0_20px_50px_rgba(0,0,0,0.15)]`,
-        label: 'text-amber-900 font-serif font-black italic tracking-wide',
+        label: 'text-amber-900 font-serif font-black tracking-wide',
         ref: 'text-zinc-900 font-medium',
         pageBg: isLowerThird ? 'bg-[#000000]' : 'bg-[#f4ebe1]',
         textShadow: 'drop-shadow-sm',

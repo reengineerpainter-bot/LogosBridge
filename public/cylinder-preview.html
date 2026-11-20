@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mechanical 3D Cylinder Pill Roller — Preview Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-lab: #0d0f12;
+      --card-bg: #14171d;
+      --border-color: rgba(255, 255, 255, 0.08);
+      --accent-crimson: #f43f5e;
+      --accent-emerald: #10b981;
+      --accent-sky: #0284c7;
+      --drum-radius: 24px;
+      --drum-perspective: 450px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background-color: var(--bg-lab);
+      color: #faf6f0;
+      font-family: 'Inter', -apple-system, sans-serif;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 48px;
+      overflow-x: hidden;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    .lab-container {
+      width: 100%;
+      max-width: 640px;
+      display: flex;
+      flex-direction: column;
+      gap: 24px;
+    }
+
+    .lab-header {
+      text-align: center;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .badge-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      background: rgba(244, 63, 94, 0.12);
+      border: 1px solid rgba(244, 63, 94, 0.3);
+      color: #fb7185;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border-radius: 9999px;
+      margin-bottom: 8px;
+    }
+
+    .badge-pill .pulse-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #f43f5e;
+      box-shadow: 0 0 8px #f43f5e;
+      animation: pulse 1.5s infinite;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    h1 {
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #ffffff;
+      margin-bottom: 6px;
+    }
+
+    p.subtitle {
+      font-size: 13px;
+      color: #94a3b8;
+      line-height: 1.5;
+    }
+
+    /* Studio Deck Hardware Housing Simulation */
+    .deck-housing {
+      background: #11141a;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 20px;
+      padding: 20px 18px 24px;
+      box-shadow: 
+        0 20px 40px -15px rgba(0, 0, 0, 0.8),
+        inset 0 1px 0 rgba(255, 255, 255, 0.15),
+        inset 0 -1px 0 rgba(0, 0, 0, 0.8);
+      position: relative;
+    }
+
+    .deck-top-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    }
+
+    .deck-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      color: #64748b;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .deck-status-led {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+    }
+
+    .theme-switch-group {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: rgba(0, 0, 0, 0.4);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .theme-btn {
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .theme-btn.active {
+      background: rgba(255, 255, 255, 0.12);
+      color: #ffffff;
+      box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    }
+
+    /* THE 3D CYLINDER ROW */
+    .cylinder-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+
+    @media (max-width: 480px) {
+      .cylinder-row {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    /* CYLINDER COMPONENT STYLES */
+    .cylinder-slot {
+      position: relative;
+      height: 48px;
+      border-radius: 14px;
+      perspective: var(--drum-perspective);
+      touch-action: none;
+      cursor: grab;
+      overflow: hidden;
+      box-shadow: 
+        inset 0 4px 10px rgba(0, 0, 0, 0.7),
+        inset 0 -4px 10px rgba(0, 0, 0, 0.7),
+        0 2px 4px rgba(0, 0, 0, 0.4);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    .cylinder-slot:active {
+      cursor: grabbing;
+    }
+
+    /* Theme Variants for Slot Border */
+    .cylinder-slot.theme-crimson {
+      border: 1px solid rgba(244, 63, 94, 0.35);
+      background: #140b0f;
+    }
+    .cylinder-slot.theme-stealth {
+      border: 1px solid rgba(16, 185, 129, 0.35);
+      background: #08120d;
+    }
+    .cylinder-slot.theme-midnight {
+      border: 1px solid rgba(14, 165, 233, 0.35);
+      background: #09131d;
+    }
+
+    /* Fixed Specular Curved Highlight (Stationary Light Reflection) */
+    .cylinder-specular-light {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 38%;
+      background: linear-gradient(180deg, 
+        rgba(255, 255, 255, 0.18) 0%, 
+        rgba(255, 255, 255, 0.05) 50%, 
+        transparent 100%
+      );
+      pointer-events: none;
+      z-index: 15;
+    }
+
+    /* Receding Top Shadow (Occlusion into Console Slot) */
+    .cylinder-slot-shadow-top {
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 14px;
+      background: linear-gradient(180deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 65%, transparent 100%);
+      pointer-events: none;
+      z-index: 16;
+    }
+
+    /* Receding Bottom Shadow (Occlusion into Console Slot) */
+    .cylinder-slot-shadow-bottom {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 14px;
+      background: linear-gradient(0deg, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0.2) 65%, transparent 100%);
+      pointer-events: none;
+      z-index: 16;
+    }
+
+    /* Left & Right Metallic Knurled End Caps */
+    .cylinder-end-cap-left, .cylinder-end-cap-right {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      width: 4px;
+      background: repeating-linear-gradient(
+        180deg,
+        rgba(255, 255, 255, 0.15) 0px,
+        rgba(255, 255, 255, 0.15) 1px,
+        rgba(0, 0, 0, 0.4) 1px,
+        rgba(0, 0, 0, 0.4) 3px
+      );
+      pointer-events: none;
+      z-index: 20;
+    }
+    .cylinder-end-cap-left { left: 0; border-right: 1px solid rgba(0,0,0,0.5); }
+    .cylinder-end-cap-right { right: 28px; border-left: 1px solid rgba(0,0,0,0.5); }
+
+    /* The 3D Rotating Drum Pivot Container */
+    .cylinder-drum {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      transform-style: preserve-3d;
+      will-change: transform;
+    }
+
+    /* Each Drum Facet (Facing viewer, upper receding, lower emerging) */
+    .drum-facet {
+      position: absolute;
+      inset: 0;
+      height: 48px;
+      display: flex;
+      align-items: center;
+      padding: 0 34px 0 12px;
+      gap: 10px;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      transform-origin: center center;
+    }
+
+    .facet-icon {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: rgba(255, 255, 255, 0.85);
+    }
+
+    .facet-label-container {
+      flex: 1;
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .facet-label {
+      font-size: 12px;
+      font-weight: 600;
+      color: #faf6f0;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      text-shadow: 0 1px 2px rgba(0, 0, 0, 0.8);
+      letter-spacing: -0.01em;
+    }
+
+    .facet-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 9px;
+      font-weight: 700;
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+    }
+
+    .facet-badge .dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    /* Tactile Side Stepper Micro-Chevrons */
+    .cylinder-stepper {
+      position: absolute;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      width: 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.35);
+      border-left: 1px solid rgba(255, 255, 255, 0.08);
+      z-index: 25;
+    }
+
+    .step-btn {
+      width: 100%;
+      height: 50%;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+
+    .step-btn:hover {
+      color: #ffffff;
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .step-btn:active {
+      transform: scale(0.85);
+      color: #fb7185;
+    }
+
+    /* TELEMETRY & PHYSICS CONTROLS */
+    .telemetry-card {
+      background: #11141a;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .telemetry-title {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: #94a3b8;
+      text-transform: uppercase;
+      margin-bottom: 12px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .telemetry-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+
+    @media (max-width: 480px) {
+      .telemetry-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    .stat-box {
+      background: rgba(0, 0, 0, 0.3);
+      padding: 10px 12px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .stat-label {
+      font-size: 10px;
+      color: #64748b;
+      font-family: 'JetBrains Mono', monospace;
+      text-transform: uppercase;
+    }
+
+    .stat-value {
+      font-size: 14px;
+      font-weight: 700;
+      color: #f1f5f9;
+      font-family: 'JetBrains Mono', monospace;
+      margin-top: 2px;
+    }
+
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-top: 14px;
+    }
+
+    .control-item {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .control-item label {
+      font-size: 11px;
+      font-weight: 600;
+      color: #94a3b8;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .control-item input[type="range"] {
+      width: 100%;
+      accent-color: #f43f5e;
+      cursor: pointer;
+    }
+
+    .sound-toggle-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 12px;
+      border-radius: 8px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.05);
+      color: #e2e8f0;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .sound-toggle-btn.active {
+      border-color: rgba(16, 185, 129, 0.4);
+      background: rgba(16, 185, 129, 0.15);
+      color: #34d399;
+    }
+
+    .instructions-box {
+      background: rgba(2, 132, 199, 0.08);
+      border: 1px solid rgba(2, 132, 199, 0.25);
+      border-radius: 12px;
+      padding: 12px 16px;
+      font-size: 12px;
+      color: #bae6fd;
+      line-height: 1.6;
+    }
+
+    .instructions-box strong {
+      color: #ffffff;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="lab-container">
+    
+    <div class="lab-header">
+      <div class="badge-pill">
+        <span class="pulse-dot"></span>
+        Mechanical 3D Cylinder Engine
+      </div>
+      <h1>Tactile Cylinder Pill Lab</h1>
+      <p class="subtitle">
+        Slide, swipe, or spin mouse wheel up/down to roll the mechanical cylinder drums. Inspect the 3D curvature, specular sheen, and inertial detent clicks.
+      </p>
+    </div>
+
+    <!-- STUDIO DECK HOUSING SIMULATOR -->
+    <div class="deck-housing">
+      <div class="deck-top-bar">
+        <div class="deck-label">
+          <span class="deck-status-led"></span>
+          Live Studio Deck Controls
+        </div>
+        <div class="theme-switch-group">
+          <button class="theme-btn active" onclick="setDeckTheme('crimson')">Crimson</button>
+          <button class="theme-btn" onclick="setDeckTheme('stealth')">Stealth</button>
+          <button class="theme-btn" onclick="setDeckTheme('midnight')">Midnight</button>
+        </div>
+      </div>
+
+      <!-- CYLINDER ROLLERS -->
+      <div class="cylinder-row">
+
+        <!-- CAMERA CYLINDER -->
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; font-family: 'JetBrains Mono', monospace;">
+            <span>Camera Cylinder</span>
+          </div>
+
+          <div id="cam-cylinder-slot" class="cylinder-slot theme-crimson">
+            <div class="cylinder-specular-light"></div>
+            <div class="cylinder-slot-shadow-top"></div>
+            <div class="cylinder-slot-shadow-bottom"></div>
+            <div class="cylinder-end-cap-left"></div>
+            <div class="cylinder-end-cap-right"></div>
+
+            <div id="cam-drum" class="cylinder-drum">
+              <!-- Dynamically populated facets in 3D -->
+            </div>
+
+            <div class="cylinder-stepper">
+              <button class="step-btn" onclick="rollCamera(-1)" title="Roll Up">▲</button>
+              <button class="step-btn" onclick="rollCamera(1)" title="Roll Down">▼</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- MICROPHONE CYLINDER -->
+        <div>
+          <div style="font-size: 11px; font-weight: 700; color: #94a3b8; margin-bottom: 6px; text-transform: uppercase; font-family: 'JetBrains Mono', monospace;">
+            <span>Microphone Cylinder</span>
+          </div>
+
+          <div id="mic-cylinder-slot" class="cylinder-slot theme-crimson">
+            <div class="cylinder-specular-light"></div>
+            <div class="cylinder-slot-shadow-top"></div>
+            <div class="cylinder-slot-shadow-bottom"></div>
+            <div class="cylinder-end-cap-left"></div>
+            <div class="cylinder-end-cap-right"></div>
+
+            <div id="mic-drum" class="cylinder-drum">
+              <!-- Dynamically populated facets in 3D -->
+            </div>
+
+            <div class="cylinder-stepper">
+              <button class="step-btn" onclick="rollMic(-1)" title="Roll Up">▲</button>
+              <button class="step-btn" onclick="rollMic(1)" title="Roll Down">▼</button>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- TELEMETRY & MOTION DIAGNOSTICS -->
+    <div class="telemetry-card">
+      <div class="telemetry-title">
+        <span>Real-Time Motion Telemetry</span>
+        <button id="sound-btn" class="sound-toggle-btn active" onclick="toggleSound()">
+          🔊 Hardware Click Sound: ON
+        </button>
+      </div>
+
+      <div class="telemetry-grid">
+        <div class="stat-box">
+          <div class="stat-label">Drum Angle (θ)</div>
+          <div id="stat-angle" class="stat-value">0.0°</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Selected Camera</div>
+          <div id="stat-cam" class="stat-value" style="font-size: 12px; font-family: sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Built-in HD Webcam</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-label">Selected Microphone</div>
+          <div id="stat-mic" class="stat-value" style="font-size: 12px; font-family: sans-serif; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Internal Array Microphone</div>
+        </div>
+      </div>
+
+      <div class="controls-grid">
+        <div class="control-item">
+          <label>
+            <span>Touch Drag Sensitivity</span>
+            <span id="label-sens">0.55°/px</span>
+          </label>
+          <input type="range" id="sens-slider" min="0.2" max="1.2" step="0.05" value="0.55" oninput="updateSensitivity(this.value)">
+        </div>
+        <div class="control-item">
+          <label>
+            <span>Drum 3D Radius (Depth)</span>
+            <span id="label-radius">24px</span>
+          </label>
+          <input type="range" id="radius-slider" min="16" max="36" step="2" value="24" oninput="updateRadius(this.value)">
+        </div>
+      </div>
+    </div>
+
+    <div class="instructions-box">
+      <strong>Interactive Physics Guide:</strong>
+      <ul style="margin-left: 18px; margin-top: 4px;">
+        <li><strong>Slide Finger / Mouse Up & Down</strong> directly on either cylinder to feel the 1:1 real-time 3D angular rotation.</li>
+        <li><strong>Flick & Release</strong> to witness the inertial spring snap settling cleanly onto the nearest device.</li>
+        <li><strong>Scroll Wheel</strong> on either pill to trigger discrete mechanical tick rotations.</li>
+      </ul>
+    </div>
+
+  </div>
+
+  <script>
+    // Audio Click Synthesizer (Realistic relay/detent mechanical click)
+    let audioCtx = null;
+    let isSoundEnabled = true;
+
+    function playClickSound(freq = 280) {
+      if (!isSoundEnabled) return;
+      try {
+        if (!audioCtx) {
+          audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') {
+          audioCtx.resume();
+        }
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(80, audioCtx.currentTime + 0.035);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + 0.035);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.04);
+      } catch (e) {}
+    }
+
+    function toggleSound() {
+      isSoundEnabled = !isSoundEnabled;
+      const btn = document.getElementById('sound-btn');
+      if (isSoundEnabled) {
+        btn.classList.add('active');
+        btn.innerHTML = '🔊 Hardware Click Sound: ON';
+        playClickSound(320);
+      } else {
+        btn.classList.remove('active');
+        btn.innerHTML = '🔇 Hardware Click Sound: OFF';
+      }
+    }
+
+    // Sample Devices
+    const CAM_DEVICES = [
+      { id: 'cam1', name: 'Built-in HD Webcam', type: 'Primary Sensor', icon: '📹' },
+      { id: 'cam2', name: 'Wireless Phone Cam 1', type: 'Remote WebRTC', icon: '📱', isPhone: true },
+      { id: 'cam3', name: 'Wireless Phone Cam 2', type: 'Remote WebRTC', icon: '📱', isPhone: true },
+      { id: 'cam4', name: 'USB Broadcast Capture Cam', type: 'HDMI Ingest', icon: '🎥' }
+    ];
+
+    const MIC_DEVICES = [
+      { id: 'mic1', name: 'Internal Array Microphone', type: 'Default Ingest', icon: '🎙️' },
+      { id: 'mic2', name: 'Wireless Phone Audio 1', type: 'Remote Opus', icon: '📱', isPhone: true },
+      { id: 'mic3', name: 'Studio USB Condenser Mic', type: '24-Bit Ingest', icon: '🎤' }
+    ];
+
+    // Cylinder State Management
+    class CylinderRoller {
+      constructor(slotId, drumId, tagId, devices, onSelect) {
+        this.slot = document.getElementById(slotId);
+        this.drum = document.getElementById(drumId);
+        this.tag = document.getElementById(tagId);
+        this.devices = devices;
+        this.onSelect = onSelect;
+
+        this.currentIndex = 0;
+        this.currentAngle = 0;
+        this.targetAngle = 0;
+        this.isDragging = false;
+        this.startY = 0;
+        this.startAngle = 0;
+        this.lastY = 0;
+        this.lastTime = 0;
+        this.velocity = 0;
+        this.rafId = null;
+
+        this.anglePerItem = 60; // 60 degrees per facet
+        this.radius = 24; // 24px depth radius
+        this.sensitivity = 0.55;
+
+        this.renderFacets();
+        this.setupGestures();
+        this.updateTransform(0);
+      }
+
+      renderFacets() {
+        this.drum.innerHTML = '';
+        const count = this.devices.length;
+
+        // Render faces around the cylinder drum
+        this.devices.forEach((dev, idx) => {
+          const facet = document.createElement('div');
+          facet.className = 'drum-facet';
+          facet.id = `${this.drum.id}-facet-${idx}`;
+          const angle = idx * this.anglePerItem;
+          
+          facet.style.transform = `rotateX(${angle}deg) translateZ(${this.radius}px)`;
+
+          facet.innerHTML = `
+            <div class="facet-icon">${dev.icon}</div>
+            <div class="facet-label-container">
+              <div class="facet-label">${dev.name}</div>
+              <div class="facet-badge">
+                <span class="dot" style="${dev.isPhone ? 'color: #f43f5e;' : 'color: #10b981;'}"></span>
+                ${dev.type}
+              </div>
+            </div>
+          `;
+          this.drum.appendChild(facet);
+        });
+      }
+
+      updateRadius(r) {
+        this.radius = r;
+        this.devices.forEach((dev, idx) => {
+          const facet = document.getElementById(`${this.drum.id}-facet-${idx}`);
+          if (facet) {
+            const angle = idx * this.anglePerItem;
+            facet.style.transform = `rotateX(${angle}deg) translateZ(${this.radius}px)`;
+          }
+        });
+        this.updateTransform(this.currentAngle);
+      }
+
+      updateTransform(angleDeg) {
+        this.drum.style.transform = `translateZ(-${this.radius}px) rotateX(${-angleDeg}deg)`;
+
+        // Update lighting/opacity on facets according to their angle to the front face
+        this.devices.forEach((dev, idx) => {
+          const facet = document.getElementById(`${this.drum.id}-facet-${idx}`);
+          if (facet) {
+            const facetAngle = idx * this.anglePerItem;
+            let diff = ((facetAngle - angleDeg) % 360);
+            if (diff > 180) diff -= 360;
+            if (diff < -180) diff += 360;
+
+            const absDiff = Math.abs(diff);
+            if (absDiff > 80) {
+              facet.style.opacity = '0';
+              facet.style.pointerEvents = 'none';
+            } else {
+              const norm = 1 - (absDiff / 80);
+              facet.style.opacity = Math.max(0.1, norm).toFixed(2);
+              facet.style.filter = `brightness(${(0.4 + 0.6 * norm).toFixed(2)})`;
+              facet.style.pointerEvents = absDiff < 30 ? 'auto' : 'none';
+            }
+          }
+        });
+
+        // Compute closest active index
+        let activeIdx = Math.round(angleDeg / this.anglePerItem) % this.devices.length;
+        if (activeIdx < 0) activeIdx += this.devices.length;
+
+        if (activeIdx !== this.currentIndex) {
+          this.currentIndex = activeIdx;
+          playClickSound(260 + (activeIdx * 20));
+          if (this.tag) this.tag.textContent = `${this.currentIndex + 1} / ${this.devices.length}`;
+          this.onSelect(this.devices[this.currentIndex]);
+        }
+      }
+
+      setupGestures() {
+        // Pointer / Touch Gestures
+        const onStart = (clientY) => {
+          this.isDragging = true;
+          this.startY = clientY;
+          this.lastY = clientY;
+          this.startAngle = this.currentAngle;
+          this.lastTime = performance.now();
+          this.velocity = 0;
+          cancelAnimationFrame(this.rafId);
+          this.drum.style.transition = 'none';
+        };
+
+        const onMove = (clientY) => {
+          if (!this.isDragging) return;
+          const now = performance.now();
+          const dt = Math.max(1, now - this.lastTime);
+          const dy = this.startY - clientY;
+          const deltaY = this.lastY - clientY;
+
+          this.velocity = (deltaY / dt) * 15;
+          this.lastY = clientY;
+          this.lastTime = now;
+
+          // Continuous 1:1 rotation
+          const newAngle = this.startAngle + (dy * this.sensitivity);
+          this.currentAngle = newAngle;
+          this.updateTransform(this.currentAngle);
+
+          // Update HUD
+          document.getElementById('stat-angle').textContent = `${this.currentAngle.toFixed(1)}°`;
+        };
+
+        const onEnd = () => {
+          if (!this.isDragging) return;
+          this.isDragging = false;
+
+          // Inertial momentum simulation
+          const projectedAngle = this.currentAngle + (this.velocity * 3);
+          const snapIndex = Math.round(projectedAngle / this.anglePerItem);
+          this.targetAngle = snapIndex * this.anglePerItem;
+
+          this.snapToTarget();
+        };
+
+        // Pointer event listeners
+        this.slot.addEventListener('pointerdown', (e) => {
+          this.slot.setPointerCapture(e.pointerId);
+          onStart(e.clientY);
+        });
+
+        this.slot.addEventListener('pointermove', (e) => {
+          onMove(e.clientY);
+        });
+
+        const handlePointerUp = (e) => {
+          if (this.isDragging) {
+            try { this.slot.releasePointerCapture(e.pointerId); } catch(err){}
+            onEnd();
+          }
+        };
+
+        this.slot.addEventListener('pointerup', handlePointerUp);
+        this.slot.addEventListener('pointercancel', handlePointerUp);
+
+        // Mouse Wheel discrete roll
+        this.slot.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (e.deltaY > 0) {
+            this.step(1);
+          } else {
+            this.step(-1);
+          }
+        }, { passive: false });
+      }
+
+      snapToTarget() {
+        this.drum.style.transition = 'transform 320ms cubic-bezier(0.16, 1, 0.3, 1)';
+        this.currentAngle = this.targetAngle;
+        this.updateTransform(this.currentAngle);
+        document.getElementById('stat-angle').textContent = `${this.currentAngle.toFixed(1)}°`;
+      }
+
+      step(direction) {
+        cancelAnimationFrame(this.rafId);
+        const currentTargetIndex = Math.round(this.currentAngle / this.anglePerItem);
+        const newTargetIndex = currentTargetIndex + direction;
+        this.targetAngle = newTargetIndex * this.anglePerItem;
+        this.snapToTarget();
+      }
+    }
+
+    // Initialize Rollers
+    let camRoller, micRoller;
+
+    window.addEventListener('DOMContentLoaded', () => {
+      camRoller = new CylinderRoller(
+        'cam-cylinder-slot', 
+        'cam-drum', 
+        'cam-index-tag', 
+        CAM_DEVICES, 
+        (dev) => {
+          document.getElementById('stat-cam').textContent = dev.name;
+        }
+      );
+
+      micRoller = new CylinderRoller(
+        'mic-cylinder-slot', 
+        'mic-drum', 
+        'mic-index-tag', 
+        MIC_DEVICES, 
+        (dev) => {
+          document.getElementById('stat-mic').textContent = dev.name;
+        }
+      );
+    });
+
+    function rollCamera(direction) {
+      if (camRoller) camRoller.step(direction);
+    }
+
+    function rollMic(direction) {
+      if (micRoller) micRoller.step(direction);
+    }
+
+    function setDeckTheme(theme) {
+      document.querySelectorAll('.theme-btn').forEach(btn => btn.classList.remove('active'));
+      event.target.classList.add('active');
+
+      const camSlot = document.getElementById('cam-cylinder-slot');
+      const micSlot = document.getElementById('mic-cylinder-slot');
+
+      camSlot.className = `cylinder-slot theme-${theme}`;
+      micSlot.className = `cylinder-slot theme-${theme}`;
+    }
+
+    function updateSensitivity(val) {
+      document.getElementById('label-sens').textContent = `${val}°/px`;
+      if (camRoller) camRoller.sensitivity = parseFloat(val);
+      if (micRoller) micRoller.sensitivity = parseFloat(val);
+    }
+
+    function updateRadius(val) {
+      document.getElementById('label-radius').textContent = `${val}px`;
+      if (camRoller) camRoller.updateRadius(parseInt(val, 10));
+      if (micRoller) micRoller.updateRadius(parseInt(val, 10));
+    }
+  </script>
+</body>
+</html>

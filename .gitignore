@@ -8,3 +8,9 @@ coverage/
 !.env.example
 serviceAccountKey.json
 firebase-applet-config.json
+
+.vercel
+dist-electron/
+release/
+*.apk
+scratch/

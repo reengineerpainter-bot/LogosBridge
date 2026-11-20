@@ -15,8 +15,9 @@ export default defineConfig(() => {
       // HMR is disabled in AI Studio via DISABLE_HMR env var.
       // Do not modify—file watching is disabled to prevent flickering during agent edits.
       hmr: process.env.DISABLE_HMR !== 'true',
-      // Disable file watching when DISABLE_HMR is true to save CPU during agent edits.
-      watch: process.env.DISABLE_HMR === 'true' ? null : {},
+      watch: process.env.DISABLE_HMR === 'true' ? null : {
+        ignored: ['**/android/**', '**/dist/**', '**/dist-electron/**', '**/release/**', '**/.git/**']
+      },
       proxy: {
         '/api': {
           target: 'http://localhost:3000',
@@ -28,7 +29,6 @@ export default defineConfig(() => {
       rollupOptions: {
         input: {
           main: path.resolve(__dirname, 'index.html'),
-          projection: path.resolve(__dirname, 'projection.html'),
         },
       },
     },

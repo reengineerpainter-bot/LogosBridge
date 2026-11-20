@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>LogosBridge - NDI Program Output</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; }
+    html, body {
+      width: 100vw;
+      height: 100vh;
+      background-color: #000000;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    #ndi-canvas {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: none;
+    }
+    #standby-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1.5rem;
+      color: #71717a;
+      text-align: center;
+    }
+    .badge {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.4rem 1rem;
+      border-radius: 9999px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: rgba(24, 24, 27, 0.6);
+      font-size: 0.75rem;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: #10b981;
+      font-weight: 700;
+    }
+    .pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #10b981;
+      box-shadow: 0 0 10px #10b981;
+      animation: pulse 1.8s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(1.3); }
+    }
+  </style>
+</head>
+<body ondblclick="toggleFullscreen()">
+  <div id="standby-container">
+    <div style="width: 72px; height: 72px; border-radius: 50%; border: 1px solid rgba(255, 255, 255, 0.1); background: rgba(24, 24, 27, 0.8); display: flex; align-items: center; justify-content: center;">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#a1a1aa" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect width="20" height="15" x="2" y="3" rx="2"/>
+        <path d="M12 18v4M6 22h12"/>
+      </svg>
+    </div>
+    <div>
+      <h2 style="font-size: 1.25rem; font-weight: 600; letter-spacing: 0.25em; color: #e4e4e7; margin-bottom: 0.5rem;">NDI PROGRAM OUT</h2>
+      <p style="font-size: 0.75rem; letter-spacing: 0.15em; color: #52525b; text-transform: uppercase;">Awaiting Live Studio Feed</p>
+    </div>
+    <div class="badge">
+      <div class="pulse-dot"></div>
+      Signal Ready
+    </div>
+  </div>
+  <canvas id="ndi-canvas" width="1920" height="1080"></canvas>
+
+  <script>
+    const canvas = document.getElementById('ndi-canvas');
+    const ctx = canvas.getContext('2d');
+    const standby = document.getElementById('standby-container');
+    let lastFrameTime = 0;
+    let timeoutId = null;
+
+    function toggleFullscreen() {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+      } else {
+        document.exitFullscreen().catch(() => {});
+      }
+    }
+
+    try {
+      const channel = new BroadcastChannel('logosbridge-ndi-canvas');
+      channel.onmessage = (e) => {
+        if (e.data && e.data.type === 'FRAME' && e.data.bitmap) {
+          standby.style.display = 'none';
+          canvas.style.display = 'block';
+          ctx.drawImage(e.data.bitmap, 0, 0, 1920, 1080);
+          e.data.bitmap.close();
+          lastFrameTime = Date.now();
+
+          clearTimeout(timeoutId);
+          timeoutId = setTimeout(() => {
+            if (Date.now() - lastFrameTime > 2500) {
+              canvas.style.display = 'none';
+              standby.style.display = 'flex';
+            }
+          }, 2500);
+        }
+      };
+    } catch (err) {
+      console.warn('[NDI Program Out] BroadcastChannel error:', err);
+    }
+  </script>
+</body>
+</html>

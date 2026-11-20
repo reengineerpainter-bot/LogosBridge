@@ -99,7 +99,7 @@ export const JOHN_1: ChapterData = {
     },
     {
       "verseNumber": 6,
-      "kjvText": "There was a man sent from God, whose name was John.",
+      "kjvText": "There was a man sent from God, whose name [was] John.",
       "bsbText": "There came a man, sent from God, whose name was John.",
       "contemporary": "There came a man, sent from God, whose name was John.",
       "nonNativeEnglish": "There came a man, sent from God, whose name was John.",
@@ -114,7 +114,7 @@ export const JOHN_1: ChapterData = {
     },
     {
       "verseNumber": 7,
-      "kjvText": "The same came for a witness, to bear witness of the Light, that all men through him might believe.",
+      "kjvText": "The same came for a witness, to bear witness of the Light, that all [men] through him might believe.",
       "bsbText": "The same came as a witness, that he might testify about the light, that all might believe through him.",
       "contemporary": "The same came as a witness, that he might testify about the light, that all might believe through him.",
       "nonNativeEnglish": "The same came as a witness, that he might tell the truth about about the light, that all might believe through him.",
@@ -135,7 +135,7 @@ export const JOHN_1: ChapterData = {
     },
     {
       "verseNumber": 8,
-      "kjvText": "He was not that Light, but was sent to bear witness of that Light.",
+      "kjvText": "He was not that Light, but [was sent] to bear witness of that Light.",
       "bsbText": "He was not the light, but was sent that he might testify about the light.",
       "contemporary": "He was not the light, but was sent that he might testify about the light.",
       "nonNativeEnglish": "You were not the light, but was sent that he might tell the truth about about the light.",
@@ -156,7 +156,7 @@ export const JOHN_1: ChapterData = {
     },
     {
       "verseNumber": 9,
-      "kjvText": "That was the true Light, which lighteth every man that cometh into the world.",
+      "kjvText": "[That] was the true Light, which lighteth every man that cometh into the world.",
       "bsbText": "The true light that enlightens everyone was coming into the world.",
       "contemporary": "The true light that enlightens everyone was coming into the world.",
       "nonNativeEnglish": "The true light that enlightens everyone was coming into the world.",
@@ -207,7 +207,7 @@ export const JOHN_1: ChapterData = {
     },
     {
       "verseNumber": 12,
-      "kjvText": "But as many as received him, to them gave he power to become the sons of God, even to them that believe on his name:",
+      "kjvText": "But as many as received him, to them gave he power to become the sons of God, [even] to them that believe on his name:",
       "bsbText": "But as many as received him, to them he gave the right to become God’s children, to those who believe in his name:",
       "contemporary": "But as many as received him, to them he gave the right to become God’s children, to those who believe in his name:",
       "nonNativeEnglish": "But as many as received him, to them he gave the right to become God’s children, to those who believe in his name:",
@@ -294,7 +294,7 @@ export const JOHN_1: ChapterData = {
     },
     {
       "verseNumber": 17,
-      "kjvText": "For the law was given by Moses, but grace and truth came by Jesus Christ.",
+      "kjvText": "For the law was given by Moses, [but] grace and truth came by Jesus Christ.",
       "bsbText": "For the law was given through Moses. Grace and truth were realized through Jesus Christ.",
       "contemporary": "For the law was given through Moses. Grace and truth were realized through Jesus Christ.",
       "nonNativeEnglish": "For the law was given through Moses. Grace and truth were realized through Jesus Christ.",
@@ -315,7 +315,7 @@ export const JOHN_1: ChapterData = {
     },
     {
       "verseNumber": 18,
-      "kjvText": "No man hath seen God at any time; the only begotten Son, which is in the bosom of the Father, he hath declared him.",
+      "kjvText": "No man hath seen God at any time; the only begotten Son, which is in the bosom of the Father, he hath declared [him].",
       "bsbText": "No one has seen God at any time. The one and only Son, who is in the bosom of the Father, he has declared him.",
       "contemporary": "No one has seen God at any time. The one and only Son, who is in the bosom of the Father, he has declared him.",
       "nonNativeEnglish": "No one has seen God at any time. The one and only Son, who is in the bosom of the Father, he has declared him.",
@@ -390,7 +390,7 @@ export const JOHN_1: ChapterData = {
     },
     {
       "verseNumber": 23,
-      "kjvText": "He said, I am the voice of one crying in the wilderness, Make straight the way of the Lord, as said the prophet Esaias.",
+      "kjvText": "He said, I [am] the voice of one crying in the wilderness, Make straight the way of the Lord, as said the prophet Esaias.",
       "bsbText": "He said, “I am the voice of one crying in the wilderness, ‘Make straight the way of the Lord,’ as Isaiah the prophet said.”",
       "contemporary": "He said, \"I am the voice of one crying in the wilderness, ‘Make straight the way of the Lord,’ as Isaiah the prophet said.\"",
       "nonNativeEnglish": "You said, \"I am the voice of one crying in the wilderness, ‘Make straight the way of the Lord,’ as Isaiah the prophet said.\"",
@@ -450,7 +450,7 @@ export const JOHN_1: ChapterData = {
     },
     {
       "verseNumber": 27,
-      "kjvText": "He it is, who coming after me is preferred before me, whose shoe’s latchet I am not worthy to unloose.",
+      "kjvText": "He it is, who coming after me is preferred before me, whose shoe's latchet I am not worthy to unloose.",
       "bsbText": "He is the one who comes after me, who is preferred before me, whose sandal strap I’m not worthy to loosen.”",
       "contemporary": "He is the one who comes after me, who is preferred before me, whose sandal strap I’m not worthy to loosen.\"",
       "nonNativeEnglish": "He is the one who comes after me, who is preferred before me, whose sandal strap I’m not worthy to loosen.\"",
@@ -663,7 +663,7 @@ export const JOHN_1: ChapterData = {
     },
     {
       "verseNumber": 40,
-      "kjvText": "One of the two which heard John speak, and followed him, was Andrew, Simon Peter’s brother.",
+      "kjvText": "One of the two which heard John [speak], and followed him, was Andrew, Simon Peter's brother.",
       "bsbText": "One of the two who heard John, and followed him, was Andrew, Simon Peter’s brother.",
       "contemporary": "One of the two who heard John, and followed him, was Andrew, Simon Peter’s brother.",
       "nonNativeEnglish": "One of the two who heard John, and followed him, was Andrew, Simon Peter’s brother.",

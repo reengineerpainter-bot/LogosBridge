@@ -27,7 +27,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 2,
-      "kjvText": "And the earth was without form, and void; and darkness was upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
+      "kjvText": "And the earth was without form, and void; and darkness [was] upon the face of the deep. And the Spirit of God moved upon the face of the waters.",
       "bsbText": "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters.",
       "contemporary": "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters.",
       "nonNativeEnglish": "The earth was formless and empty. Darkness was on the surface of the deep and God’s Spirit was hovering over the surface of the waters.",
@@ -63,7 +63,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 4,
-      "kjvText": "And God saw the light, that it was good: and God divided the light from the darkness.",
+      "kjvText": "And God saw the light, that [it was] good: and God divided the light from the darkness.",
       "bsbText": "God saw the light, and saw that it was good. God divided the light from the darkness.",
       "contemporary": "God saw the light, and saw that it was good. God divided the light from the darkness.",
       "nonNativeEnglish": "God saw the light, and saw that it was good. God divided the light from the darkness.",
@@ -114,7 +114,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 7,
-      "kjvText": "And God made the firmament, and divided the waters which were under the firmament from the waters which were above the firmament: and it was so.",
+      "kjvText": "And God made the firmament, and divided the waters which [were] under the firmament from the waters which [were] above the firmament: and it was so.",
       "bsbText": "God made the expanse, and divided the waters which were under the expanse from the waters which were above the expanse; and it was so.",
       "contemporary": "God made the expanse, and divided the waters which were under the expanse from the waters which were above the expanse; and it was so.",
       "nonNativeEnglish": "God made the expanse, and divided the waters which were under the expanse from the waters which were above the expanse; and it was so.",
@@ -156,7 +156,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 9,
-      "kjvText": "And God said, Let the waters under the heaven be gathered together unto one place, and let the dry land appear: and it was so.",
+      "kjvText": "And God said, Let the waters under the heaven be gathered together unto one place, and let the dry [land] appear: and it was so.",
       "bsbText": "God said, “Let the waters under the sky be gathered together to one place, and let the dry land appear”; and it was so.",
       "contemporary": "God said, \"Let the waters under the sky be gathered together to one place, and let the dry land appear\"; and it was so.",
       "nonNativeEnglish": "God said, \"Let the waters under the sky be gathered together to one place, and let the dry land appear\"; and it was so.",
@@ -177,7 +177,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 10,
-      "kjvText": "And God called the dry land Earth; and the gathering together of the waters called he Seas: and God saw that it was good.",
+      "kjvText": "And God called the dry [land] Earth; and the gathering together of the waters called he Seas: and God saw that [it was] good.",
       "bsbText": "God called the dry land “earth”, and the gathering together of the waters he called “seas”. God saw that it was good.",
       "contemporary": "God called the dry land \"earth\", and the gathering together of the waters he called \"seas\". God saw that it was good.",
       "nonNativeEnglish": "God called the dry land \"earth\", and the gathering together of the waters he called \"seas\". God saw that it was good.",
@@ -198,7 +198,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 11,
-      "kjvText": "And God said, Let the earth bring forth grass, the herb yielding seed, and the fruit tree yielding fruit after his kind, whose seed is in itself, upon the earth: and it was so.",
+      "kjvText": "And God said, Let the earth bring forth grass, the herb yielding seed, [and] the fruit tree yielding fruit after his kind, whose seed [is] in itself, upon the earth: and it was so.",
       "bsbText": "God said, “Let the earth yield grass, herbs yielding seeds, and fruit trees bearing fruit after their kind, with their seeds in it, on the earth”; and it was so.",
       "contemporary": "God said, \"Let the earth yield grass, herbs yielding seeds, and fruit trees bearing fruit after their kind, with their seeds in it, on the earth\"; and it was so.",
       "nonNativeEnglish": "God said, \"Let the earth yield grass, herbs yielding seeds, and fruit trees bearing fruit after their kind, with their seeds in it, on the earth\"; and it was so.",
@@ -219,7 +219,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 12,
-      "kjvText": "And the earth brought forth grass, and herb yielding seed after his kind, and the tree yielding fruit, whose seed was in itself, after his kind: and God saw that it was good.",
+      "kjvText": "And the earth brought forth grass, [and] herb yielding seed after his kind, and the tree yielding fruit, whose seed [was] in itself, after his kind: and God saw that [it was] good.",
       "bsbText": "The earth yielded grass, herbs yielding seed after their kind, and trees bearing fruit, with their seeds in it, after their kind; and God saw that it was good.",
       "contemporary": "The earth yielded grass, herbs yielding seed after their kind, and trees bearing fruit, with their seeds in it, after their kind; and God saw that it was good.",
       "nonNativeEnglish": "The earth yielded grass, herbs yielding seed after their kind, and trees bearing fruit, with their seeds in it, after their kind; and God saw that it was good.",
@@ -297,7 +297,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 16,
-      "kjvText": "And God made two great lights; the greater light to rule the day, and the lesser light to rule the night: he made the stars also.",
+      "kjvText": "And God made two great lights; the greater light to rule the day, and the lesser light to rule the night: [he made] the stars also.",
       "bsbText": "God made the two great lights: the greater light to rule the day, and the lesser light to rule the night. He also made the stars.",
       "contemporary": "God made the two great lights: the greater light to rule the day, and the lesser light to rule the night. He also made the stars.",
       "nonNativeEnglish": "God made the two great lights: the greater light to rule the day, and the lesser light to rule the night. He also made the stars.",
@@ -339,7 +339,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 18,
-      "kjvText": "And to rule over the day and over the night, and to divide the light from the darkness: and God saw that it was good.",
+      "kjvText": "And to rule over the day and over the night, and to divide the light from the darkness: and God saw that [it was] good.",
       "bsbText": "and to rule over the day and over the night, and to divide the light from the darkness. God saw that it was good.",
       "contemporary": "and to rule over the day and over the night, and to divide the light from the darkness. God saw that it was good.",
       "nonNativeEnglish": "And to rule over the day and over the night, and to divide the light from the darkness. God saw that it was good.",
@@ -369,7 +369,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 20,
-      "kjvText": "And God said, Let the waters bring forth abundantly the moving creature that hath life, and fowl that may fly above the earth in the open firmament of heaven.",
+      "kjvText": "And God said, Let the waters bring forth abundantly the moving creature that hath life, and fowl [that] may fly above the earth in the open firmament of heaven.",
       "bsbText": "God said, “Let the waters abound with living creatures, and let birds fly above the earth in the open expanse of the sky.”",
       "contemporary": "God said, \"Let the waters abound with living creatures, and let birds fly above the earth in the open expanse of the sky.\"",
       "nonNativeEnglish": "God said, \"Let the waters abound with living creatures, and let birds fly above the earth in the open expanse of the sky.\"",
@@ -390,7 +390,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 21,
-      "kjvText": "And God created great whales, and every living creature that moveth, which the waters brought forth abundantly, after their kind, and every winged fowl after his kind: and God saw that it was good.",
+      "kjvText": "And God created great whales, and every living creature that moveth, which the waters brought forth abundantly, after their kind, and every winged fowl after his kind: and God saw that [it was] good.",
       "bsbText": "God created the large sea creatures and every living creature that moves, with which the waters swarmed, after their kind, and every winged bird after its kind. God saw that it was good.",
       "contemporary": "God created the large sea creatures and every living creature that moves, with which the waters swarmed, after their kind, and every winged bird after its kind. God saw that it was good.",
       "nonNativeEnglish": "God created the large sea creatures and every living creature that moves, with which the waters swarmed, after their kind, and every winged bird after its kind. God saw that it was good.",
@@ -468,7 +468,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 25,
-      "kjvText": "And God made the beast of the earth after his kind, and cattle after their kind, and every thing that creepeth upon the earth after his kind: and God saw that it was good.",
+      "kjvText": "And God made the beast of the earth after his kind, and cattle after their kind, and every thing that creepeth upon the earth after his kind: and God saw that [it was] good.",
       "bsbText": "God made the animals of the earth after their kind, and the livestock after their kind, and everything that creeps on the ground after its kind. God saw that it was good.",
       "contemporary": "God made the animals of the earth after their kind, and the livestock after their kind, and everything that creeps on the ground after its kind. God saw that it was good.",
       "nonNativeEnglish": "God made the animals of the earth after their kind, and the livestock after their kind, and everything that creeps on the ground after its kind. God saw that it was good.",
@@ -510,7 +510,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 27,
-      "kjvText": "So God created man in his own image, in the image of God created he him; male and female created he them.",
+      "kjvText": "So God created man in his [own] image, in the image of God created he him; male and female created he them.",
       "bsbText": "God created man in his own image. In God’s image he created him; male and female he created them.",
       "contemporary": "God created man in his own image. In God’s image he created him; male and female he created them.",
       "nonNativeEnglish": "God created man in his own image. In God’s image he created him; male and female he created them.",
@@ -552,7 +552,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 29,
-      "kjvText": "And God said, Behold, I have given you every herb bearing seed, which is upon the face of all the earth, and every tree, in the which is the fruit of a tree yielding seed; to you it shall be for meat.",
+      "kjvText": "And God said, Behold, I have given you every herb bearing seed, which [is] upon the face of all the earth, and every tree, in the which [is] the fruit of a tree yielding seed; to you it shall be for meat.",
       "bsbText": "God said, “Behold, I have given you every herb yielding seed, which is on the surface of all the earth, and every tree, which bears fruit yielding seed. It will be your food.",
       "contemporary": "God said, \"look, I have given you every herb yielding seed, which is on the surface of all the earth, and every tree, which bears fruit yielding seed. It will be your food.",
       "nonNativeEnglish": "God said, \"look, I have given you every herb yielding seed, which is on the surface of all the earth, and every tree, which bears fruit yielding seed. It will be your food.",
@@ -573,7 +573,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 30,
-      "kjvText": "And to every beast of the earth, and to every fowl of the air, and to every thing that creepeth upon the earth, wherein there is life, I have given every green herb for meat: and it was so.",
+      "kjvText": "And to every beast of the earth, and to every fowl of the air, and to every thing that creepeth upon the earth, wherein [there is] life, [I have given] every green herb for meat: and it was so.",
       "bsbText": "To every animal of the earth, and to every bird of the sky, and to everything that creeps on the earth, in which there is life, I have given every green herb for food;” and it was so.",
       "contemporary": "To every animal of the earth, and to every bird of the sky, and to everything that creeps on the earth, in which there is life, I have given every green herb for food;\" and it was so.",
       "nonNativeEnglish": "To every animal of the earth, and to every bird of the sky, and to everything that creeps on the earth, in which there is life, I have given every green herb for food;\" and it was so.",
@@ -594,7 +594,7 @@ export const GENESIS_1: ChapterData = {
     },
     {
       "verseNumber": 31,
-      "kjvText": "And God saw every thing that he had made, and, behold, it was very good. And the evening and the morning were the sixth day.",
+      "kjvText": "And God saw every thing that he had made, and, behold, [it was] very good. And the evening and the morning were the sixth day.",
       "bsbText": "God saw everything that he had made, and, behold, it was very good. There was evening and there was morning, a sixth day.",
       "contemporary": "God saw everything that he had made, and, look, it was very good. There was evening and there was morning, a sixth day.",
       "nonNativeEnglish": "God saw everything that he had made, and, look, it was very good. There was evening and there was morning, a sixth day.",

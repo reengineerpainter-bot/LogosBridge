@@ -1,0 +1,13 @@
+# Railway ignore file
+node_modules/
+android/
+build/
+dist/
+dist-electron/
+release/
+*.apk
+*.exe
+*.log
+.git/
+.gemini/
+

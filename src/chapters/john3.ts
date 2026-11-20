@@ -51,7 +51,7 @@ export const JOHN_3: ChapterData = {
     },
     {
       "verseNumber": 4,
-      "kjvText": "Nicodemus saith unto him, How can a man be born when he is old? can he enter the second time into his mother’s womb, and be born?",
+      "kjvText": "Nicodemus saith unto him, How can a man be born when he is old? can he enter the second time into his mother's womb, and be born?",
       "bsbText": "Nicodemus said to him, “How can a man be born when he is old? Can he enter a second time into his mother’s womb, and be born?”",
       "contemporary": "Nicodemus said to him, \"How can a man be born when he is old? Can he enter a second time into his mother’s womb, and be born?\"",
       "nonNativeEnglish": "Nicodemus said to him, \"How can a man be born when he is old? Can he enter a second time into his mother’s womb, and be born?\"",
@@ -66,7 +66,7 @@ export const JOHN_3: ChapterData = {
     },
     {
       "verseNumber": 5,
-      "kjvText": "Jesus answered, Verily, verily, I say unto thee, Except a man be born of water and of the Spirit, he cannot enter into the kingdom of God.",
+      "kjvText": "Jesus answered, Verily, verily, I say unto thee, Except a man be born of water and [of] the Spirit, he cannot enter into the kingdom of God.",
       "bsbText": "Jesus answered, “Most certainly I tell you, unless one is born of water and spirit, he can’t enter into God’s Kingdom.",
       "contemporary": "Jesus answered, \"Most certainly I tell you, unless one is born of water and spirit, he can’t enter into God’s Kingdom.",
       "nonNativeEnglish": "Jesus answered, \"Most certainly I tell you, unless one is born of water and spirit, he can’t enter into God’s Kingdom.",
@@ -177,7 +177,7 @@ export const JOHN_3: ChapterData = {
     },
     {
       "verseNumber": 12,
-      "kjvText": "If I have told you earthly things, and ye believe not, how shall ye believe, if I tell you of heavenly things?",
+      "kjvText": "If I have told you earthly things, and ye believe not, how shall ye believe, if I tell you [of] heavenly things?",
       "bsbText": "If I told you earthly things and you don’t believe, how will you believe if I tell you heavenly things?",
       "contemporary": "If I told you earthly things and you don’t believe, how will you believe if I tell you heavenly things?",
       "nonNativeEnglish": "If I told you earthly things and you don’t believe, how will you believe if I tell you heavenly things?",
@@ -198,7 +198,7 @@ export const JOHN_3: ChapterData = {
     },
     {
       "verseNumber": 13,
-      "kjvText": "And no man hath ascended up to heaven, but he that came down from heaven, even the Son of man which is in heaven.",
+      "kjvText": "And no man hath ascended up to heaven, but he that came down from heaven, [even] the Son of man which is in heaven.",
       "bsbText": "No one has ascended into heaven, but he who descended out of heaven, the Son of Man, who is in heaven.",
       "contemporary": "No one has ascended into heaven, but he who descended out of heaven, the Son of Man, who is in heaven.",
       "nonNativeEnglish": "No one has ascended into heaven, but he who descended out of heaven, the Son of Man, who is in heaven.",
@@ -414,7 +414,7 @@ export const JOHN_3: ChapterData = {
     },
     {
       "verseNumber": 25,
-      "kjvText": "Then there arose a question between some of John’s disciples and the Jews about purifying.",
+      "kjvText": "Then there arose a question between [some] of John's disciples and the Jews about purifying.",
       "bsbText": "There arose therefore a questioning on the part of John’s disciples with some Jews about purification.",
       "contemporary": "There arose therefore a questioning on the part of John’s disciples with some Jews about purification.",
       "nonNativeEnglish": "There arose therefore a questioning on the part of John’s disciples with some Jews about washing clean.",
@@ -429,7 +429,7 @@ export const JOHN_3: ChapterData = {
     },
     {
       "verseNumber": 26,
-      "kjvText": "And they came unto John, and said unto him, Rabbi, he that was with thee beyond Jordan, to whom thou barest witness, behold, the same baptizeth, and all men come to him.",
+      "kjvText": "And they came unto John, and said unto him, Rabbi, he that was with thee beyond Jordan, to whom thou barest witness, behold, the same baptizeth, and all [men] come to him.",
       "bsbText": "They came to John, and said to him, “Rabbi, he who was with you beyond the Jordan, to whom you have testified, behold, the same baptizes, and everyone is coming to him.”",
       "contemporary": "They came to John, and said to him, \"Rabbi, he who was with you beyond the Jordan, to whom you have testified, look, the same baptizes, and everyone is coming to him.\"",
       "nonNativeEnglish": "They came to John, and said to him, \"Rabbi, he who was with you beyond the Jordan, to whom you have told the truth about, look, the same baptizes, and everyone is coming to him.\"",
@@ -480,7 +480,7 @@ export const JOHN_3: ChapterData = {
     },
     {
       "verseNumber": 29,
-      "kjvText": "He that hath the bride is the bridegroom: but the friend of the bridegroom, which standeth and heareth him, rejoiceth greatly because of the bridegroom’s voice: this my joy therefore is fulfilled.",
+      "kjvText": "He that hath the bride is the bridegroom: but the friend of the bridegroom, which standeth and heareth him, rejoiceth greatly because of the bridegroom's voice: this my joy therefore is fulfilled.",
       "bsbText": "He who has the bride is the bridegroom; but the friend of the bridegroom, who stands and hears him, rejoices greatly because of the bridegroom’s voice. This, my joy, therefore is made full.",
       "contemporary": "He who has the bride is the bridegroom; but the friend of the bridegroom, who stands and hears him, rejoices greatly because of the bridegroom’s voice. This, my joy, therefore is made full.",
       "nonNativeEnglish": "He who has the bride is the bridegroom; but the friend of the bridegroom, who stands and hears him, rejoices greatly because of the bridegroom’s voice. This, my joy, therefore is made full.",
@@ -495,7 +495,7 @@ export const JOHN_3: ChapterData = {
     },
     {
       "verseNumber": 30,
-      "kjvText": "He must increase, but I must decrease.",
+      "kjvText": "He must increase, but I [must] decrease.",
       "bsbText": "He must increase, but I must decrease.",
       "contemporary": "He must increase, but I must decrease.",
       "nonNativeEnglish": "You must increase, but I must decrease.",
@@ -561,7 +561,7 @@ export const JOHN_3: ChapterData = {
     },
     {
       "verseNumber": 34,
-      "kjvText": "For he whom God hath sent speaketh the words of God: for God giveth not the Spirit by measure unto him.",
+      "kjvText": "For he whom God hath sent speaketh the words of God: for God giveth not the Spirit by measure [unto him].",
       "bsbText": "For he whom God has sent speaks the words of God; for God gives the Spirit without measure.",
       "contemporary": "For he whom God has sent speaks the words of God; for God gives the Spirit without measure.",
       "nonNativeEnglish": "For he whom God has sent speaks the words of God; for God gives the Spirit without measure.",

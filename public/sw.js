@@ -1,10 +1,12 @@
 // Minimal Offline/Installation Service Worker for Personalized Bible Study PWA
-const CACHE_NAME = 'personalised-bible-v2';
-const BIBLE_CACHE = 'bible-translations-v1';
+const CACHE_NAME = 'personalised-bible-v5';
+const BIBLE_CACHE = 'bible-translations-v4';
 const ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/data/kjv.json?v=1769_v3',
+  '/data/kjv.json',
   '/icon.svg',
   '/src/main.tsx',
   '/src/App.tsx',

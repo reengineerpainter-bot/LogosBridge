@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Premium Side-by-Side Lexical Pill — Preview Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'sans-serif'],
+            serif: ['Playfair Display', 'Georgia', 'serif'],
+            cinzel: ['Cinzel', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+    .scrollbar-none::-webkit-scrollbar { display: none; }
+    .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+    .pill-blur {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center p-3 sm:p-6 transition-colors duration-300">
+
+  <!-- ======================================================== -->
+  <!-- TOP CONTROL HEADER                                       -->
+  <!-- ======================================================== -->
+  <header class="w-full max-w-xl bg-slate-900 border border-slate-800 rounded-2xl p-3 mb-3 flex items-center justify-between gap-2 shadow-lg">
+    <div class="flex items-center gap-2">
+      <span class="w-7 h-7 rounded-lg bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center font-bold text-xs">
+        ✦
+      </span>
+      <div>
+        <h1 class="text-xs font-bold font-mono tracking-tight text-white flex items-center gap-1.5">
+          Dual-Track Lexical Pill <span class="text-[9px] px-1.5 py-0.2 rounded bg-amber-500/20 text-amber-400 font-mono uppercase">Side-by-Side</span>
+        </h1>
+        <p class="text-[10px] text-slate-400">System Root Action & Personal Meaning in One Unified Pill</p>
+      </div>
+    </div>
+
+    <!-- Quick Controls -->
+    <div class="flex items-center gap-1.5">
+      <button id="themeToggleBtn" onclick="toggleTheme()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-[11px] font-medium text-slate-200 border border-slate-700 cursor-pointer">
+        <span id="themeIcon">☀️</span>
+      </button>
+      <button onclick="resetDemoData()" class="px-2 py-1 rounded-lg bg-rose-950/40 hover:bg-rose-900/60 text-rose-300 border border-rose-800/40 text-[10px] font-mono cursor-pointer" title="Reset Data">
+        ↺
+      </button>
+    </div>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- COMPACT WORKSPACE (MOBILE FIRST)                         -->
+  <!-- ======================================================== -->
+  <main class="w-full max-w-xl flex flex-col gap-3">
+
+    <!-- STUDY TAB ROW (INTERLINEAR ROW REPLICA) -->
+    <section id="studyContainer" class="bg-[#111622] text-white rounded-2xl p-4 border border-slate-800 shadow-2xl space-y-3">
+      
+      <!-- ======================================================== -->
+      <!-- ⭐ 1. UNIFIED SIDE-BY-SIDE ROOT ACTION & PERSONAL PILL   -->
+      <!-- ======================================================== -->
+      <div class="pb-2.5 border-b border-slate-800/90">
+        
+        <div class="flex items-center gap-1.5 overflow-x-auto whitespace-nowrap scrollbar-none py-1">
+          
+          <!-- Stationary Verse Number Indicator -->
+          <span class="w-5 h-5 rounded bg-amber-500/10 text-amber-400 font-mono font-bold text-[11px] flex items-center justify-center shrink-0 border border-amber-500/30">
+            1
+          </span>
+
+          <!-- Strong's Code (Clickable to open Modal) -->
+          <button 
+            type="button" 
+            onclick="openWordStudyModal()"
+            class="font-mono font-bold text-xs text-amber-400 hover:text-amber-300 flex items-center gap-0.5 shrink-0 cursor-pointer active:scale-95 px-1 py-0.5 rounded hover:bg-amber-500/10" 
+            title="Open 4-Tier Strong's Modal"
+          >
+            <span id="activeStrongsCode">G3056</span>
+            <span class="text-[10px] opacity-70">↗</span>
+          </button>
+
+          <!-- Divider -->
+          <span class="text-zinc-700 select-none text-[11px] shrink-0">•</span>
+
+          <!-- TRACK 1: SYSTEM ROOT ACTION (OFFICIAL AUTHORITY) -->
+          <div 
+            class="flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-lg bg-slate-900/90 border border-slate-800 text-xs font-serif italic text-slate-300 font-medium"
+            title="Authoritative System Root Action"
+          >
+            <span class="font-mono text-[9px] text-slate-500 font-bold uppercase not-italic tracking-wider mr-0.5">Sys:</span>
+            <span id="officialRootAction" class="truncate max-w-[170px] sm:max-w-[210px]">
+              divine communication • living expression
+            </span>
+          </div>
+
+          <!-- Vertical Micro Separator -->
+          <span class="w-px h-3.5 bg-slate-700 shrink-0"></span>
+
+          <!-- TRACK 2: PERSONAL LEXICAL MEANING (SIDE-BY-SIDE) -->
+          <button 
+            type="button"
+            id="personalPillBtn"
+            onclick="toggleInlineQuickEdit()"
+            class="flex items-center gap-1.5 shrink-0 px-2 py-0.5 rounded-lg border text-xs font-serif italic transition-all cursor-pointer active:scale-95 bg-amber-500/15 border-amber-500/40 text-amber-200 hover:bg-amber-500/25"
+            title="Your personal attached meaning (Tap to edit or add)"
+          >
+            <span class="font-mono text-[9px] text-amber-400 font-bold uppercase not-italic tracking-wider flex items-center gap-0.5">
+              <span>✦</span> Mine:
+            </span>
+            <span id="personalPillText" class="truncate max-w-[160px] sm:max-w-[200px] font-semibold">
+              "Divine blueprint"
+            </span>
+            <span class="text-[10px] text-amber-400/70 not-italic">✎</span>
+          </button>
+
+        </div>
+
+        <!-- INLINE POP-DOWN QUICK EDIT FIELD (Slides down when tapping the Mine pill) -->
+        <div id="quickEditRow" class="hidden mt-2 pt-2 border-t border-slate-800/60 flex items-center gap-1.5">
+          <input 
+            id="quickEditInput"
+            type="text" 
+            placeholder="Type your personal meaning for this word..."
+            onkeydown="if(event.key==='Enter') saveQuickEdit()"
+            class="flex-1 text-xs px-2.5 py-1.5 rounded-lg bg-slate-950 border border-amber-500/40 text-amber-200 placeholder:text-slate-600 focus:outline-none focus:border-amber-400 font-serif italic"
+          />
+          <button 
+            type="button"
+            onclick="saveQuickEdit()"
+            class="px-3 py-1.5 text-xs font-bold rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 transition-all active:scale-95 cursor-pointer shrink-0"
+          >
+            Save
+          </button>
+          <button 
+            type="button"
+            onclick="toggleInlineQuickEdit()"
+            class="px-2 py-1.5 text-xs rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-400 cursor-pointer shrink-0"
+          >
+            ✕
+          </button>
+        </div>
+
+      </div>
+
+      <!-- 2. SCRIPTURE TEXT (KJV ENGLISH — CLICKABLE WORDS) -->
+      <div class="space-y-1">
+        <div class="flex items-center justify-between text-[10px] font-mono text-slate-500 uppercase tracking-wider">
+          <span>Scripture (Click English words)</span>
+          <span class="text-amber-400/80 font-sans normal-case">active: <b id="activeWordLabel" class="underline">Word</b></span>
+        </div>
+
+        <div id="englishScriptureContainer" class="text-lg sm:text-xl font-serif leading-relaxed select-none tracking-wide text-slate-200">
+          <!-- Rendered with interactive span tokens -->
+        </div>
+      </div>
+
+    </section>
+
+    <!-- 3. COMPACT DIRECTORY -->
+    <section class="bg-slate-900 border border-slate-800 rounded-2xl p-3 shadow-md space-y-2">
+      <div class="flex items-center justify-between text-[11px] font-mono text-slate-400">
+        <span class="flex items-center gap-1 font-bold uppercase tracking-wider">
+          <span>🏷️</span> Stored Word Meanings (<span id="countBadge" class="text-amber-400">1</span>)
+        </span>
+        <span class="text-[10px] text-slate-500 font-mono">logos_user_attached_lexicon</span>
+      </div>
+
+      <div id="userMeaningsList" class="space-y-1.5 text-xs">
+        <!-- Rendered dynamically -->
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- 4-TIER STRONG'S MODAL REPLICA WITH SIDE-BY-SIDE HEADER   -->
+  <!-- ======================================================== -->
+  <div id="wordStudyModal" class="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 hidden bg-black/70 backdrop-blur-xs">
+    <div id="modalSheet" class="w-full max-w-lg max-h-[85vh] bg-[#111622] text-white rounded-t-3xl sm:rounded-2xl p-4 sm:p-5 overflow-y-auto border border-slate-800 shadow-2xl space-y-4">
+      
+      <!-- Modal Top Bar -->
+      <div class="flex items-center justify-between pb-2 border-b border-slate-800">
+        <div class="flex items-center gap-2">
+          <span id="modalStrongsBadge" class="text-xs font-mono font-bold px-2 py-0.5 rounded bg-amber-500/10 text-amber-400 border border-amber-500/30">
+            G3056
+          </span>
+          <span class="text-sm font-serif italic text-white font-bold" id="modalOriginalWord">λόγος</span>
+          <span class="text-[11px] font-mono text-slate-500">• John 1:1</span>
+        </div>
+        <button onclick="closeWordStudyModal()" class="w-6 h-6 rounded-full bg-slate-800 text-slate-400 hover:text-white flex items-center justify-center text-xs cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- ⭐ SIDE-BY-SIDE COMPARISON CARD INSIDE MODAL -->
+      <div class="p-3 rounded-xl bg-slate-900/90 border border-slate-800 space-y-2">
+        <div class="flex items-center justify-between text-[10px] font-mono uppercase text-slate-400 font-bold">
+          <span class="flex items-center gap-1 text-amber-400">⚖️ Dual-Track Lexical Comparison</span>
+          <span class="text-slate-500 normal-case font-normal">Side-by-Side</span>
+        </div>
+        
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <!-- Left Track: System DB -->
+          <div class="p-2.5 rounded-lg bg-slate-950 border border-slate-800 space-y-1">
+            <span class="text-[9px] font-mono text-slate-400 uppercase font-bold flex items-center gap-1">
+              <span>🏛️</span> System Root
+            </span>
+            <div id="modalSystemActionDisplay" class="text-[11px] font-serif italic text-slate-200 leading-snug">
+              "divine communication • living expression"
+            </div>
+          </div>
+          <!-- Right Track: Personal Meaning -->
+          <div class="p-2.5 rounded-lg bg-amber-500/15 border border-amber-500/30 space-y-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[9px] font-mono text-amber-300 uppercase font-bold flex items-center gap-1">
+                <span>✦</span> My Gloss
+              </span>
+              <button onclick="editFromModal()" class="text-[10px] text-amber-400 hover:underline">✎</button>
+            </div>
+            <div id="modalCustomMeaningDisplay" class="text-[11px] font-serif italic text-amber-200 font-bold leading-snug">
+              "Divine blueprint"
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Authoritative Core Meaning (100% Intact) -->
+      <div class="space-y-1">
+        <div class="text-[10px] font-mono uppercase text-slate-400 font-bold">Authoritative Concordance</div>
+        <p class="text-xs font-serif italic text-slate-300 leading-relaxed">
+          "A word, speech, divine utterance; the rational principle of the cosmos."
+        </p>
+      </div>
+
+      <!-- Macro Anatomy (100% Intact) -->
+      <div class="space-y-1 pt-1 border-t border-slate-800">
+        <div class="text-[10px] font-mono uppercase text-slate-400 font-bold">Macro Anatomy</div>
+        <p class="text-xs text-slate-300 leading-relaxed font-sans">
+          <b class="text-white">Subject:</b> The Word. <b class="text-white">Action:</b> Eternally existed with and as God.
+        </p>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-5 z-[100] px-3.5 py-1.5 rounded-xl bg-amber-500 text-slate-950 font-bold text-xs shadow-xl flex items-center gap-1.5 transform translate-y-16 opacity-0 transition-all pointer-events-none">
+    <span id="toastIcon">✓</span>
+    <span id="toastMsg">Saved</span>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- JAVASCRIPT LOGIC                                         -->
+  <!-- ======================================================== -->
+  <script>
+    const STORAGE_KEY = 'logos_user_attached_lexicon';
+
+    // Interactive tokens in John 1:1
+    const KJV_VERSE_TOKENS = [
+      { text: "In", strongs: "G1722", greek: "Ἐν", action: "in • within • at" },
+      { text: "the", strongs: "G3588", greek: "ὁ", action: "definite article" },
+      { text: "beginning", strongs: "G746", greek: "ἀρχῇ", action: "origin • first cause • primary rule" },
+      { text: "was", strongs: "G2258", greek: "ἦν", action: "continually existed" },
+      { text: "the", strongs: "G3588", greek: "ὁ", action: "definite article" },
+      { text: "Word,", strongs: "G3056", greek: "λόγος", action: "divine communication • living expression" },
+      { text: "and", strongs: "G2532", greek: "καὶ", action: "and • also • even" },
+      { text: "the", strongs: "G3588", greek: "ὁ", action: "definite article" },
+      { text: "Word", strongs: "G3056", greek: "λόγος", action: "divine communication • living expression" },
+      { text: "was", strongs: "G2258", greek: "ἦν", action: "continually existed" },
+      { text: "with", strongs: "G4314", greek: "πρὸς", action: "face to face with • in union with" },
+      { text: "God,", strongs: "G2316", greek: "θεόν", action: "God • Supreme Creator" },
+      { text: "and", strongs: "G2532", greek: "καὶ", action: "and • also" },
+      { text: "the", strongs: "G3588", greek: "ὁ", action: "definite article" },
+      { text: "Word", strongs: "G3056", greek: "λόγος", action: "divine communication • living expression" },
+      { text: "was", strongs: "G2258", greek: "ἦν", action: "continually existed" },
+      { text: "God.", strongs: "G2316", greek: "θεός", action: "God • Supreme Creator" }
+    ];
+
+    let selectedTokenIndex = 5; // Default: "Word," (G3056)
+    let currentTheme = 'dark';
+    let isQuickEditOpen = false;
+
+    function getStoredLexicon() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) return JSON.parse(raw);
+      } catch (e) {
+        console.error(e);
+      }
+      return {
+        "G3056": "Divine blueprint"
+      };
+    }
+
+    function saveStoredLexicon(data) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      renderUI();
+    }
+
+    // Render Scripture with clickable English tokens
+    function renderEnglishScripture() {
+      const container = document.getElementById('englishScriptureContainer');
+      const dict = getStoredLexicon();
+
+      container.innerHTML = KJV_VERSE_TOKENS.map((token, idx) => {
+        const isSelected = idx === selectedTokenIndex;
+        const hasCustom = !!dict[token.strongs];
+
+        return `
+          <span 
+            onclick="selectToken(${idx})"
+            class="inline-block px-1 py-0.5 rounded cursor-pointer transition-all duration-150 relative ${
+              isSelected 
+                ? 'bg-amber-500/20 text-amber-300 font-bold underline decoration-amber-500' 
+                : 'hover:text-amber-400 hover:bg-slate-800/60'
+            }"
+            title="${token.text} → Strong's ${token.strongs} (${token.greek}): ${token.action}"
+          >
+            ${token.text}
+            ${hasCustom ? '<span class="inline-block w-1.5 h-1.5 rounded-full bg-amber-400 absolute top-0.5 right-0.5 shadow-sm"></span>' : ''}
+          </span>
+        `;
+      }).join(' ');
+    }
+
+    function selectToken(idx) {
+      selectedTokenIndex = idx;
+      if (isQuickEditOpen) toggleInlineQuickEdit(false);
+      renderUI();
+    }
+
+    function toggleInlineQuickEdit(forceState = null) {
+      isQuickEditOpen = forceState !== null ? forceState : !isQuickEditOpen;
+      const row = document.getElementById('quickEditRow');
+      const input = document.getElementById('quickEditInput');
+      const activeToken = KJV_VERSE_TOKENS[selectedTokenIndex];
+      const dict = getStoredLexicon();
+
+      if (isQuickEditOpen) {
+        row.classList.remove('hidden');
+        input.value = dict[activeToken.strongs] || '';
+        input.placeholder = `My meaning for '${activeToken.text.replace(/[,.]/g, '')}' (${activeToken.strongs})...`;
+        input.focus();
+      } else {
+        row.classList.add('hidden');
+      }
+    }
+
+    function saveQuickEdit() {
+      const input = document.getElementById('quickEditInput');
+      const text = input.value.trim();
+      const activeToken = KJV_VERSE_TOKENS[selectedTokenIndex];
+      const dict = getStoredLexicon();
+
+      if (text) {
+        dict[activeToken.strongs] = text;
+        showToast('Saved to ' + activeToken.strongs);
+      } else {
+        delete dict[activeToken.strongs];
+        showToast('Cleared personal meaning', '✕');
+      }
+
+      saveStoredLexicon(dict);
+      toggleInlineQuickEdit(false);
+    }
+
+    function renderUI() {
+      const activeToken = KJV_VERSE_TOKENS[selectedTokenIndex];
+      const dict = getStoredLexicon();
+      const currentMeaning = dict[activeToken.strongs];
+
+      // Update Header Pill
+      document.getElementById('activeStrongsCode').textContent = activeToken.strongs;
+      document.getElementById('officialRootAction').textContent = activeToken.action;
+      document.getElementById('activeWordLabel').textContent = `${activeToken.text.replace(/[,.]/g, '')} (${activeToken.strongs})`;
+
+      const pillBtn = document.getElementById('personalPillBtn');
+      const pillText = document.getElementById('personalPillText');
+
+      if (currentMeaning) {
+        pillText.textContent = `"${currentMeaning}"`;
+        pillBtn.className = "flex items-center gap-1.5 shrink-0 px-2 py-0.5 rounded-lg border text-xs font-serif italic transition-all cursor-pointer active:scale-95 bg-amber-500/15 border-amber-500/40 text-amber-200 hover:bg-amber-500/25";
+      } else {
+        pillText.textContent = "+ Add Gloss";
+        pillBtn.className = "flex items-center gap-1.5 shrink-0 px-2 py-0.5 rounded-lg border border-dashed text-xs font-sans transition-all cursor-pointer active:scale-95 bg-slate-900 border-slate-700 text-slate-400 hover:border-amber-500/50 hover:text-amber-300";
+      }
+
+      // Update Directory List
+      const listEl = document.getElementById('userMeaningsList');
+      const keys = Object.keys(dict);
+      document.getElementById('countBadge').textContent = keys.length;
+
+      if (keys.length === 0) {
+        listEl.innerHTML = `<div class="p-2 text-center text-slate-500 text-[11px] font-mono">No personal meanings attached yet. Tap "+ Add Gloss" in the pill above!</div>`;
+      } else {
+        listEl.innerHTML = keys.map(k => `
+          <div class="flex items-center justify-between p-2 rounded-lg bg-slate-950/70 border border-slate-800">
+            <div class="flex items-center gap-1.5 min-w-0">
+              <span class="font-mono font-bold text-amber-400 text-xs">${k}</span>
+              <span class="text-zinc-600">•</span>
+              <span class="font-serif italic text-amber-200 text-xs truncate">"${dict[k]}"</span>
+            </div>
+            <button onclick="removeLexiconKey('${k}')" class="text-slate-400 hover:text-rose-400 font-mono text-xs px-1 cursor-pointer">✕</button>
+          </div>
+        `).join('');
+      }
+
+      renderEnglishScripture();
+    }
+
+    function removeLexiconKey(k) {
+      const dict = getStoredLexicon();
+      delete dict[k];
+      saveStoredLexicon(dict);
+      showToast('Deleted ' + k, '✕');
+    }
+
+    function resetDemoData() {
+      localStorage.removeItem(STORAGE_KEY);
+      renderUI();
+      showToast('Reset to default', '↺');
+    }
+
+    // Modal Operations
+    function openWordStudyModal() {
+      const activeToken = KJV_VERSE_TOKENS[selectedTokenIndex];
+      const dict = getStoredLexicon();
+
+      document.getElementById('modalStrongsBadge').textContent = activeToken.strongs;
+      document.getElementById('modalOriginalWord').textContent = activeToken.greek;
+      document.getElementById('modalSystemActionDisplay').textContent = `"${activeToken.action}"`;
+      document.getElementById('modalCustomMeaningDisplay').textContent = dict[activeToken.strongs] ? `"${dict[activeToken.strongs]}"` : '+ Tap to add';
+
+      document.getElementById('wordStudyModal').classList.remove('hidden');
+    }
+
+    function closeWordStudyModal() {
+      document.getElementById('wordStudyModal').classList.add('hidden');
+    }
+
+    function editFromModal() {
+      closeWordStudyModal();
+      toggleInlineQuickEdit(true);
+    }
+
+    function toggleTheme() {
+      const body = document.body;
+      const studyContainer = document.getElementById('studyContainer');
+      const icon = document.getElementById('themeIcon');
+
+      if (currentTheme === 'dark') {
+        currentTheme = 'light';
+        body.className = 'bg-stone-100 text-stone-900 min-h-screen flex flex-col items-center p-3 sm:p-6 transition-colors duration-300';
+        studyContainer.className = 'bg-white text-stone-900 rounded-2xl p-4 border border-stone-200 shadow-xl space-y-3';
+        icon.textContent = '🌙';
+      } else {
+        currentTheme = 'dark';
+        body.className = 'bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center p-3 sm:p-6 transition-colors duration-300';
+        studyContainer.className = 'bg-[#111622] text-white rounded-2xl p-4 border border-slate-800 shadow-2xl space-y-3';
+        icon.textContent = '☀️';
+      }
+    }
+
+    function showToast(msg, icon = '✓') {
+      const toast = document.getElementById('toast');
+      document.getElementById('toastMsg').textContent = msg;
+      document.getElementById('toastIcon').textContent = icon;
+      toast.classList.remove('translate-y-16', 'opacity-0');
+      setTimeout(() => {
+        toast.classList.add('translate-y-16', 'opacity-0');
+      }, 2000);
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      renderUI();
+    });
+  </script>
+</body>
+</html>

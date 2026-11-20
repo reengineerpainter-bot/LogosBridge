@@ -1,11 +1,15 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Literata:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Caveat:wght@600;700&family=Inter:wght@300;400;500;600;700;800;900&family=Literata:ital,opsz,wght@0,7..72,400;0,7..72,500;0,7..72,600;0,7..72,700;0,7..72,800;0,7..72,900;1,7..72,400;1,7..72,500&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,500;0,8..60,600;0,8..60,700;0,8..60,800;0,8..60,900;1,8..60,400;1,8..60,600&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;700;800&display=swap');
 @import "tailwindcss";
+
+@custom-variant dark (&:is(.dark, .dark *));
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-serif: "Literata", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
+  --font-untitled: "Untitled Serif", "Source Serif 4", "Literata", Georgia, Cambria, "Times New Roman", serif;
   --font-display: "Playfair Display", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-handwriting: "Caveat", cursive;
 
   /* Dynamically routed cyan/accent color variables for user theme selection */
   --color-cyan-50: var(--cyan-50, #ecfeff);
@@ -19,6 +23,38 @@
   --color-cyan-800: var(--cyan-800, #155e75);
   --color-cyan-900: var(--cyan-900, #164e63);
   --color-cyan-950: var(--cyan-950, #083344);
+
+  /* Material Design 3 (M3) Warm Roasted Espresso Dark Palette */
+  --color-m3-surface: #191512;
+  --color-m3-surface-dim: #14100e;
+  --color-m3-surface-container-low: #1e1916;
+  --color-m3-surface-container: #241e1a;
+  --color-m3-surface-container-high: #2b231f;
+  --color-m3-surface-container-highest: #332b25;
+  --color-m3-primary: #f59e0b;
+  --color-m3-on-primary: #191512;
+  --color-m3-primary-container: #3d2c18;
+  --color-m3-on-primary-container: #fde68a;
+  --color-m3-secondary-container: #2d2520;
+  --color-m3-on-secondary-container: #dcd3c6;
+  --color-m3-outline: #483a30;
+  --color-m3-outline-variant: #382e27;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a, [role="button"] {
+  touch-action: manipulation;
+}
+
+html, body, #root {
+  background-color: #ffffff;
+}
+
+html.dark, html.dark body, html.dark #root {
+  background-color: #191512;
 }
 
 body {
@@ -31,26 +67,38 @@ body {
   /* Tailwind utility classes applied to App container will handle background/text colors */
 }
 
-/* Premium custom scrollbar */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: transparent;
-}
-::-webkit-scrollbar-thumb {
-  background: rgba(100, 116, 139, 0.2);
-  border-radius: 10px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: rgba(100, 116, 139, 0.4);
+.font-untitled {
+  font-family: var(--font-untitled);
+  font-feature-settings: "kern" 1, "liga" 1;
 }
 
-/* Firefox compatibility */
-* {
-  scrollbar-width: thin;
-  scrollbar-color: rgba(100, 116, 139, 0.2) transparent;
+/* Scripture Italic: Clean typographic italic without layout distortion or clipping */
+.gentle-italic {
+  font-style: italic !important;
+}
+
+/* Standalone verse number badges remain strictly upright Roman */
+.gentle-italic sup,
+.unskew-badge {
+  font-style: normal !important;
+}
+
+/* Clean scrollbar suppression to eliminate black edge line and tiny scrollbar from top to bottom */
+html, body, #root, * {
+  scrollbar-width: none !important;
+  -ms-overflow-style: none !important;
+}
+::-webkit-scrollbar,
+*::-webkit-scrollbar {
+  display: none !important;
+  width: 0px !important;
+  height: 0px !important;
+  background: transparent !important;
+}
+::-webkit-scrollbar-thumb,
+*::-webkit-scrollbar-thumb {
+  display: none !important;
+  background: transparent !important;
 }
 
 @keyframes bounceWave {
@@ -66,6 +114,21 @@ body {
   animation: fadeIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 
+/* Docked notch cycling icon: slides in from right to left */
+@keyframes slideRightToLeft {
+  0% {
+    opacity: 0;
+    transform: translateX(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+.animate-slide-right-left {
+  animation: slideRightToLeft 0.32s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
 /* Glassmorphism utilities */
 .glass-panel {
   background: rgba(255, 255, 255, 0.7);
@@ -79,11 +142,165 @@ body {
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
-/* Hide scrollbar for horizontal scrolling containers */
-.hide-scrollbar {
+/* Hide scrollbar utility classes */
+.hide-scrollbar,
+.no-scrollbar {
   -ms-overflow-style: none;  /* IE and Edge */
   scrollbar-width: none;  /* Firefox */
 }
-.hide-scrollbar::-webkit-scrollbar {
+.hide-scrollbar::-webkit-scrollbar,
+.no-scrollbar::-webkit-scrollbar {
   display: none;
 }
+
+/* iOS safe area bottom padding (for bottom navigation bars) */
+.safe-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+/* Fade-in-up animation used in dual-stream tab transitions */
+@keyframes fadeInUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.animate-fade-in-up {
+  animation: fadeInUp 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.font-handwriting {
+  font-family: 'Caveat', cursive;
+}
+
+@keyframes cursorPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+.typing-cursor {
+  display: inline-block;
+  width: 1.5px;
+  height: 1.1em;
+  background-color: #f59e0b;
+  margin-left: 1px;
+  vertical-align: middle;
+  animation: cursorPulse 0.6s infinite ease-in-out;
+}
+
+@keyframes home-ripple-expand {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.95;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(4.8);
+    opacity: 0;
+  }
+}
+
+/* Section notch label — angled bottom corners */
+.section-notch-label {
+  clip-path: polygon(
+    0 0,
+    100% 0,
+    100% calc(100% - 6px),
+    calc(100% - 6px) 100%,
+    6px 100%,
+    0 calc(100% - 6px)
+  );
+}
+
+/* Glowing animation for the theological root action pill (warm ivory & espresso) */
+@keyframes rootActionGlow {
+  0%, 100% {
+    box-shadow: 0 0 6px rgba(250, 246, 240, 0.12), inset 0 0 4px rgba(250, 246, 240, 0.06);
+    border-color: rgba(72, 58, 48, 0.65);
+  }
+  50% {
+    box-shadow: 0 0 14px rgba(250, 246, 240, 0.28), inset 0 0 6px rgba(250, 246, 240, 0.14);
+    border-color: rgba(250, 246, 240, 0.45);
+  }
+}
+
+.animate-rootActionGlow {
+  animation: rootActionGlow 2.2s ease-in-out infinite;
+}
+
+/* Ethereal celestial glow pop-in for hero headline lines */
+@keyframes glowPopIn {
+  0% {
+    opacity: 0;
+    transform: translateY(22px) scale(0.94);
+    filter: blur(6px);
+    text-shadow: none;
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-2px) scale(1.02);
+    filter: blur(0px);
+    text-shadow: 0 0 25px rgba(255, 255, 255, 1), 0 0 45px rgba(255, 250, 250, 0.95), 0 0 70px rgba(245, 245, 245, 0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0px);
+    text-shadow: 0 2px 12px rgba(0, 0, 0, 0.75);
+  }
+}
+
+.animate-glow-pop-1 {
+  animation: glowPopIn 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-glow-pop-2 {
+  animation: glowPopIn 1.1s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-glow-pop-3 {
+  animation: glowPopIn 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ==========================================================================
+   Activity Capsule Seamless Marquee Animation
+   ========================================================================== */
+@keyframes capsule-marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-capsule-scroll {
+  display: inline-flex;
+  width: max-content;
+  animation: capsule-marquee 55s linear infinite;
+}
+
+.animate-capsule-scroll:hover,
+.animate-capsule-scroll:focus-within {
+  animation-play-state: paused;
+}
+
+/* Suppress Mobile WebKit/Chrome Native Video Play Button Overlay */
+video::-webkit-media-controls,
+video::-webkit-media-controls-panel,
+video::-webkit-media-controls-play-button,
+video::-webkit-media-controls-start-playback-button,
+video::-webkit-media-controls-overlay-play-button,
+video::-webkit-media-controls-enclosure,
+*::-webkit-media-controls-start-playback-button,
+*::-webkit-media-controls-play-button {
+  display: none !important;
+  -webkit-appearance: none !important;
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+
+
+
+
+

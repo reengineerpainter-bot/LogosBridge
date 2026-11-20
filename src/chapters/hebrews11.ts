@@ -65,7 +65,7 @@ export const HEBREWS_11: ChapterData = {
     },
     {
       "verseNumber": 6,
-      "kjvText": "But without faith it is impossible to please him: for he that cometh to God must believe that he is, and that he is a rewarder of them that diligently seek him.",
+      "kjvText": "But without faith [it is] impossible to please [him]: for he that cometh to God must believe that he is, and [that] he is a rewarder of them that diligently seek him.",
       "bsbText": "And without faith it is impossible to please Him, for anyone who comes to Him must believe that He exists and that He rewards those who earnestly seek Him.",
       "contemporary": "But without faith no one can please God. We must believe that God is real and that he rewards everyone who searches for him.",
       "nonNativeEnglish": "I declare my conviction: YOU ARE REAL! I am seeking You with all my heart today, and I rest in the assurance that You are rewarding my search with Your presence.",
@@ -89,7 +89,7 @@ export const HEBREWS_11: ChapterData = {
     },
     {
       "verseNumber": 9,
-      "kjvText": "By faith he sojourned in the land of promise, as in a strange country, dwelling in tabernacles with Isaac and Jacob, the heirs with him of the same promise:",
+      "kjvText": "By faith he sojourned in the land of promise, as [in] a strange country, dwelling in tabernacles with Isaac and Jacob, the heirs with him of the same promise:",
       "bsbText": "By faith he stayed as a foreigner in the land of promise, living in tents, as did Isaac and Jacob, who were heirs with him of the same promise.",
       "contemporary": "Because he had faith, he lived as a guest in the promised land, just as Isaac and Jacob did.",
       "nonNativeEnglish": "I recognize that this world is not my permanent home. I am living in Your promises right now, content to follow Your lead as a guest in this life.",
@@ -97,7 +97,7 @@ export const HEBREWS_11: ChapterData = {
     },
     {
       "verseNumber": 10,
-      "kjvText": "For he looked for a city which hath foundations, whose builder and maker is God.",
+      "kjvText": "For he looked for a city which hath foundations, whose builder and maker [is] God.",
       "bsbText": "For he was looking forward to the city with foundations, whose architect and builder is God.",
       "contemporary": "Abraham was waiting for the city that God had designed and built, the city with solid foundations.",
       "nonNativeEnglish": "I am looking past temporary problems toward the solid, eternal future You have built for me. You are the Architect of my destiny.",
@@ -113,7 +113,7 @@ export const HEBREWS_11: ChapterData = {
     },
     {
       "verseNumber": 12,
-      "kjvText": "Therefore sprang there even of one, and him as good as dead, so many as the stars of the sky in multitude, and as the sand which is by the sea shore innumerable.",
+      "kjvText": "Therefore sprang there even of one, and him as good as dead, [so many] as the stars of the sky in multitude, and as the sand which is by the sea shore innumerable.",
       "bsbText": "And so from this one man, as good as dead, came descendants as numerous as the stars of the sky and as countless as the sand on the seashore.",
       "contemporary": "And so from one man... came descendants as numerous as the stars.",
       "nonNativeEnglish": "Thank You for the massive impact that comes from my simple trust. You can take my 'one life' and multiply its influence more than I can count.",
@@ -121,7 +121,7 @@ export const HEBREWS_11: ChapterData = {
     },
     {
       "verseNumber": 13,
-      "kjvText": "These all died in faith, not having received the promises, but having seen them afar off, and were persuaded of them, and embraced them, and confessed that they were strangers and pilgrims on the earth.",
+      "kjvText": "These all died in faith, not having received the promises, but having seen them afar off, and were persuaded of [them], and embraced [them], and confessed that they were strangers and pilgrims on the earth.",
       "bsbText": "All these people died in faith, without having received the things they were promised. However, they saw them and welcomed them from afar, admitting that they were foreigners and strangers on the earth.",
       "contemporary": "All these people died having faith. They didn't receive the things God had promised, but they saw them from a distance.",
       "nonNativeEnglish": "My faith goes beyond my current experience. I am 'welcoming' Your promises from a distance today, knowing that every word You spoke is certain.",
@@ -137,7 +137,7 @@ export const HEBREWS_11: ChapterData = {
     },
     {
       "verseNumber": 15,
-      "kjvText": "And truly, if they had been mindful of that country from whence they came out, they might have had opportunity to have returned.",
+      "kjvText": "And truly, if they had been mindful of that [country] from whence they came out, they might have had opportunity to have returned.",
       "bsbText": "If they had been thinking of the country they had left, they would have had opportunity to return.",
       "contemporary": "If they had been thinking of the country they had left, they could have gone back.",
       "nonNativeEnglish": "I’m not looking back! I refuse to dwell on my old life or my old failures. I’m moving forward with You, and I’m not turning around.",
@@ -145,7 +145,7 @@ export const HEBREWS_11: ChapterData = {
     },
     {
       "verseNumber": 16,
-      "kjvText": "But now they desire a better country, that is, an heavenly: wherefore God is not ashamed to be called their God: for he hath prepared for them a city.",
+      "kjvText": "But now they desire a better [country], that is, an heavenly: wherefore God is not ashamed to be called their God: for he hath prepared for them a city.",
       "bsbText": "Instead, they were longing for a better country, a heavenly one. Therefore God is not ashamed to be called their God, for He has prepared a city for them.",
       "contemporary": "But they were looking for a better place, a heavenly one. That is why God isn't ashamed to be called their God.",
       "nonNativeEnglish": "I am longing for the 'better reality' You have for me. Thank You for identifying with me, Lord. I love knowing that You aren't ashamed to be MY God.",
@@ -153,7 +153,7 @@ export const HEBREWS_11: ChapterData = {
     },
     {
       "verseNumber": 17,
-      "kjvText": "By faith Abraham, when he was tried, offered up Isaac: and he that had received the promises offered up his only begotten son,",
+      "kjvText": "By faith Abraham, when he was tried, offered up Isaac: and he that had received the promises offered up his only begotten [son],",
       "bsbText": "By faith Abraham, when he was tested, offered up Isaac as a sacrifice. He who had received the promises was ready to offer his one and only son,",
       "contemporary": "Abraham had faith and offered his son Isaac as a sacrifice when he was tested.",
       "nonNativeEnglish": "Lord, when I am tested, help me to be willing to surrender even the things I love most, trusting that You are ultimately in control of my future.",
@@ -169,7 +169,7 @@ export const HEBREWS_11: ChapterData = {
     },
     {
       "verseNumber": 19,
-      "kjvText": "Accounting that God was able to raise him up, even from the dead; from whence also he received him in a figure.",
+      "kjvText": "Accounting that God [was] able to raise [him] up, even from the dead; from whence also he received him in a figure.",
       "bsbText": "Abraham reasoned that God could even raise the dead, and in a manner of speaking, he did receive Isaac back from death.",
       "contemporary": "But Abraham believed that God could raise the dead to life.",
       "nonNativeEnglish": "I believe in Your resurrection power! Nothing is too far gone for You to bring back to life in my world today.",
@@ -185,7 +185,7 @@ export const HEBREWS_11: ChapterData = {
     },
     {
       "verseNumber": 21,
-      "kjvText": "By faith Jacob, when he was a dying, blessed both the sons of Joseph; and worshipped, leaning upon the top of his staff.",
+      "kjvText": "By faith Jacob, when he was a dying, blessed both the sons of Joseph; and worshipped, [leaning] upon the top of his staff.",
       "bsbText": "By faith Jacob, when he was dying, blessed each of Joseph’s sons, and worshiped as he leaned on the top of his staff.",
       "contemporary": "Jacob had faith. And before he died, he blessed each of Joseph's sons.",
       "nonNativeEnglish": "I am staying faithful until the very end. I want my legacy to be a blessing to those who follow me.",
@@ -201,7 +201,7 @@ export const HEBREWS_11: ChapterData = {
     },
     {
       "verseNumber": 23,
-      "kjvText": "By faith Moses, when he was born, was hid three months of his parents, because they saw he was a proper child; and they were not afraid of the king's commandment.",
+      "kjvText": "By faith Moses, when he was born, was hid three months of his parents, because they saw [he was] a proper child; and they were not afraid of the king's commandment.",
       "bsbText": "By faith Moses’ parents hid him for three months after he was born, because they saw he was no ordinary child, and they were not afraid of the king’s edict.",
       "contemporary": "Moses' parents had faith and hid him for three months after he was born.",
       "nonNativeEnglish": "I am protecting the 'new things' You are birthing in my life, Lord. I have the courage to nurture Your purpose, even when it feels risky.",
@@ -241,10 +241,106 @@ export const HEBREWS_11: ChapterData = {
     },
     {
       "verseNumber": 28,
-      "kjvText": "Through faith he kept the passover, and the sprinkling of blood, lest he that destroyed the firstborn should touch them. (Verses 28-40 consolidated summary)",
-      "bsbText": "By faith he kept the Passover and the sprinkling of blood... And what more shall I say? For time would fail me to tell of Gideon, Barak, Samson, Jephthae; of David also, and Samuel, and of the prophets...",
-      "contemporary": "These heroes endured trials, conquered kingdoms, and obtained God's promises by unwavering trust in the face of suffering.",
-      "nonNativeEnglish": "I see the testimony of the martyrs and the pioneers. I join their ranks today, trusting that You have provided a better future for us all together.",
+      "kjvText": "Through faith he kept the passover, and the sprinkling of blood, lest he that destroyed the firstborn should touch them.",
+      "bsbText": "By faith he kept the Passover and the sprinkling of blood, so that the destroyer of the firstborn would not touch Israel’s firstborn.",
+      "contemporary": "Because of faith, Moses instituted the Passover and the sprinkling of blood so the angel of death would spare them.",
+      "nonNativeEnglish": "I apply the blood of Christ over my life and household today by faith, knowing You keep me secure from harm.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 29,
+      "kjvText": "By faith they passed through the Red sea as by dry [land]: which the Egyptians assaying to do were drowned.",
+      "bsbText": "By faith the people passed through the Red Sea as on dry land; but when the Egyptians tried to do so, they were drowned.",
+      "contemporary": "By faith they walked through the Red Sea on dry land, but the Egyptian army drowned when they tried.",
+      "nonNativeEnglish": "When facing impossible obstacles, I trust You to make a way through the sea where there seems to be no way.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 30,
+      "kjvText": "By faith the walls of Jericho fell down, after they were compassed about seven days.",
+      "bsbText": "By faith the walls of Jericho fell, after the army had marched around them for seven days.",
+      "contemporary": "By faith the walls of Jericho collapsed after the Israelites marched around them for seven days.",
+      "nonNativeEnglish": "Every wall of opposition falls down before Your presence as I march forward in faithful obedience.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 31,
+      "kjvText": "By faith the harlot Rahab perished not with them that believed not, when she had received the spies with peace.",
+      "bsbText": "By faith the prostitute Rahab, because she welcomed the spies, was not killed with those who were disobedient.",
+      "contemporary": "By faith Rahab welcomed the spies and was saved from destruction.",
+      "nonNativeEnglish": "Your grace reaches anyone who puts their trust in You. I celebrate Your redeeming mercy in my life today.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 32,
+      "kjvText": "And what shall I more say? for the time would fail me to tell of Gedeon, and [of] Barak, and [of] Samson, and [of] Jephthae; [of] David also, and Samuel, and [of] the prophets:",
+      "bsbText": "And what more shall I say? I do not have time to tell about Gideon, Barak, Samson and Jephthah, about David and Samuel and the prophets,",
+      "contemporary": "What more can I say? There is not enough time to tell about Gideon, Barak, Samson, Jephthah, David, Samuel, and the prophets.",
+      "nonNativeEnglish": "I am inspired by this great cloud of witnesses who stood strong and trusted Your promises throughout history.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 33,
+      "kjvText": "Who through faith subdued kingdoms, wrought righteousness, obtained promises, stopped the mouths of lions,",
+      "bsbText": "who through faith conquered kingdoms, administered justice, and gained what was promised; who shut the mouths of lions,",
+      "contemporary": "Through faith they conquered kingdoms, did what was right, received promises, and shut the mouths of lions.",
+      "nonNativeEnglish": "Through faith in You, I overcome challenges, walk in righteousness, and receive everything You have promised.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 34,
+      "kjvText": "Quenched the violence of fire, escaped the edge of the sword, out of weakness were made strong, waxed valiant in fight, turned to flight the armies of the aliens.",
+      "bsbText": "quenched the fury of the flames, and escaped the edge of the sword; whose weakness was turned to strength; and who became powerful in battle and routed foreign armies.",
+      "contemporary": "They put out raging fires, escaped death by the sword, gained strength from weakness, and became mighty warriors.",
+      "nonNativeEnglish": "In my moments of human weakness, Your divine power makes me strong and gives me victory over every attack.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 35,
+      "kjvText": "Women received their dead raised to life again: and others were tortured, not accepting deliverance; that they might obtain a better resurrection:",
+      "bsbText": "Women received back their dead, raised to life again. There were others who were tortured, refusing to be released so that they might gain an even better resurrection.",
+      "contemporary": "Women received their dead raised back to life, while others endured suffering faithfully looking toward eternal life.",
+      "nonNativeEnglish": "I hold onto eternal hope. You are the God of resurrection, and I trust Your everlasting Kingdom above all else.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 36,
+      "kjvText": "And others had trial of [cruel] mockings and scourgings, yea, moreover of bonds and imprisonment:",
+      "bsbText": "Some faced jeers and flogging, and even chains and imprisonment.",
+      "contemporary": "Others endured insults, whippings, chains, and prison for their faith.",
+      "nonNativeEnglish": "Even in trials or persecution, my faith remains steady and unshaken in Your unfailing love.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 37,
+      "kjvText": "They were stoned, they were sawn asunder, were tempted, were slain with the sword: they wandered about in sheepskins and goatskins; being destitute, afflicted, tormented;",
+      "bsbText": "They were put to death by stoning; they were sawed in two; they were killed by the sword. They went about in sheepskins and goatskins, destitute, persecuted and mistreated—",
+      "contemporary": "They were stoned, sawed in two, and killed with swords; they lived in poverty and were mistreated.",
+      "nonNativeEnglish": "I honor the courage of those who gave everything for the truth, and I stand boldly for Your Name today.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 38,
+      "kjvText": "(Of whom the world was not worthy:) they wandered in deserts, and [in] mountains, and [in] dens and caves of the earth.",
+      "bsbText": "the world was not worthy of them. They wandered in deserts and mountains, living in caves and in holes in the ground.",
+      "contemporary": "The world was not worthy of such people; they roamed in deserts, mountains, and caves.",
+      "nonNativeEnglish": "I know my true worth is found in You. Even when rejected by the world, I am treasured and held in Your hand.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 39,
+      "kjvText": "And these all, having obtained a good report through faith, received not the promise:",
+      "bsbText": "These were all commended for their faith, yet none of them received what had been promised,",
+      "contemporary": "All these people were praised for their faith, yet they did not receive the final promise during their lifetime.",
+      "nonNativeEnglish": "I keep believing even when I haven't seen the final outcome yet, because You are completely faithful.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 40,
+      "kjvText": "God having provided some better thing for us, that they without us should not be made perfect.",
+      "bsbText": "since God had planned something better for us so that only together with us would they be made perfect.",
+      "contemporary": "God had planned something even better for us, so that they would reach full completion together with us.",
+      "nonNativeEnglish": "Thank You for Your master plan! You have provided something better for us in Christ, uniting all believers across generations.",
       "specialWords": []
     }
   ],

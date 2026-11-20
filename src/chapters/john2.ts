@@ -66,7 +66,7 @@ export const JOHN_2: ChapterData = {
     },
     {
       "verseNumber": 5,
-      "kjvText": "His mother saith unto the servants, Whatsoever he saith unto you, do it.",
+      "kjvText": "His mother saith unto the servants, Whatsoever he saith unto you, do [it].",
       "bsbText": "His mother said to the servants, “Whatever he says to you, do it.”",
       "contemporary": "His mother said to the servants, \"Whatever he says to you, do it.\"",
       "nonNativeEnglish": "His mother said to the servants, \"Whatever he says to you, do it.\"",
@@ -111,7 +111,7 @@ export const JOHN_2: ChapterData = {
     },
     {
       "verseNumber": 8,
-      "kjvText": "And he saith unto them, Draw out now, and bear unto the governor of the feast. And they bare it.",
+      "kjvText": "And he saith unto them, Draw out now, and bear unto the governor of the feast. And they bare [it].",
       "bsbText": "He said to them, “Now draw some out, and take it to the ruler of the feast.” So they took it.",
       "contemporary": "He said to them, \"Now draw some out, and take it to the ruler of the feast.\" So they took it.",
       "nonNativeEnglish": "You said to them, \"Now draw some out, and take it to the ruler of the feast.\" So they took it.",
@@ -141,7 +141,7 @@ export const JOHN_2: ChapterData = {
     },
     {
       "verseNumber": 10,
-      "kjvText": "And saith unto him, Every man at the beginning doth set forth good wine; and when men have well drunk, then that which is worse: but thou hast kept the good wine until now.",
+      "kjvText": "And saith unto him, Every man at the beginning doth set forth good wine; and when men have well drunk, then that which is worse: [but] thou hast kept the good wine until now.",
       "bsbText": "and said to him, “Everyone serves the good wine first, and when the guests have drunk freely, then that which is worse. You have kept the good wine until now!”",
       "contemporary": "and said to him, \"Everyone serves the good wine first, and when the guests have drunk freely, then that which is worse. You have kept the good wine until now!\"",
       "nonNativeEnglish": "And said to him, \"Everyone serves the good wine first, and when the guests have drunk freely, then that which is worse. You have kept the good wine until now!\"",
@@ -198,7 +198,7 @@ export const JOHN_2: ChapterData = {
     },
     {
       "verseNumber": 13,
-      "kjvText": "And the Jews’ passover was at hand, and Jesus went up to Jerusalem,",
+      "kjvText": "And the Jews' passover was at hand, and Jesus went up to Jerusalem,",
       "bsbText": "The Passover of the Jews was at hand, and Jesus went up to Jerusalem.",
       "contemporary": "The Passover of the Jews was at hand, and Jesus went up to Jerusalem.",
       "nonNativeEnglish": "The Passover of the Jews was at hand, and Jesus went up to Jerusalem.",
@@ -228,7 +228,7 @@ export const JOHN_2: ChapterData = {
     },
     {
       "verseNumber": 15,
-      "kjvText": "And when he had made a scourge of small cords, he drove them all out of the temple, and the sheep, and the oxen; and poured out the changers’ money, and overthrew the tables;",
+      "kjvText": "And when he had made a scourge of small cords, he drove them all out of the temple, and the sheep, and the oxen; and poured out the changers' money, and overthrew the tables;",
       "bsbText": "He made a whip of cords, and threw all out of the temple, both the sheep and the oxen; and he poured out the changers’ money, and overthrew their tables.",
       "contemporary": "He made a whip of cords, and threw all out of the temple, both the sheep and the oxen; and he poured out the changers’ money, and overthrew their tables.",
       "nonNativeEnglish": "He made a whip of cords, and threw all out of the temple, both the sheep and the oxen; and he poured out the changers’ money, and overthrew their tables.",
@@ -243,7 +243,7 @@ export const JOHN_2: ChapterData = {
     },
     {
       "verseNumber": 16,
-      "kjvText": "And said unto them that sold doves, Take these things hence; make not my Father’s house an house of merchandise.",
+      "kjvText": "And said unto them that sold doves, Take these things hence; make not my Father's house an house of merchandise.",
       "bsbText": "To those who sold the doves, he said, “Take these things out of here! Don’t make my Father’s house a marketplace!”",
       "contemporary": "To those who sold the doves, he said, \"Take these things out of here! Don’t make my Father’s house a marketplace!\"",
       "nonNativeEnglish": "To those who sold the doves, he said, \"Take these things out of here! Don’t make my Father’s house a marketplace!\"",
@@ -360,7 +360,7 @@ export const JOHN_2: ChapterData = {
     },
     {
       "verseNumber": 23,
-      "kjvText": "Now when he was in Jerusalem at the passover, in the feast day, many believed in his name, when they saw the miracles which he did.",
+      "kjvText": "Now when he was in Jerusalem at the passover, in the feast [day], many believed in his name, when they saw the miracles which he did.",
       "bsbText": "Now when he was in Jerusalem at the Passover, during the feast, many believed in his name, observing his signs which he did.",
       "contemporary": "Now when he was in Jerusalem at the Passover, during the feast, many believed in his name, observing his signs which he did.",
       "nonNativeEnglish": "Now when he was in Jerusalem at the Passover, during the feast, many believed in his name, observing his signs which he did.",
@@ -381,7 +381,7 @@ export const JOHN_2: ChapterData = {
     },
     {
       "verseNumber": 24,
-      "kjvText": "But Jesus did not commit himself unto them, because he knew all men,",
+      "kjvText": "But Jesus did not commit himself unto them, because he knew all [men],",
       "bsbText": "But Jesus didn’t entrust himself to them, because he knew everyone,",
       "contemporary": "But Jesus didn’t entrust himself to them, because he knew everyone,",
       "nonNativeEnglish": "But Jesus didn’t entrust himself to them, because he knew everyone,",

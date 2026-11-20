@@ -1,18 +1,25 @@
 {
   "name": "react-example",
   "private": true,
-  "version": "1.0.9",
+  "version": "1.0.1",
   "type": "module",
   "main": "main.cjs",
   "scripts": {
+    "compile:strongs": "node scripts/compile_strongs_study_db.cjs",
+    "predev": "node scripts/compile_strongs_study_db.cjs",
+    "prebuild": "node scripts/compile_strongs_study_db.cjs",
     "dev": "tsx local-dev-server.ts",
-    "build": "node scripts/sync-branding-assets.js && vite build && esbuild local-dev-server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
+    "build": "node scripts/sync-branding-assets.js && node scripts/generate_win_icon.cjs && vite build && node scripts/purge_bundled_media.cjs && esbuild local-dev-server.ts --bundle --platform=node --format=cjs --packages=external --sourcemap --outfile=dist/server.cjs",
     "start": "node dist/server.cjs",
-    "clean": "rm -rf dist server.js",
+    "bridge": "node server.js",
+    "clean": "rm -rf dist",
+    "generate-refs": "tsx scripts/generate_cross_references.ts",
     "lint": "tsc --noEmit",
     "cap:add": "cap add android",
     "cap:sync": "cap sync android",
     "cap:copy": "cap copy android",
+    "android:sync": "npm run build && node scripts/sync_android_launcher_icons.cjs && npx cap sync android",
+    "android:build": "npm run android:sync && cd android && .\\gradlew.bat assembleDebug",
     "electron:start": "electron .",
     "electron:build": "electron-builder --win"
   },
@@ -21,11 +28,17 @@
     "@capacitor/app": "^8.1.1",
     "@capacitor/core": "^8.4.2",
     "@capacitor/local-notifications": "^8.2.1",
+    "@capacitor/share": "^8.0.3",
     "@capacitor/status-bar": "^8.0.3",
     "@capgo/capacitor-navigation-bar": "^8.2.6",
+    "@ffmpeg-installer/ffmpeg": "^1.1.0",
     "@google/genai": "^2.4.0",
     "@midvash/bible-data": "^0.1.1",
+    "@supabase/supabase-js": "^2.117.3",
     "@tailwindcss/vite": "^4.1.14",
+    "@types/qrcode": "^1.5.6",
+    "@types/selfsigned": "^2.0.4",
+    "@types/ws": "^8.18.1",
     "@vitejs/plugin-react": "^5.0.4",
     "archiver": "^8.0.0",
     "dotenv": "^17.2.3",
@@ -34,9 +47,12 @@
     "firebase-admin": "^13.10.0",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
+    "qrcode": "^1.5.4",
     "react": "^19.0.1",
     "react-dom": "^19.0.1",
-    "vite": "^6.2.3"
+    "selfsigned": "^5.5.0",
+    "vite": "^6.2.3",
+    "ws": "^8.21.3"
   },
   "devDependencies": {
     "@capacitor/android": "^8.4.0",
@@ -61,24 +77,39 @@
   "build": {
     "appId": "com.logosbridge.app",
     "productName": "LogosBridge",
-    "publish": [
-      "github"
+    "asar": true,
+    "asarUnpack": [
+      "node_modules/@ffmpeg-installer/**/*"
     ],
     "directories": {
-      "output": "dist/dist-electron"
+      "output": "dist-electron"
     },
     "files": [
       "dist/**/*",
+      "!**/dist-electron/**",
+      "!dist-electron/**",
       "main.cjs",
       "preload.cjs",
       "package.json"
     ],
     "win": {
-      "target": "nsis"
+      "target": [
+        "nsis"
+      ],
+      "icon": "build/icon.ico"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": false,
+      "deleteAppDataOnUninstall": false,
+      "differentialPackage": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "LogosBridge",
+      "uninstallDisplayName": "LogosBridge",
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
     }
   }
 }

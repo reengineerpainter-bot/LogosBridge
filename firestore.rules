@@ -45,9 +45,17 @@ service cloud.firestore {
         && data.createdAt is timestamp 
         && data.updatedAt is timestamp
         && (!('displayName' in data) || (data.displayName is string && data.displayName.size() <= 100))
+        && (!('photoURL' in data) || (data.photoURL is string && data.photoURL.size() <= 200000))
         && (!('theme' in data) || (data.theme is string && data.theme in ['light', 'dark']))
         && (!('lastReadBook' in data) || (data.lastReadBook is string && data.lastReadBook.size() <= 50))
-        && (!('lastReadChapter' in data) || data.lastReadChapter is int);
+        && (!('lastReadChapter' in data) || data.lastReadChapter is int)
+        && (!('lastReadTab' in data) || (data.lastReadTab is string && data.lastReadTab.size() <= 30))
+        && (!('scriptureTypeface' in data) || (data.scriptureTypeface is string && data.scriptureTypeface.size() <= 20))
+        && (!('scriptureStyle' in data) || (data.scriptureStyle is string && data.scriptureStyle.size() <= 20))
+        && (!('scriptureZoom' in data) || data.scriptureZoom is number)
+        && (!('playbackSpeed' in data) || data.playbackSpeed is number)
+        && (!('isScriptureBold' in data) || data.isScriptureBold is bool)
+        && (!('isScriptureItalic' in data) || data.isScriptureItalic is bool);
     }
 
     function isValidBookmark(data) {
@@ -60,7 +68,7 @@ service cloud.firestore {
         && data.chapter is int 
         && data.verse is int 
         && data.color is string 
-        && data.color in ['none', 'yellow', 'cyan', 'green', 'red']
+        && data.color in ['none', 'yellow', 'cyan', 'green', 'red', 'amber', 'blue']
         && (!('notes' in data) || (data.notes is string && data.notes.size() <= 5000))
         && data.createdAt is timestamp 
         && data.updatedAt is timestamp;
@@ -91,23 +99,19 @@ service cloud.firestore {
       allow list: if false;
 
       allow create: if isOwner(userId) 
-        && isVerifiedUser()
         && isValidId(userId)
         && isValidUserProfile(incoming())
         && incoming().userId == userId
-        && incoming().email == request.auth.token.email
         && incoming().createdAt == request.time
         && incoming().updatedAt == request.time;
 
       allow update: if isOwner(userId)
-        && isVerifiedUser()
         && isValidId(userId)
         && isValidUserProfile(incoming())
         && incoming().userId == existing().userId
-        && incoming().email == existing().email
         && incoming().createdAt == existing().createdAt
         && incoming().updatedAt == request.time
-        && incoming().diff(existing()).affectedKeys().hasAny(['displayName', 'theme', 'lastReadBook', 'lastReadChapter', 'updatedAt']);
+        && incoming().diff(existing()).affectedKeys().hasAny(['displayName', 'photoURL', 'theme', 'lastReadBook', 'lastReadChapter', 'lastReadTab', 'scriptureTypeface', 'scriptureStyle', 'scriptureZoom', 'playbackSpeed', 'isScriptureBold', 'isScriptureItalic', 'updatedAt']);
 
       allow delete: if isOwner(userId);
 
@@ -118,7 +122,6 @@ service cloud.firestore {
         allow list: if isOwner(userId);
 
         allow create: if isOwner(userId)
-          && isVerifiedUser()
           && isValidId(bookmarkId)
           && isValidBookmark(incoming())
           && incoming().userId == userId
@@ -127,7 +130,6 @@ service cloud.firestore {
           && incoming().updatedAt == request.time;
 
         allow update: if isOwner(userId)
-          && isVerifiedUser()
           && isValidId(bookmarkId)
           && isValidBookmark(incoming())
           && incoming().userId == existing().userId

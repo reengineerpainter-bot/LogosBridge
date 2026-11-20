@@ -1,0 +1,57 @@
+[
+  {
+    "id": "joyful",
+    "title": "Joyful and Abounding",
+    "description": "Experiencing the fullness of God's peace and victory; a heart prepared for gratitude and deeper fellowship.",
+    "subtitle": "Experiencing the fullness of God's peace and victory; a heart prepared for gratitude and deeper fellowship.",
+    "tag": "PRAISE & INTIMACY",
+    "badgeText": "PRAISE & INTIMACY",
+    "diagnosticKey": "PRAISE_AND_INTIMACY"
+  },
+  {
+    "id": "expectant",
+    "title": "Expectant and Transforming",
+    "description": "Standing at a threshold of change, trusting the Father for guidance, clear vision, and a renewed path forward.",
+    "subtitle": "Standing at a threshold of change, trusting the Father for guidance, clear vision, and a renewed path forward.",
+    "tag": "FAITH & ASSURANCE",
+    "badgeText": "FAITH & ASSURANCE",
+    "diagnosticKey": "FAITH_AND_ASSURANCE"
+  },
+  {
+    "id": "thirsting",
+    "title": "Thirsting for Renewal",
+    "description": "Traversing a season of spiritual quietness, desiring a deeper encounter and fresh revelation from the Word.",
+    "subtitle": "Traversing a season of spiritual quietness, desiring a deeper encounter and fresh revelation from the Word.",
+    "tag": "LIVING WATER",
+    "badgeText": "LIVING WATER",
+    "diagnosticKey": "LIVING_WATER"
+  },
+  {
+    "id": "anxious",
+    "title": "Anxious and Overwhelmed",
+    "description": "Navigating worldly distractions and a divided schedule; seeking a quieted mind and divine alignment.",
+    "subtitle": "Navigating worldly distractions and a divided schedule; seeking a quieted mind and divine alignment.",
+    "tag": "FOCUS & STILLNESS",
+    "badgeText": "FOCUS & STILLNESS",
+    "diagnosticKey": "FOCUS_AND_STILLNESS"
+  },
+  {
+    "id": "burdened",
+    "title": "Burdened and Distant",
+    "description": "Feeling separated from God's presence or carrying the weight of recent shortcomings, desiring a return to His embrace.",
+    "subtitle": "Feeling separated from God's presence or carrying the weight of recent shortcomings, desiring a return to His embrace.",
+    "tag": "RIGHTEOUSNESS & GRACE",
+    "badgeText": "RIGHTEOUSNESS & GRACE",
+    "diagnosticKey": "RIGHTEOUSNESS_AND_GRACE"
+  },
+  {
+    "id": "wearied",
+    "title": "Wearied and Heavy-Laden",
+    "description": "Experiencing physical fatigue or emotional exhaustion from the demands of the day. Walk in the perfect peace of God that transcends all understanding.",
+    "subtitle": "Experiencing physical fatigue or emotional exhaustion from the demands of the day. Walk in the perfect peace of God that transcends all understanding.",
+    "tag": "REST & RENEWAL",
+    "badgeText": "REST & RENEWAL",
+    "diagnosticKey": "REST_AND_RENEWAL"
+  }
+]
+

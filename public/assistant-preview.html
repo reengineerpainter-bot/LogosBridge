@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Smart Office Personal Study Assistant — Preview Lab</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@500;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', '-apple-system', 'sans-serif'],
+            serif: ['Playfair Display', 'Georgia', 'serif'],
+            cinzel: ['Cinzel', 'serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+          colors: {
+            obsidian: {
+              950: '#060913',
+              900: '#111522',
+              850: '#151928',
+              800: '#1e2438',
+              700: '#2d3550',
+            },
+            executive: {
+              gold: '#d4af37',
+              goldLight: '#f6e27a',
+              bronze: '#b87333',
+              amber: '#f59e0b',
+              navy: '#0f172a',
+            }
+          }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root {
+      --ease-executive: cubic-bezier(0.16, 1, 0.3, 1);
+    }
+    * {
+      -webkit-tap-highlight-color: transparent;
+      box-sizing: border-box;
+    }
+    @keyframes capsuleScroll {
+      0% { transform: translateX(0); }
+      100% { transform: translateX(-50%); }
+    }
+    .animate-capsule-scroll {
+      display: inline-flex;
+      animation: capsuleScroll 55s linear infinite;
+    }
+    .animate-capsule-scroll:hover {
+      animation-play-state: paused;
+    }
+    .glass-capsule-dark {
+      background: linear-gradient(135deg, rgba(25, 21, 18, 0.88), rgba(15, 23, 42, 0.92));
+      border: 1px solid rgba(212, 175, 55, 0.22);
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .glass-capsule-light {
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.96));
+      border: 1px solid rgba(184, 115, 51, 0.25);
+      box-shadow: 0 4px 18px -2px rgba(15, 23, 42, 0.08), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+    }
+    .scrollbar-none::-webkit-scrollbar { display: none; }
+    .scrollbar-none { -ms-overflow-style: none; scrollbar-width: none; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col items-center p-3 sm:p-6 transition-colors duration-300">
+
+  <!-- ======================================================== -->
+  <!-- TOP LAB CONTROL BAR                                      -->
+  <!-- ======================================================== -->
+  <header class="w-full max-w-4xl bg-slate-900/90 border border-slate-800 rounded-2xl p-3 sm:p-4 mb-4 backdrop-blur-md shadow-xl flex flex-wrap items-center justify-between gap-3">
+    <div class="flex items-center gap-2.5">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-amber-600 to-amber-400 flex items-center justify-center text-slate-950 font-bold shadow-md shadow-amber-500/20">
+        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-sm sm:text-base font-bold font-sans tracking-tight text-white flex items-center gap-2">
+          Smart Office Personal Assistant <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-400 border border-amber-500/30 font-semibold uppercase tracking-wider">Preview Lab</span>
+        </h1>
+        <p class="text-xs text-slate-400">Study Later Daily Reminders • Study Tab & Action Pill Integration</p>
+      </div>
+    </div>
+
+    <!-- Mode & Device Toggles -->
+    <div class="flex items-center gap-2 flex-wrap">
+      <!-- Tab Switcher -->
+      <div class="bg-slate-800/80 p-0.5 rounded-lg border border-slate-700/70 flex items-center text-xs font-medium">
+        <button id="btn-tab-study" onclick="switchPreviewTab('study')" class="px-2.5 py-1 rounded-md transition-all font-semibold bg-amber-500 text-slate-950 shadow-xs">
+          Study Tab
+        </button>
+        <button id="btn-tab-home" onclick="switchPreviewTab('home')" class="px-2.5 py-1 rounded-md transition-all text-slate-400 hover:text-white">
+          Home View
+        </button>
+        <button id="btn-tab-dossier" onclick="openAssistantModal()" class="px-2.5 py-1 rounded-md transition-all text-amber-400 hover:text-amber-300 flex items-center gap-1">
+          <span>Dossier</span>
+          <span id="badge-pending-count" class="w-4 h-4 rounded-full bg-amber-500 text-slate-950 text-[10px] font-mono font-bold flex items-center justify-center">2</span>
+        </button>
+      </div>
+
+      <!-- Theme Switcher -->
+      <button onclick="toggleTheme()" id="btn-theme" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition-all text-slate-200">
+        <span id="theme-icon">🌙</span> <span id="theme-label">Dark</span>
+      </button>
+
+      <!-- Viewport Toggle -->
+      <button onclick="toggleViewport()" id="btn-viewport" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-xs font-medium flex items-center gap-1.5 transition-all text-slate-200">
+        <span id="viewport-icon">📱</span> <span id="viewport-label">Mobile (390px)</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- ======================================================== -->
+  <!-- PREVIEW CONTAINER FRAME (RESPONSIVE WRAPPER)             -->
+  <!-- ======================================================== -->
+  <main id="preview-viewport-frame" class="w-full max-w-[420px] transition-all duration-300 flex flex-col relative">
+
+    <!-- DEVICE SHELL (When in mobile preview mode) -->
+    <div id="device-shell" class="w-full bg-[#191512] dark:bg-[#191512] rounded-[38px] border-[8px] border-slate-800 shadow-2xl overflow-hidden min-h-[760px] flex flex-col relative transition-colors duration-300">
+      
+      <!-- STATUS BAR SIMULATOR -->
+      <div class="w-full h-8 px-6 pt-1 flex items-center justify-between text-[11px] font-mono font-semibold select-none opacity-60 z-30">
+        <span id="status-time">9:41</span>
+        <div class="w-20 h-4 bg-black/40 rounded-full mx-auto"></div>
+        <div class="flex items-center gap-1 text-[10px]">
+          <span>5G</span>
+          <span>100%</span>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- SMART ASSISTANT BRIEF CAPSULE (PERCHED AT TOP)           -->
+      <!-- ======================================================== -->
+      <div id="assistant-capsule-wrapper" class="w-full px-2 pt-1 pb-1 z-30 transition-all duration-300">
+        <div 
+          id="assistant-capsule" 
+          onclick="openAssistantModal()" 
+          class="group w-full h-11 sm:h-12 px-3 rounded-xl flex items-center justify-between gap-2.5 cursor-pointer select-none transition-all duration-200 active:scale-[0.99] glass-capsule-dark text-white relative overflow-hidden"
+          title="Logos Smart Study Concierge • Tap to view Study Later docket"
+        >
+          <!-- Assistant Holographic Status Dot -->
+          <div class="shrink-0 flex items-center gap-1.5 pointer-events-none">
+            <div class="relative w-6 h-6 rounded-lg bg-gradient-to-tr from-amber-500 to-amber-300 flex items-center justify-center text-slate-950 shadow-sm font-bold">
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+                <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+                <path d="M9 14l2 2 4-4"></path>
+              </svg>
+              <!-- Overdue Ping -->
+              <span class="absolute -top-1 -right-1 flex h-2 w-2">
+                <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                <span class="relative inline-flex rounded-full h-2 w-2 bg-amber-500"></span>
+              </span>
+            </div>
+            <span class="text-[10px] font-mono font-bold tracking-wider uppercase text-amber-400/90 hidden sm:inline">Concierge</span>
+          </div>
+
+          <!-- Marquee / Dual Briefing Track (Both Study Reminder AND Past Activity Briefing) -->
+          <div 
+            class="flex-1 min-w-0 overflow-hidden relative pointer-events-none"
+            style="mask-image: linear-gradient(to right, transparent, black 8px, black calc(100% - 8px), transparent); -webkit-mask-image: linear-gradient(to right, transparent, black 8px, black calc(100% - 8px), transparent);"
+          >
+            <div id="capsule-marquee-track" class="animate-capsule-scroll flex items-center whitespace-nowrap">
+              <!-- Pass 1: Pending Study Reminder -->
+              <div class="flex items-center gap-2 text-xs font-semibold shrink-0">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30">STUDY REMINDER</span>
+                <span id="capsule-brief-text-1" class="text-amber-100 font-medium">Romans 8:28 (Pending 3d) • "Analyze synergei root"</span>
+              </div>
+              
+              <!-- Divider -->
+              <div class="flex items-center gap-2 mx-4 text-xs font-mono text-amber-500/50 shrink-0">◆</div>
+
+              <!-- Pass 1: Past Activity Briefing (Preserved & Integrated!) -->
+              <div class="flex items-center gap-2 text-xs font-semibold shrink-0">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">RECENT ACTIVITY</span>
+                <span id="capsule-past-activity-1" class="text-slate-200 font-medium">Traced Hebrew root bārā’ (H1254) in Genesis 1:1 • 4-Day Study Streak 🔥</span>
+              </div>
+
+              <div class="w-20 shrink-0"></div>
+
+              <!-- Pass 2: Pending Study Reminder -->
+              <div class="flex items-center gap-2 text-xs font-semibold shrink-0">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-amber-500/20 text-amber-300 border border-amber-500/30">STUDY REMINDER</span>
+                <span id="capsule-brief-text-2" class="text-amber-100 font-medium">Romans 8:28 (Pending 3d) • "Analyze synergei root"</span>
+              </div>
+
+              <!-- Divider -->
+              <div class="flex items-center gap-2 mx-4 text-xs font-mono text-amber-500/50 shrink-0">◆</div>
+
+              <!-- Pass 2: Past Activity Briefing (Preserved & Integrated!) -->
+              <div class="flex items-center gap-2 text-xs font-semibold shrink-0">
+                <span class="px-1.5 py-0.5 rounded text-[10px] font-mono bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">RECENT ACTIVITY</span>
+                <span id="capsule-past-activity-2" class="text-slate-200 font-medium">Traced Hebrew root bārā’ (H1254) in Genesis 1:1 • 4-Day Study Streak 🔥</span>
+              </div>
+
+              <div class="w-20 shrink-0"></div>
+            </div>
+          </div>
+
+          <!-- Quick Action Button -->
+          <div class="shrink-0 flex items-center gap-1">
+            <button 
+              type="button"
+              onclick="event.stopPropagation(); quickCompleteActiveVerse();" 
+              class="w-6 h-6 rounded-full bg-white/10 hover:bg-emerald-500/30 hover:text-emerald-400 text-white/70 flex items-center justify-center transition-all cursor-pointer"
+              title="Mark Top Verse as Completed"
+            >
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="20 6 9 17 4 12"></polyline>
+              </svg>
+            </button>
+            <button 
+              type="button"
+              onclick="event.stopPropagation(); openAssistantModal();" 
+              class="w-6 h-6 rounded-full bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 flex items-center justify-center transition-all cursor-pointer"
+              title="Open Study Docket"
+            >
+              <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <polyline points="9 18 15 12 9 6"></polyline>
+              </svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW A: STUDY TAB VIEW (INTERLINEAR WITH ACTION PILL)   -->
+      <!-- ======================================================== -->
+      <div id="view-study-tab" class="flex-1 flex flex-col overflow-y-auto px-3 py-2 scrollbar-none">
+        
+        <!-- STUDY TAB HEADER -->
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800/80">
+          <div>
+            <span class="text-xs font-mono uppercase tracking-wider text-amber-500/90 font-semibold">Study Tab (Interlinear)</span>
+            <h2 id="study-heading" class="text-base font-serif font-bold text-white">Romans 8</h2>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-slate-800 border border-slate-700 text-slate-300">Greek</span>
+            <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-amber-500/20 text-amber-400 border border-amber-500/30">Script</span>
+          </div>
+        </div>
+
+        <p class="text-[11px] text-slate-400 italic mb-3">
+          💡 Double-tap or click any verse below to open the <strong class="text-amber-300">More Option Pill</strong> and see the <strong class="text-amber-300">Study Later</strong> Assistant icon!
+        </p>
+
+        <!-- VERSE ROWS CONTAINER -->
+        <div id="verses-container" class="space-y-4 pb-20">
+          <!-- Dynamic Verse rows injected via JS -->
+        </div>
+      </div>
+
+      <!-- ======================================================== -->
+      <!-- VIEW B: HOME VIEW (HERO DISPLAY)                         -->
+      <!-- ======================================================== -->
+      <div id="view-home-tab" class="flex-1 flex flex-col relative hidden overflow-hidden">
+        <div class="relative w-full h-80 overflow-hidden">
+          <img src="/nature.jpg" alt="Nature" class="w-full h-full object-cover">
+          <div class="absolute inset-0 bg-gradient-to-t from-[#191512] via-[#191512]/60 to-transparent"></div>
+          <div class="absolute bottom-4 left-4 right-4">
+            <span class="text-[10px] font-mono font-bold uppercase tracking-widest text-amber-400">Daily Bread</span>
+            <h3 class="text-xl font-serif font-bold text-white">"And we know that all things work together for good..."</h3>
+            <p class="text-xs text-amber-200/80 font-mono mt-1">Romans 8:28 • KJV</p>
+          </div>
+        </div>
+        <div class="p-4 space-y-3">
+          <div class="p-3.5 rounded-2xl bg-slate-900/60 border border-slate-800/80 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-amber-500/20 border border-amber-500/30 flex items-center justify-center text-amber-400">
+                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <div>
+                <h4 class="text-xs font-bold text-white">Assistant Reminder Active</h4>
+                <p class="text-[11px] text-slate-400">Romans 8:28 is pending on your docket</p>
+              </div>
+            </div>
+            <button onclick="openAssistantModal()" class="px-3 py-1.5 rounded-lg bg-amber-500 text-slate-950 font-bold text-xs hover:bg-amber-400 transition-all">
+              Review
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- TOAST NOTIFICATION POPUP -->
+      <div id="preview-toast" class="absolute bottom-16 left-4 right-4 bg-slate-900 border border-amber-500/40 text-amber-300 px-4 py-2.5 rounded-xl shadow-2xl flex items-center justify-between gap-2 transform translate-y-20 opacity-0 pointer-events-none transition-all duration-300 z-50">
+        <div class="flex items-center gap-2 text-xs font-semibold">
+          <span id="toast-icon">✓</span>
+          <span id="toast-message">Notification message</span>
+        </div>
+      </div>
+
+      <!-- BOTTOM NOTCH / NAVIGATION DOCK (READ-ONLY SIMULATION) -->
+      <div class="w-full h-14 bg-[#14100d]/90 border-t border-slate-800/80 px-6 flex items-center justify-around text-slate-400 text-xs font-medium z-30">
+        <div onclick="switchPreviewTab('home')" class="flex flex-col items-center gap-0.5 cursor-pointer hover:text-amber-400 transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+          <span class="text-[10px]">Home</span>
+        </div>
+        <div class="flex flex-col items-center gap-0.5 cursor-pointer text-slate-500">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+          <span class="text-[10px]">Read</span>
+        </div>
+        <div onclick="switchPreviewTab('study')" class="flex flex-col items-center gap-0.5 cursor-pointer text-amber-400 font-bold transition-colors">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+          <span class="text-[10px]">Study</span>
+        </div>
+        <div onclick="openAssistantModal()" class="flex flex-col items-center gap-0.5 cursor-pointer text-amber-300 hover:text-amber-200 transition-colors relative">
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+          <span class="text-[10px]">Docket</span>
+          <span class="absolute -top-1 right-2 w-2 h-2 rounded-full bg-amber-400"></span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- ======================================================== -->
+  <!-- EXPANDED SMART OFFICE ASSISTANT DOSSIER MODAL            -->
+  <!-- ======================================================== -->
+  <div id="assistant-modal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-3 sm:p-4 opacity-0 pointer-events-none transition-all duration-300">
+    <div class="w-full max-w-lg bg-[#191512] dark:bg-[#191512] border border-amber-500/30 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh] transition-all transform scale-95 duration-200">
+      
+      <!-- Dossier Header -->
+      <div class="p-4 sm:p-5 border-b border-amber-500/20 bg-gradient-to-r from-amber-500/10 via-transparent to-transparent flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500 to-amber-300 text-slate-950 flex items-center justify-center font-black shadow-lg shadow-amber-500/20">
+            <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+          </div>
+          <div>
+            <span class="text-[10px] font-mono font-bold tracking-widest uppercase text-amber-400">Smart Office Study Assistant</span>
+            <h3 class="text-base sm:text-lg font-serif font-bold text-white">Daily Study Later Docket</h3>
+          </div>
+        </div>
+        <button onclick="closeAssistantModal()" class="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center transition-all cursor-pointer">
+          ✕
+        </button>
+      </div>
+
+      <!-- Dossier Sub-nav / Quick Filters -->
+      <div class="px-4 py-2 border-b border-slate-800 bg-slate-900/60 flex items-center justify-between text-xs flex-wrap gap-2">
+        <div class="flex items-center gap-1.5 flex-wrap">
+          <button id="tab-docket-pending" onclick="setDocketTab('pending')" class="px-2.5 py-1 rounded-lg font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30">
+            Pending (<span id="docket-count-pending">2</span>)
+          </button>
+          <button id="tab-docket-activity" onclick="setDocketTab('activity')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white flex items-center gap-1">
+            <span>Past Activities</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+          </button>
+          <button id="tab-docket-completed" onclick="setDocketTab('completed')" class="px-2.5 py-1 rounded-lg text-slate-400 hover:text-white">
+            Completed (<span id="docket-count-completed">1</span>)
+          </button>
+        </div>
+        <span class="text-[10px] font-mono text-slate-400">Reminds Daily Until Done</span>
+      </div>
+
+      <!-- Docket Items Scroll Container -->
+      <div id="docket-list" class="flex-1 overflow-y-auto p-4 space-y-3 scrollbar-none">
+        <!-- Rendered dynamically -->
+      </div>
+
+      <!-- Dossier Footer: Quick Add Verse -->
+      <div class="p-3.5 bg-slate-900/90 border-t border-slate-800 flex items-center gap-2">
+        <input 
+          id="input-quick-add" 
+          type="text" 
+          placeholder="Queue verse (e.g. Philippians 4:13) + goal..." 
+          class="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-amber-500/60"
+        />
+        <button 
+          onclick="addCustomVerseToDocket()" 
+          class="px-3.5 py-2 rounded-xl bg-gradient-to-r from-amber-500 to-amber-400 text-slate-950 text-xs font-bold hover:brightness-110 active:scale-95 transition-all shrink-0 cursor-pointer"
+        >
+          + Queue
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ======================================================== -->
+  <!-- JAVASCRIPT STATE ENGINE                                  -->
+  <!-- ======================================================== -->
+  <script>
+    // Initial State & Data
+    const state = {
+      theme: 'dark',
+      viewport: 'mobile',
+      currentTab: 'study',
+      docketTab: 'pending',
+      activeStudyVerseForPill: 28, // Currently selected verse in study view
+      pastActivities: [
+        {
+          type: 'STRONGS_LOOKUP',
+          badge: 'Strong\'s Analysis',
+          badgeColor: 'cyan',
+          title: 'Root Inquiry: bārā’ (בָּרָא)',
+          reference: 'Genesis 1:1',
+          strongs: 'H1254',
+          snippet: 'Traced original Hebrew verb for divine creation ex nihilo.',
+          timestamp: 'Today at 7:15 AM'
+        },
+        {
+          type: 'saved_note',
+          badge: 'Theological Note',
+          badgeColor: 'amber',
+          title: 'Drafted Reflection Note',
+          reference: 'Romans 8:28',
+          snippet: '"Examining synergistic divine providence in synergei."',
+          timestamp: 'Yesterday at 9:40 PM'
+        },
+        {
+          type: 'highlighted_verse',
+          badge: 'Scripture Highlight',
+          badgeColor: 'emerald',
+          title: 'Illuminated Scripture',
+          reference: 'Ephesians 2:8',
+          snippet: 'Highlighted in emerald gold covenant library.',
+          timestamp: '2 days ago'
+        },
+        {
+          type: 'streak',
+          badge: 'Study Streak',
+          badgeColor: 'amber',
+          title: 'Consecutive Study Streak',
+          reference: 'Daily Discipline',
+          snippet: '4 consecutive active study days maintained 🔥',
+          timestamp: 'Active'
+        }
+      ],
+      studyDocket: [
+        {
+          id: 'Romans_8_28',
+          book: 'Romans',
+          chapter: 8,
+          verse: 28,
+          text: 'And we know that all things work together for good to them that love God, to them who are the called according to his purpose.',
+          goal: 'Examine Greek root "synergei" and morphological voice.',
+          addedDaysAgo: 3,
+          status: 'pending',
+          priority: 'high',
+        },
+        {
+          id: 'Ephesians_2_8',
+          book: 'Ephesians',
+          chapter: 2,
+          verse: 8,
+          text: 'For by grace are ye saved through faith; and that not of yourselves: it is the gift of God:',
+          goal: 'Trace "poiēma" in verse 10 and divine craftsmanship.',
+          addedDaysAgo: 1,
+          status: 'pending',
+          priority: 'normal',
+        },
+        {
+          id: 'Genesis_1_1',
+          book: 'Genesis',
+          chapter: 1,
+          verse: 1,
+          text: 'In the beginning God created the heaven and the earth.',
+          goal: 'Completed Hebrew root analysis of "bārā’".',
+          addedDaysAgo: 5,
+          completedAt: 'Yesterday at 8:30 PM',
+          status: 'completed',
+          priority: 'normal',
+        }
+      ]
+    };
+
+    // Romans 8 mock study verses
+    const mockVerses = [
+      {
+        verseNumber: 26,
+        hebrewGreek: 'ὡσαύτως δὲ καὶ τὸ πνεῦμα συναντιλαμβάνεται',
+        translit: 'hōsautōs de kai to pneuma synantilambanetai',
+        kjvText: 'Likewise the Spirit also helpeth our infirmities: for we know not what we should pray for as we ought: but the Spirit itself maketh intercession for us with groanings which cannot be uttered.',
+        strongs: 'G4878 (synantilambanomai)'
+      },
+      {
+        verseNumber: 27,
+        hebrewGreek: 'ὁ δὲ ἐραυνῶν τὰς καρδίας οἶδεν τί τὸ φρόνημα',
+        translit: 'ho de eraunōn tas kardias oiden ti to phronēma',
+        kjvText: 'And he that searcheth the hearts knoweth what is the mind of the Spirit, because he maketh intercession for the saints according to the will of God.',
+        strongs: 'G2045 (ereunaō)'
+      },
+      {
+        verseNumber: 28,
+        hebrewGreek: 'οἴδαμεν δὲ ὅτι τοῖς ἀγαπῶσιν τὸν θεὸν πάντα συνεργεῖ εἰς ἀγαθόν',
+        translit: 'oidamen de hoti tois agapōsin ton theon panta synergei eis agathon',
+        kjvText: 'And we know that all things work together for good to them that love God, to them who are the called according to his purpose.',
+        strongs: 'G4903 (synergeō • work together)'
+      },
+      {
+        verseNumber: 29,
+        hebrewGreek: 'ὅτι οὓς προέγνω, καὶ προώρισεν συμμόρφους τῆς εἰκόνος',
+        translit: 'hoti hous proegnō, kai proōrisen symmorphous tēs eikonos',
+        kjvText: 'For whom he did foreknow, he also did predestinate to be conformed to the image of his Son, that he might be the firstborn among many brethren.',
+        strongs: 'G4267 (proginōskō)'
+      }
+    ];
+
+    // ========================================================
+    // RENDER FUNCTIONS
+    // ========================================================
+
+    function renderStudyVerses() {
+      const container = document.getElementById('verses-container');
+      if (!container) return;
+
+      container.innerHTML = mockVerses.map(v => {
+        const isQueued = state.studyDocket.some(d => d.book === 'Romans' && d.chapter === 8 && d.verse === v.verseNumber && d.status === 'pending');
+        const isSelected = state.activeStudyVerseForPill === v.verseNumber;
+
+        return `
+          <div 
+            id="verse-card-${v.verseNumber}"
+            onclick="selectVerseForPill(${v.verseNumber})"
+            class="p-2.5 rounded-2xl transition-all duration-200 cursor-pointer ${
+              isSelected 
+                ? 'bg-amber-500/10 border border-amber-500/40 shadow-md' 
+                : 'hover:bg-slate-800/40 border border-transparent'
+            }"
+          >
+            <!-- Verse Header Line -->
+            <div class="flex items-center justify-between mb-1.5">
+              <div class="flex items-center gap-2">
+                <span class="w-6 h-6 rounded-md font-mono text-xs font-bold flex items-center justify-center ${
+                  isQueued ? 'bg-amber-500 text-slate-950 font-black' : 'bg-slate-800 text-slate-300'
+                }">
+                  ${v.verseNumber}
+                </span>
+                <span class="text-xs font-mono font-bold text-amber-400">${v.strongs}</span>
+                ${isQueued ? '<span class="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 border border-amber-500/40">Docket: Pending</span>' : ''}
+              </div>
+
+              <span class="text-[10px] font-mono text-slate-500">v${v.verseNumber}</span>
+            </div>
+
+            <!-- Interlinear Text Lines -->
+            <div class="space-y-1 mb-2">
+              <p class="font-serif text-sm font-bold text-amber-100/90 tracking-wide">${v.hebrewGreek}</p>
+              <p class="font-mono text-xs text-slate-400 italic">${v.translit}</p>
+              <p class="text-xs text-slate-200 leading-relaxed font-sans">${v.kjvText}</p>
+            </div>
+
+            <!-- THE MORE OPTION PILL (EXPANDS ON SELECTION) -->
+            ${isSelected ? `
+              <div class="mt-2 pt-2 border-t border-slate-800/80 flex items-center justify-between">
+                <!-- THE PILL -->
+                <div class="inline-flex items-center gap-1 px-2 py-1 rounded-full border shadow-lg backdrop-blur-md bg-neutral-900/95 border-amber-500/30 text-slate-300">
+                  
+                  <!-- 1. Share -->
+                  <button onclick="event.stopPropagation(); showToast('Verse shared');" class="p-1 rounded-full hover:text-white hover:bg-slate-800 transition-all" title="Share Verse">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+                  </button>
+
+                  <span class="w-px h-3 bg-slate-700"></span>
+
+                  <!-- 2. Highlight -->
+                  <button onclick="event.stopPropagation(); showToast('Highlight cycled');" class="p-1 rounded-full hover:text-amber-400 hover:bg-slate-800 transition-all" title="Highlight">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 11-6 6v3h3l6-6"/><path d="m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4"/></svg>
+                  </button>
+
+                  <span class="w-px h-3 bg-slate-700"></span>
+
+                  <!-- 3. Cross-Ref -->
+                  <button onclick="event.stopPropagation(); showToast('Cross-references opened');" class="p-1 rounded-full hover:text-cyan-400 hover:bg-slate-800 transition-all" title="Cross References">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+                  </button>
+
+                  <span class="w-px h-3 bg-slate-700"></span>
+
+                  <!-- 4. Notes -->
+                  <button onclick="event.stopPropagation(); showToast('Theological diary opened');" class="p-1 rounded-full hover:text-amber-400 hover:bg-slate-800 transition-all" title="Note">
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+                  </button>
+
+                  <span class="w-px h-3 bg-amber-500/40"></span>
+
+                  <!-- 5. 🌟 NEW: SMART OFFICE ASSISTANT "STUDY LATER" ICON -->
+                  <button 
+                    onclick="event.stopPropagation(); toggleVerseStudyLater(${v.verseNumber});" 
+                    class="p-1 px-1.5 rounded-full flex items-center gap-1 transition-all ${
+                      isQueued 
+                        ? 'bg-amber-500 text-slate-950 font-bold shadow-sm' 
+                        : 'text-amber-400 hover:bg-amber-500/20'
+                    }" 
+                    title="${isQueued ? 'Remove from Daily Study Docket' : 'Add to Smart Assistant: Study Later Reminder'}"
+                  >
+                    <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                      <circle cx="12" cy="12" r="10"></circle>
+                      <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                    <span class="text-[10px] font-mono font-bold">${isQueued ? 'Queued' : 'Study Later'}</span>
+                  </button>
+
+                </div>
+
+                <span class="text-[10px] text-amber-400/80 font-mono">Pill Active</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+
+    function renderCapsuleNarrative() {
+      const pendingItems = state.studyDocket.filter(d => d.status === 'pending');
+      const text1 = document.getElementById('capsule-brief-text-1');
+      const text2 = document.getElementById('capsule-brief-text-2');
+      const pendingBadge = document.getElementById('badge-pending-count');
+
+      if (pendingBadge) pendingBadge.textContent = pendingItems.length;
+
+      if (pendingItems.length > 0) {
+        const top = pendingItems[0];
+        const daysText = top.addedDaysAgo === 0 ? 'Queued Today' : `Pending ${top.addedDaysAgo}d`;
+        const brief = `${top.book} ${top.chapter}:${top.verse} (${daysText}) • "${top.goal || 'Study Later'}" • Tap for dossier`;
+        if (text1) text1.textContent = brief;
+        if (text2) text2.textContent = brief;
+      } else {
+        const brief = `Study Docket Clear • Tap + on any verse to schedule daily reminders`;
+        if (text1) text1.textContent = brief;
+        if (text2) text2.textContent = brief;
+      }
+    }
+
+    function renderDocketModal() {
+      const list = document.getElementById('docket-list');
+      const countPending = document.getElementById('docket-count-pending');
+      const countCompleted = document.getElementById('docket-count-completed');
+
+      const pending = state.studyDocket.filter(d => d.status === 'pending');
+      const completed = state.studyDocket.filter(d => d.status === 'completed');
+
+      if (countPending) countPending.textContent = pending.length;
+      if (countCompleted) countCompleted.textContent = completed.length;
+
+      // 1. PAST ACTIVITY TAB
+      if (state.docketTab === 'activity') {
+        list.innerHTML = state.pastActivities.map(act => {
+          return `
+            <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-cyan-500/30 transition-all flex flex-col gap-1.5 relative">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                    act.badgeColor === 'cyan' ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/30' :
+                    act.badgeColor === 'amber' ? 'bg-amber-500/20 text-amber-300 border border-amber-500/30' :
+                    'bg-emerald-500/20 text-emerald-300 border border-emerald-500/30'
+                  }">
+                    ${act.badge}
+                  </span>
+                  <span class="text-xs font-serif font-bold text-white">${act.reference}</span>
+                </div>
+                <span class="text-[10px] font-mono text-slate-500">${act.timestamp}</span>
+              </div>
+              <h4 class="text-xs font-bold text-slate-200">${act.title}</h4>
+              <p class="text-[11px] text-slate-400 italic bg-slate-950/40 p-2 rounded-lg border border-slate-800/60 font-sans">
+                ${act.snippet}
+              </p>
+              <div class="flex items-center justify-end pt-1">
+                <button onclick="studyVerseNow('${act.reference.split(' ')[0] || 'Genesis'}', 1, 1)" class="text-[11px] font-semibold text-cyan-400 hover:text-cyan-300 flex items-center gap-1 transition-colors">
+                  <span>Resume in Study Tab</span>
+                  <span>→</span>
+                </button>
+              </div>
+            </div>
+          `;
+        }).join('');
+        return;
+      }
+
+      // 2. DOCKET TABS (Pending / Completed)
+      const itemsToShow = state.docketTab === 'pending' ? pending : completed;
+
+      if (itemsToShow.length === 0) {
+        list.innerHTML = `
+          <div class="py-12 text-center text-slate-500">
+            <svg class="w-10 h-10 mx-auto mb-2 opacity-40 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            <p class="text-xs font-medium">No ${state.docketTab} study items.</p>
+            <p class="text-[11px] text-slate-600 mt-0.5">Flag verses on the Study Tab using the Study Later pill icon.</p>
+          </div>
+        `;
+        return;
+      }
+
+      list.innerHTML = itemsToShow.map(item => {
+        const isPending = item.status === 'pending';
+        return `
+          <div class="p-3.5 rounded-2xl bg-slate-900/80 border border-slate-800 hover:border-amber-500/30 transition-all flex flex-col gap-2 relative group">
+            
+            <!-- Item Header -->
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-serif font-bold text-white">${item.book} ${item.chapter}:${item.verse}</span>
+                  ${isPending ? `
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded-full font-bold ${
+                      item.addedDaysAgo >= 3 
+                        ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30' 
+                        : 'bg-amber-500/20 text-amber-300 border border-amber-500/30'
+                    }">
+                      ${item.addedDaysAgo === 0 ? 'Queued Today' : `Overdue (${item.addedDaysAgo}d)`}
+                    </span>
+                  ` : `
+                    <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">
+                      Completed ✓
+                    </span>
+                  `}
+                </div>
+                <p class="text-xs text-amber-200/90 italic font-medium mt-0.5">"${item.goal}"</p>
+              </div>
+
+              <!-- Delete / Archive button -->
+              <button onclick="deleteDocketItem('${item.id}')" class="text-slate-500 hover:text-rose-400 transition-colors p-1" title="Remove from Docket">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              </button>
+            </div>
+
+            <!-- Verse excerpt -->
+            <p class="text-[11px] text-slate-400 line-clamp-2 leading-relaxed bg-slate-950/40 p-2 rounded-lg border border-slate-800/60 font-sans">
+              ${item.text}
+            </p>
+
+            <!-- Actions Row -->
+            <div class="flex items-center justify-between pt-1 text-xs">
+              ${isPending ? `
+                <div class="flex items-center gap-1.5 w-full">
+                  <button onclick="studyVerseNow('${item.book}', ${item.chapter}, ${item.verse})" class="flex-1 py-1.5 px-2.5 rounded-lg bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold flex items-center justify-center gap-1 transition-all active:scale-95 shadow-xs">
+                    <span>📖 Study Now</span>
+                  </button>
+                  <button onclick="markItemCompleted('${item.id}')" class="flex-1 py-1.5 px-2.5 rounded-lg bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 font-semibold flex items-center justify-center gap-1 transition-all active:scale-95">
+                    <span>✓ Mark Done</span>
+                  </button>
+                  <button onclick="snoozeItem('${item.id}')" class="py-1.5 px-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-[11px]" title="Snooze reminder until tomorrow">
+                    ⏱ Tomorrow
+                  </button>
+                </div>
+              ` : `
+                <div class="flex items-center justify-between w-full text-[11px] text-emerald-400/80 font-mono">
+                  <span>Archived with reflection notes</span>
+                  <span>${item.completedAt || 'Finished'}</span>
+                </div>
+              `}
+            </div>
+
+          </div>
+        `;
+      }).join('');
+    }
+
+    // ========================================================
+    // INTERACTION HANDLERS
+    // ========================================================
+
+    function selectVerseForPill(verseNo) {
+      if (state.activeStudyVerseForPill === verseNo) {
+        state.activeStudyVerseForPill = null;
+      } else {
+        state.activeStudyVerseForPill = verseNo;
+      }
+      renderStudyVerses();
+    }
+
+    function toggleVerseStudyLater(verseNo) {
+      const existingIdx = state.studyDocket.findIndex(d => d.book === 'Romans' && d.chapter === 8 && d.verse === verseNo && d.status === 'pending');
+      
+      if (existingIdx >= 0) {
+        state.studyDocket.splice(existingIdx, 1);
+        showToast(`Romans 8:${verseNo} removed from Study Later`);
+      } else {
+        const verseObj = mockVerses.find(v => v.verseNumber === verseNo);
+        state.studyDocket.unshift({
+          id: `Romans_8_${verseNo}`,
+          book: 'Romans',
+          chapter: 8,
+          verse: verseNo,
+          text: verseObj ? verseObj.kjvText : '',
+          goal: `In-depth lexical inquiry on v${verseNo}`,
+          addedDaysAgo: 0,
+          status: 'pending',
+          priority: 'normal',
+        });
+        showToast(`Added Romans 8:${verseNo} to Study Later Docket!`);
+      }
+
+      renderStudyVerses();
+      renderCapsuleNarrative();
+      renderDocketModal();
+    }
+
+    function markItemCompleted(id) {
+      const item = state.studyDocket.find(d => d.id === id);
+      if (item) {
+        item.status = 'completed';
+        item.completedAt = 'Just now';
+        showToast(`✓ Completed study of ${item.book} ${item.chapter}:${item.verse}! Streak continued.`);
+        renderStudyVerses();
+        renderCapsuleNarrative();
+        renderDocketModal();
+      }
+    }
+
+    function quickCompleteActiveVerse() {
+      const pending = state.studyDocket.filter(d => d.status === 'pending');
+      if (pending.length > 0) {
+        markItemCompleted(pending[0].id);
+      } else {
+        showToast("No pending study verses to complete.");
+      }
+    }
+
+    function snoozeItem(id) {
+      showToast("Reminder snoozed until tomorrow's study session ⏱");
+      closeAssistantModal();
+    }
+
+    function deleteDocketItem(id) {
+      state.studyDocket = state.studyDocket.filter(d => d.id !== id);
+      showToast("Item deleted from docket");
+      renderStudyVerses();
+      renderCapsuleNarrative();
+      renderDocketModal();
+    }
+
+    function studyVerseNow(book, chapter, verse) {
+      closeAssistantModal();
+      switchPreviewTab('study');
+      state.activeStudyVerseForPill = verse;
+      renderStudyVerses();
+      showToast(`Navigated to ${book} ${chapter}:${verse} in Study Mode`);
+      
+      setTimeout(() => {
+        const el = document.getElementById(`verse-card-${verse}`);
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 150);
+    }
+
+    function addCustomVerseToDocket() {
+      const input = document.getElementById('input-quick-add');
+      const val = input.value.trim();
+      if (!val) return;
+
+      state.studyDocket.unshift({
+        id: `Custom_${Date.now()}`,
+        book: 'Study Entry',
+        chapter: 1,
+        verse: 1,
+        text: val,
+        goal: val,
+        addedDaysAgo: 0,
+        status: 'pending',
+        priority: 'high',
+      });
+
+      input.value = '';
+      showToast("Queued custom verse to daily assistant docket!");
+      renderStudyVerses();
+      renderCapsuleNarrative();
+      renderDocketModal();
+    }
+
+    function setDocketTab(tab) {
+      state.docketTab = tab;
+      const btnPending = document.getElementById('tab-docket-pending');
+      const btnActivity = document.getElementById('tab-docket-activity');
+      const btnCompleted = document.getElementById('tab-docket-completed');
+      
+      const activeClass = 'px-2.5 py-1 rounded-lg font-semibold bg-amber-500/20 text-amber-300 border border-amber-500/30';
+      const inactiveClass = 'px-2.5 py-1 rounded-lg text-slate-400 hover:text-white';
+
+      btnPending.className = tab === 'pending' ? activeClass : inactiveClass;
+      if (btnActivity) btnActivity.className = tab === 'activity' ? 'px-2.5 py-1 rounded-lg font-semibold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30 flex items-center gap-1' : inactiveClass + ' flex items-center gap-1';
+      btnCompleted.className = tab === 'completed' ? activeClass : inactiveClass;
+      
+      renderDocketModal();
+    }
+
+    function switchPreviewTab(tab) {
+      state.currentTab = tab;
+      const viewStudy = document.getElementById('view-study-tab');
+      const viewHome = document.getElementById('view-home-tab');
+      const btnStudy = document.getElementById('btn-tab-study');
+      const btnHome = document.getElementById('btn-tab-home');
+
+      if (tab === 'study') {
+        viewStudy.classList.remove('hidden');
+        viewHome.classList.add('hidden');
+        btnStudy.className = 'px-2.5 py-1 rounded-md transition-all font-semibold bg-amber-500 text-slate-950 shadow-xs';
+        btnHome.className = 'px-2.5 py-1 rounded-md transition-all text-slate-400 hover:text-white';
+      } else {
+        viewStudy.classList.add('hidden');
+        viewHome.classList.remove('hidden');
+        btnStudy.className = 'px-2.5 py-1 rounded-md transition-all text-slate-400 hover:text-white';
+        btnHome.className = 'px-2.5 py-1 rounded-md transition-all font-semibold bg-amber-500 text-slate-950 shadow-xs';
+      }
+    }
+
+    function openAssistantModal() {
+      renderDocketModal();
+      const modal = document.getElementById('assistant-modal');
+      modal.classList.remove('opacity-0', 'pointer-events-none');
+      modal.querySelector('div').classList.remove('scale-95');
+    }
+
+    function closeAssistantModal() {
+      const modal = document.getElementById('assistant-modal');
+      modal.classList.add('opacity-0', 'pointer-events-none');
+      modal.querySelector('div').classList.add('scale-95');
+    }
+
+    function toggleTheme() {
+      const shell = document.getElementById('device-shell');
+      const capsule = document.getElementById('assistant-capsule');
+      const icon = document.getElementById('theme-icon');
+      const label = document.getElementById('theme-label');
+
+      if (state.theme === 'dark') {
+        state.theme = 'light';
+        shell.className = 'w-full bg-[#f8fafc] text-slate-900 rounded-[38px] border-[8px] border-slate-300 shadow-2xl overflow-hidden min-h-[760px] flex flex-col relative transition-colors duration-300';
+        capsule.className = 'group w-full h-11 sm:h-12 px-3 rounded-xl flex items-center justify-between gap-2.5 cursor-pointer select-none transition-all duration-200 active:scale-[0.99] glass-capsule-light text-slate-900 relative overflow-hidden';
+        icon.textContent = '☀️';
+        label.textContent = 'Light';
+      } else {
+        state.theme = 'dark';
+        shell.className = 'w-full bg-[#191512] text-slate-100 rounded-[38px] border-[8px] border-slate-800 shadow-2xl overflow-hidden min-h-[760px] flex flex-col relative transition-colors duration-300';
+        capsule.className = 'group w-full h-11 sm:h-12 px-3 rounded-xl flex items-center justify-between gap-2.5 cursor-pointer select-none transition-all duration-200 active:scale-[0.99] glass-capsule-dark text-white relative overflow-hidden';
+        icon.textContent = '🌙';
+        label.textContent = 'Dark';
+      }
+      renderStudyVerses();
+    }
+
+    function toggleViewport() {
+      const frame = document.getElementById('preview-viewport-frame');
+      const icon = document.getElementById('viewport-icon');
+      const label = document.getElementById('viewport-label');
+
+      if (state.viewport === 'mobile') {
+        state.viewport = 'desktop';
+        frame.className = 'w-full max-w-4xl transition-all duration-300 flex flex-col relative';
+        icon.textContent = '💻';
+        label.textContent = 'Desktop (Full)';
+      } else {
+        state.viewport = 'mobile';
+        frame.className = 'w-full max-w-[420px] transition-all duration-300 flex flex-col relative';
+        icon.textContent = '📱';
+        label.textContent = 'Mobile (390px)';
+      }
+    }
+
+    let toastTimer = null;
+    function showToast(msg) {
+      const toast = document.getElementById('preview-toast');
+      const toastMsg = document.getElementById('toast-message');
+      toastMsg.textContent = msg;
+
+      toast.classList.remove('translate-y-20', 'opacity-0', 'pointer-events-none');
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => {
+        toast.classList.add('translate-y-20', 'opacity-0', 'pointer-events-none');
+      }, 2600);
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', () => {
+      renderStudyVerses();
+      renderCapsuleNarrative();
+    });
+  </script>
+</body>
+</html>
+

@@ -2,33 +2,68 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content" />
     
     <!-- PWA Primary Config -->
     <title>LogosBridge</title>
     <meta name="description" content="A contemporary and highly readable Bible study assistant tailored for non-native English speakers." />
     <link rel="manifest" href="/manifest.json" />
-    <meta name="theme-color" content="#070b14" />
+    <meta name="theme-color" content="#191512" />
 
     <!-- iOS Native App Web Shell Config -->
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Bible Study" />
-    <link rel="apple-touch-icon" href="/icon.svg" />
+    <link rel="apple-touch-icon" href="/icon-192.png" />
 
-    <!-- Service Worker Registration -->
+    <!-- Service Worker Registration (Production Only; Auto-Purged on Localhost) -->
     <script>
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js')
-            .then((reg) => console.log('Service Worker registered successfully!', reg.scope))
-            .catch((err) => console.error('Service Worker registration failed:', err));
-        });
+        if (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' || window.location.port !== '') {
+          // Dev mode: Unregister existing service worker and purge dev caches to ensure fresh code
+          navigator.serviceWorker.getRegistrations().then((registrations) => {
+            for (const registration of registrations) {
+              registration.unregister();
+            }
+          });
+          if ('caches' in window) {
+            caches.keys().then((names) => {
+              for (const name of names) {
+                if (name.includes('personalised-bible')) {
+                  caches.delete(name);
+                }
+              }
+            });
+          }
+        } else {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js')
+              .then((reg) => console.log('Service Worker registered successfully!', reg.scope))
+              .catch((err) => console.error('Service Worker registration failed:', err));
+          });
+        }
       }
     </script>
+    <style>
+      html, body, #root {
+        background-color: #ffffff;
+        margin: 0;
+        padding: 0;
+      }
+      html.dark, html.dark body, html.dark #root {
+        background-color: #191512;
+      }
+    </style>
+    <script>
+      try {
+        if (localStorage.getItem('logosbridge_theme') === 'dark') {
+          document.documentElement.classList.add('dark');
+        }
+      } catch (e) {}
+    </script>
   </head>
-  <body style="background-color: #020617; margin: 0; padding: 0;">
-    <div id="root">
+  <body style="margin: 0; padding: 0;">
+    <div id="root"></div>
 
     <!-- Projector Popup Scrollbar Flash Prevention -->
     <script>

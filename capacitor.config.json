@@ -2,7 +2,15 @@
   "appId": "com.helpsbiblestudy.app",
   "appName": "LogosBridge",
   "webDir": "dist",
+  "backgroundColor": "#ffffff",
   "server": {
-    "androidScheme": "https"
+    "androidScheme": "http",
+    "cleartext": true
+  },
+  "plugins": {
+    "Keyboard": {
+      "resize": "none",
+      "resizeOnFullScreen": false
+    }
   }
 }

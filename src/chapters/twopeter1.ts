@@ -48,7 +48,7 @@ export const TWO_PETER_1: ChapterData = {
     },
     {
       "verseNumber": 3,
-      "kjvText": "According as his divine power hath given unto us all things that pertain unto life and godliness, through the knowledge of him that hath called us to glory and virtue:",
+      "kjvText": "According as his divine power hath given unto us all things that [pertain] unto life and godliness, through the knowledge of him that hath called us to glory and virtue:",
       "bsbText": "His divine power has given us everything we need for life and godliness through our knowledge of Him who called us by His own glory and goodness.",
       "contemporary": "God's marvelous power has already equipped us with every single thing we require for thriving life and spiritual depth. This supply reaches us through our personal relationship with Him, the one who called us to share in His own magnificent character and excellence.",
       "nonNativeEnglish": "God’s power has given us everything we need to live a good life. We get this by knowing Him.",
@@ -147,7 +147,7 @@ export const TWO_PETER_1: ChapterData = {
     },
     {
       "verseNumber": 8,
-      "kjvText": "For if these things be in you, and abound, they make you that ye shall neither be barren nor unfruitful in the knowledge of our Lord Jesus Christ.",
+      "kjvText": "For if these things be in you, and abound, they make [you that ye shall] neither [be] barren nor unfruitful in the knowledge of our Lord Jesus Christ.",
       "bsbText": "For if you possess these qualities in increasing measure, they will keep you from being ineffective and unproductive in your knowledge of our Lord Jesus Christ.",
       "contemporary": "If these qualities exist inside your mind and keep swelling larger, they guarantee that you will never become useless, idle, or empty in your relationship with our Leader Jesus Christ.",
       "nonNativeEnglish": "If you have these virtues and they blow up bigger, you will be active and bear excellent fruit.",
@@ -199,6 +199,108 @@ export const TWO_PETER_1: ChapterData = {
           "originalValue": "Ptaisēte (πταίσητε)",
           "language": "Greek",
           "explanation": "To trip, stumble, make a fatal error, or fall into ruin; absolute protection on the road."
+        }
+      ]
+    },
+    {
+      "verseNumber": 11,
+      "kjvText": "For so an entrance shall be ministered unto you abundantly into the everlasting kingdom of our Lord and Saviour Jesus Christ.",
+      "bsbText": "and you will receive a rich welcome into the eternal kingdom of our Lord and Savior Jesus Christ.",
+      "contemporary": "And you will receive a rich and glorious welcome into the eternal kingdom of our Lord and Savior Jesus Christ.",
+      "nonNativeEnglish": "By living this way, God will welcome you with great joy into the eternal kingdom of our Lord Jesus.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 12,
+      "kjvText": "Wherefore I will not be negligent to put you always in remembrance of these things, though ye know [them], and be established in the present truth.",
+      "bsbText": "So I will always remind you of these things, even though you know them and are firmly established in the truth you now have.",
+      "contemporary": "So I intend always to remind you of these things, even though you know them and are grounded in the truth.",
+      "nonNativeEnglish": "I will always remind you of these truths, even though you already know them well.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 13,
+      "kjvText": "Yea, I think it meet, as long as I am in this tabernacle, to stir you up by putting [you] in remembrance;",
+      "bsbText": "I think it is right to refresh your memory as long as I live in the tent of this body,",
+      "contemporary": "I think it is right, as long as I am in this earthly body, to stir you up by way of reminder,",
+      "nonNativeEnglish": "As long as I live on this earth, I want to encourage and remind you to stay faithful.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 14,
+      "kjvText": "Knowing that shortly I must put off [this] my tabernacle, even as our Lord Jesus Christ hath shewed me.",
+      "bsbText": "because I know that I will soon put it aside, as our Lord Jesus Christ has made clear to me.",
+      "contemporary": "Since I know that the departure from this body will come soon, just as our Lord Jesus Christ showed me.",
+      "nonNativeEnglish": "I know my earthly life will soon end, as our Lord Jesus revealed to me.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 15,
+      "kjvText": "Moreover I will endeavour that ye may be able after my decease to have these things always in remembrance.",
+      "bsbText": "And I will make every effort to see that after my departure you will always be able to remember these things.",
+      "contemporary": "And I will make every effort to ensure that you will always remember these truths after I am gone.",
+      "nonNativeEnglish": "I am working hard so that you will always remember these teachings even after I am gone.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 16,
+      "kjvText": "For we have not followed cunningly devised fables, when we made known unto you the power and coming of our Lord Jesus Christ, but were eyewitnesses of his majesty.",
+      "bsbText": "For we did not follow cleverly devised stories when we told you about the coming of our Lord Jesus Christ in power, but we were eyewitnesses of His majesty.",
+      "contemporary": "We did not follow clever myths when we told you about the powerful coming of our Lord Jesus; we saw His majesty with our own eyes.",
+      "nonNativeEnglish": "We didn't tell you made-up stories. We saw the majestic glory of Jesus with our own eyes!",
+      "specialWords": [
+        {
+          "word": "eyewitnesses",
+          "originalValue": "Epoptēs (ἐπόπτης)",
+          "language": "Greek",
+          "explanation": "A firsthand spectator or eyewitness of sacred mysteries."
+        }
+      ]
+    },
+    {
+      "verseNumber": 17,
+      "kjvText": "For he received from God the Father honour and glory, when there came such a voice to him from the excellent glory, This is my beloved Son, in whom I am well pleased.",
+      "bsbText": "He received honor and glory from God the Father when the voice came to Him from the Majestic Glory, saying, 'This is my Son, whom I love; with Him I am well pleased.'",
+      "contemporary": "For He received honor and glory from God the Father when the voice spoke from heaven: 'This is my beloved Son, who brings Me great joy.'",
+      "nonNativeEnglish": "Jesus received honor from God the Father when the voice from heaven declared: 'This is My beloved Son, I am well pleased with Him.'",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 18,
+      "kjvText": "And this voice which came from heaven we heard, when we were with him in the holy mount.",
+      "bsbText": "We ourselves heard this voice that came from heaven when we were with Him on the sacred mountain.",
+      "contemporary": "We ourselves heard this voice that came from heaven when we were with Him on the sacred mountain.",
+      "nonNativeEnglish": "We heard that heavenly voice ourselves when we stood with Him on the holy mountain.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 19,
+      "kjvText": "We have also a more sure word of prophecy; whereunto ye do well that ye take heed, as unto a light that shineth in a dark place, until the day dawn, and the day star arise in your hearts:",
+      "bsbText": "We also have the prophetic message as something completely reliable, and you will do well to pay attention to it, as to a light shining in a dark place, until the day dawns and the morning star rises in your hearts.",
+      "contemporary": "We have also the prophetic word made more certain, and you will do well to pay attention to it like a lamp shining in a dark place.",
+      "nonNativeEnglish": "We have God’s prophetic Word which is completely trustworthy. Pay close attention to it like a bright light in darkness.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 20,
+      "kjvText": "Knowing this first, that no prophecy of the scripture is of any private interpretation.",
+      "bsbText": "Above all, you must understand that no prophecy of Scripture came about by the prophet’s own interpretation of things.",
+      "contemporary": "Above all, know that no prophecy of Scripture originates from an individual's personal interpretation.",
+      "nonNativeEnglish": "Understand this first: no prophecy in the Bible came from human ideas or personal opinions.",
+      "specialWords": []
+    },
+    {
+      "verseNumber": 21,
+      "kjvText": "For the prophecy came not in old time by the will of man: but holy men of God spake [as they were] moved by the Holy Ghost.",
+      "bsbText": "For prophecy never had its origin in the human will, but prophets, though human, spoke from God as they were carried along by the Holy Spirit.",
+      "contemporary": "For no prophecy ever came by human will; instead, holy people spoke from God as they were moved by the Holy Spirit.",
+      "nonNativeEnglish": "Prophecy never came from human will. Holy people of God spoke as the Holy Spirit inspired and guided them.",
+      "specialWords": [
+        {
+          "word": "moved/carried",
+          "originalValue": "Pheromenoi (φερόμενοι)",
+          "language": "Greek",
+          "explanation": "Carried along or borne by wind, like a ship driven by the gentle power of the wind."
         }
       ]
     }

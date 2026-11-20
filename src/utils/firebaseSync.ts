@@ -14,28 +14,57 @@ import {
   query,
   orderBy,
   Timestamp,
+  serverTimestamp,
   writeBatch
 } from 'firebase/firestore';
-import { db, handleFirestoreError, OperationType } from '../firebase';
+import { db, auth, handleFirestoreError, OperationType } from '../firebase';
+
+export function sanitizeBookmarkId(rawId: string): string {
+  return rawId.toLowerCase().trim().replace(/[^a-z0-9_\-]/g, '_');
+}
+
+export interface NotebookUserSettings {
+  template?: 'blank' | 'ruled' | 'grid';
+  fontSize?: number;
+  style?: 'h1' | 'h2' | 'h3' | 'b1' | 'b2';
+  textColor?: string;
+  highlightColor?: string;
+  penInstrument?: 'fountain' | 'ballpoint' | 'calligraphy' | 'pencil';
+  penStroke?: number;
+  penColor?: string;
+  surfaceHeight?: number;
+}
 
 export interface UserProfileData {
   userId: string;
   email: string;
   displayName?: string;
+  photoURL?: string;
   theme?: 'light' | 'dark';
   lastReadBook?: string;
   lastReadChapter?: number;
+  lastReadTab?: string;
+  scriptureTypeface?: string;
+  scriptureStyle?: string;
+  scriptureZoom?: number;
+  playbackSpeed?: number;
+  isScriptureBold?: boolean;
+  isScriptureItalic?: boolean;
+  capsuleLastDismissedAt?: Date | string;
+  currentCapsuleText?: string;
+  currentCapsuleGeneratedAt?: Date | string;
+  notebookSettings?: NotebookUserSettings;
   createdAt: Date;
   updatedAt: Date;
 }
 
 export interface BookmarkData {
-  id: string; // usually book_chapter_verse
+  id: string;
   userId: string;
   book: string;
   chapter: number;
   verse: number;
-  color: 'none' | 'yellow' | 'cyan' | 'green' | 'red';
+  color?: 'none' | 'yellow' | 'cyan' | 'green' | 'red' | 'amber' | 'blue';
   notes?: string;
   createdAt: Date;
   updatedAt: Date;
@@ -52,48 +81,80 @@ export interface QuizScoreData {
 }
 
 /**
- * Get or Create User Profile in Firestore
+ * Get or Create User Profile document on authentication
  */
-export async function getOrCreateUserProfile(userId: string, email: string, displayName: string): Promise<UserProfileData | null> {
+export async function getOrCreateUserProfile(userId: string, email: string, displayName?: string, photoURL?: string): Promise<UserProfileData> {
   const userDocRef = doc(db, 'users', userId);
   const path = `users/${userId}`;
   
   try {
     const docSnap = await getDoc(userDocRef);
+    
     if (docSnap.exists()) {
       const data = docSnap.data();
+      if (data.notebookSettings) {
+        try {
+          localStorage.setItem('logosbridge_notebook_settings', JSON.stringify(data.notebookSettings));
+        } catch {}
+      }
       return {
         userId: data.userId,
         email: data.email,
         displayName: data.displayName,
+        photoURL: data.photoURL || photoURL,
         theme: data.theme,
         lastReadBook: data.lastReadBook,
         lastReadChapter: data.lastReadChapter,
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
-        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt),
+        lastReadTab: data.lastReadTab,
+        scriptureTypeface: data.scriptureTypeface,
+        scriptureStyle: data.scriptureStyle,
+        scriptureZoom: data.scriptureZoom,
+        playbackSpeed: data.playbackSpeed,
+        isScriptureBold: data.isScriptureBold,
+        isScriptureItalic: data.isScriptureItalic,
+        capsuleLastDismissedAt: data.capsuleLastDismissedAt?.toDate ? data.capsuleLastDismissedAt.toDate() : data.capsuleLastDismissedAt,
+        currentCapsuleText: data.currentCapsuleText,
+        currentCapsuleGeneratedAt: data.currentCapsuleGeneratedAt?.toDate ? data.currentCapsuleGeneratedAt.toDate() : data.currentCapsuleGeneratedAt,
+        notebookSettings: data.notebookSettings,
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
       };
     } else {
-      const now = new Date();
+      const activeTheme = (typeof localStorage !== 'undefined' ? localStorage.getItem('logosbridge_theme') as 'light' | 'dark' : null) || 'light';
       const newProfile: UserProfileData = {
         userId,
         email,
-        displayName,
-        theme: 'light',
+        displayName: displayName || email.split('@')[0],
+        photoURL: photoURL || undefined,
+        theme: activeTheme,
         lastReadBook: 'John',
         lastReadChapter: 1,
-        createdAt: now,
-        updatedAt: now,
+        lastReadTab: 'read',
+        createdAt: new Date(),
+        updatedAt: new Date(),
       };
       
       await setDoc(userDocRef, {
         ...newProfile,
-        createdAt: Timestamp.fromDate(now),
-        updatedAt: Timestamp.fromDate(now),
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
       });
+      
       return newProfile;
     }
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, path);
+    console.warn(`Firestore getOrCreateUserProfile notice on ${path}:`, error);
+    const activeTheme = (typeof localStorage !== 'undefined' ? localStorage.getItem('logosbridge_theme') as 'light' | 'dark' : null) || 'light';
+    return {
+      userId,
+      email,
+      displayName: displayName || email.split('@')[0],
+      theme: activeTheme,
+      lastReadBook: 'John',
+      lastReadChapter: 1,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
   }
 }
 
@@ -104,13 +165,39 @@ export async function updateUserProfile(userId: string, updates: Partial<Omit<Us
   const userDocRef = doc(db, 'users', userId);
   const path = `users/${userId}`;
   
+  // Persist locally so avatar or preferences are always available even offline
   try {
-    await updateDoc(userDocRef, {
-      ...updates,
-      updatedAt: Timestamp.fromDate(new Date()),
-    });
+    if (updates.photoURL) {
+      localStorage.setItem(`logosbridge_avatar_${userId}`, updates.photoURL);
+    }
+    if (updates.displayName) {
+      localStorage.setItem(`logosbridge_display_name_${userId}`, updates.displayName);
+    }
+    if (updates.notebookSettings) {
+      localStorage.setItem('logosbridge_notebook_settings', JSON.stringify(updates.notebookSettings));
+    }
+  } catch (e) {
+    // ignore
+  }
+
+  try {
+    const docSnap = await getDoc(userDocRef);
+    if (!docSnap.exists()) {
+      await setDoc(userDocRef, {
+        userId,
+        email: auth.currentUser?.email || '',
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
+        ...updates,
+      });
+    } else {
+      await updateDoc(userDocRef, {
+        ...updates,
+        updatedAt: serverTimestamp(),
+      });
+    }
   } catch (error) {
-    handleFirestoreError(error, OperationType.UPDATE, path);
+    console.warn(`Firestore updateUserProfile notice on ${path}:`, error);
   }
 }
 
@@ -127,20 +214,21 @@ export async function getUserBookmarks(userId: string): Promise<BookmarkData[]> 
     querySnap.forEach((doc) => {
       const data = doc.data();
       bookmarks.push({
-        id: data.id,
+        id: doc.id,
         userId: data.userId,
         book: data.book,
         chapter: Number(data.chapter),
         verse: Number(data.verse),
         color: data.color || 'none',
         notes: data.notes || '',
-        createdAt: data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date(data.createdAt),
-        updatedAt: data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date(data.updatedAt),
+        createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+        updatedAt: data.updatedAt?.toDate ? data.updatedAt.toDate() : new Date(),
       });
     });
     return bookmarks;
   } catch (error) {
-    handleFirestoreError(error, OperationType.LIST, path);
+    console.warn(`Firestore getUserBookmarks notice on ${path}:`, error);
+    return [];
   }
 }
 
@@ -148,7 +236,8 @@ export async function getUserBookmarks(userId: string): Promise<BookmarkData[]> 
  * Save user bookmark to Firestore
  */
 export async function saveUserBookmark(userId: string, bookmark: Omit<BookmarkData, 'userId' | 'createdAt' | 'updatedAt'>): Promise<void> {
-  const docId = bookmark.id || `${bookmark.book}_${bookmark.chapter}_${bookmark.verse}`;
+  const rawId = bookmark.id || `${bookmark.book}_${bookmark.chapter}_${bookmark.verse}`;
+  const docId = sanitizeBookmarkId(rawId);
   const bookmarkDocRef = doc(db, 'users', userId, 'bookmarks', docId);
   const path = `users/${userId}/bookmarks/${docId}`;
   
@@ -157,7 +246,7 @@ export async function saveUserBookmark(userId: string, bookmark: Omit<BookmarkDa
     const now = new Date();
     if (docSnap.exists()) {
       await updateDoc(bookmarkDocRef, {
-        color: bookmark.color,
+        color: bookmark.color || 'none',
         notes: bookmark.notes || '',
         updatedAt: Timestamp.fromDate(now),
       });
@@ -168,14 +257,14 @@ export async function saveUserBookmark(userId: string, bookmark: Omit<BookmarkDa
         book: bookmark.book,
         chapter: Number(bookmark.chapter),
         verse: Number(bookmark.verse),
-        color: bookmark.color,
+        color: bookmark.color || 'none',
         notes: bookmark.notes || '',
         createdAt: Timestamp.fromDate(now),
         updatedAt: Timestamp.fromDate(now),
       });
     }
   } catch (error) {
-    handleFirestoreError(error, OperationType.WRITE, path);
+    console.warn(`Firestore saveUserBookmark notice on ${path}:`, error);
   }
 }
 
@@ -183,7 +272,7 @@ export async function saveUserBookmark(userId: string, bookmark: Omit<BookmarkDa
  * Delete bookmark from Firestore
  */
 export async function deleteUserBookmark(userId: string, book: string, chapter: number, verse: number): Promise<void> {
-  const docId = `${book}_${chapter}_${verse}`;
+  const docId = sanitizeBookmarkId(`${book}_${chapter}_${verse}`);
   const bookmarkDocRef = doc(db, 'users', userId, 'bookmarks', docId);
   const path = `users/${userId}/bookmarks/${docId}`;
   
@@ -351,3 +440,191 @@ export async function saveUserNote(userId: string, verseNote: { book: string; ch
     throw err;
   }
 }
+
+export type ActivityActionType =
+  | 'READ_CHAPTER'
+  | 'STRONGS_LOOKUP'
+  | 'INTERLINEAR_VIEW'
+  | 'VERSE_STUDIED'
+  | 'HIGHLIGHT_VERSE'
+  | 'NOTE_COMPOSED'
+  | 'viewed_interlinear'
+  | 'highlighted_verse'
+  | 'read_chapter'
+  | 'explored_cross_reference'
+  | 'opened_cross_references'
+  | 'saved_note'
+  | 'toggled_manuscript_mode'
+  | (string & {});
+
+export interface UserActivityLog {
+  id?: string;
+  userId?: string;
+  actionType: ActivityActionType;
+  reference?: string;
+  strongsNumber?: string;
+  originalWord?: string;
+  details?: string;
+  timestamp: string;
+  weight?: number;
+}
+
+/**
+ * Lightweight, universal activity logger for Core Study Tools.
+ * Can be called with:
+ *   1) logUserActivity('highlighted_verse', 'Genesis 1:1', 'Emerald', 2)
+ *   2) logUserActivity({ actionType: 'STRONGS_LOOKUP', reference: 'Gen 1:1', ... })
+ *   3) logUserActivity(userId, { actionType: '...', ... })
+ */
+export async function logUserActivity(
+  actionOrUserIdOrObj: string | Partial<UserActivityLog>,
+  referenceOrActivity?: string | Partial<UserActivityLog>,
+  details?: string,
+  weight?: number
+): Promise<void> {
+  let activeUserId = auth?.currentUser?.uid || 'guest_user';
+  let entry: Partial<UserActivityLog> = {};
+
+  if (typeof actionOrUserIdOrObj === 'object' && actionOrUserIdOrObj !== null) {
+    // Called as logUserActivity({ actionType: '...', ... })
+    entry = { ...actionOrUserIdOrObj };
+    if (entry.userId) activeUserId = entry.userId;
+  } else if (typeof actionOrUserIdOrObj === 'string' && typeof referenceOrActivity === 'object' && referenceOrActivity !== null) {
+    // Called as logUserActivity(userId, { actionType: '...', ... })
+    activeUserId = actionOrUserIdOrObj;
+    entry = { ...referenceOrActivity };
+  } else if (typeof actionOrUserIdOrObj === 'string') {
+    // Called as logUserActivity(action, reference, details, weight)
+    entry = {
+      actionType: actionOrUserIdOrObj,
+      reference: typeof referenceOrActivity === 'string' ? referenceOrActivity : undefined,
+      details: details,
+      weight: weight ?? 1,
+    };
+  }
+
+  if (!entry.actionType) return;
+
+  const now = new Date().toISOString();
+  const logEntry: UserActivityLog = {
+    actionType: entry.actionType,
+    reference: entry.reference || '',
+    strongsNumber: entry.strongsNumber,
+    originalWord: entry.originalWord,
+    details: entry.details || `${entry.actionType} on ${entry.reference || 'Scripture'}`,
+    timestamp: entry.timestamp || now,
+    weight: entry.weight ?? 1,
+    userId: activeUserId,
+  };
+
+  // 1. Immediate local storage persistence
+  if (typeof window !== 'undefined' && window.localStorage) {
+    try {
+      const existing = JSON.parse(window.localStorage.getItem('logosbridge_activity_logs') || '[]');
+      existing.unshift(logEntry);
+      window.localStorage.setItem('logosbridge_activity_logs', JSON.stringify(existing.slice(0, 50)));
+    } catch (e) {
+      console.warn('Could not cache activity log locally:', e);
+    }
+  }
+
+  // 2. Cloud Firestore persistence
+  if (activeUserId && !activeUserId.startsWith('guest_')) {
+    try {
+      const activityColRef = collection(db, 'users', activeUserId, 'activity_logs');
+      await setDoc(doc(activityColRef), {
+        ...logEntry,
+        createdAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('Could not persist activity log to Firestore:', err);
+    }
+  }
+
+  // 3. Dispatch to backend endpoint for in-memory Context Engine cache
+  try {
+    fetch('/api/user/activity-log', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        userId: activeUserId,
+        action_type: logEntry.actionType,
+        reference: logEntry.reference,
+        details: logEntry.details,
+        timestamp: logEntry.timestamp,
+        weight: logEntry.weight,
+        strongsNumber: logEntry.strongsNumber,
+        originalWord: logEntry.originalWord,
+      }),
+    }).catch(() => {});
+  } catch {
+    // Non-blocking fire-and-forget
+  }
+}
+
+/**
+ * Dismisses the Activity Capsule and records the timestamp to enforce the 24-hour cooldown
+ */
+export async function dismissCapsule(userId?: string): Promise<void> {
+  const nowIso = new Date().toISOString();
+  if (typeof window !== 'undefined' && window.localStorage) {
+    window.localStorage.setItem('logosbridge_capsule_last_dismissed_at', nowIso);
+  }
+
+  if (userId && !userId.startsWith('guest_')) {
+    try {
+      const userDocRef = doc(db, 'users', userId);
+      await updateDoc(userDocRef, {
+        capsuleLastDismissedAt: serverTimestamp(),
+      });
+    } catch (err) {
+      console.warn('Could not update capsule dismissal on Firestore:', err);
+    }
+  }
+
+  try {
+    await fetch('/api/user/capsule-dismiss', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId }),
+    });
+  } catch {
+    // offline graceful ignore
+  }
+}
+
+/**
+ * Sync user's custom attached cross-references to Firestore
+ */
+export async function syncUserCrossReferencesToCloud(userId: string, references: Record<string, string[]>): Promise<void> {
+  if (!userId || userId.startsWith('guest')) return;
+  const docRef = doc(db, 'users', userId, 'userData', 'crossReferences');
+  try {
+    await setDoc(docRef, {
+      references,
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  } catch (error) {
+    console.warn('Firestore syncUserCrossReferencesToCloud notice:', error);
+  }
+}
+
+/**
+ * Fetch user's custom attached cross-references from Firestore
+ */
+export async function fetchUserCrossReferencesFromCloud(userId: string): Promise<Record<string, string[]> | null> {
+  if (!userId || userId.startsWith('guest')) return null;
+  const docRef = doc(db, 'users', userId, 'userData', 'crossReferences');
+  try {
+    const snap = await getDoc(docRef);
+    if (snap.exists()) {
+      const data = snap.data();
+      return (data.references as Record<string, string[]>) || {};
+    }
+  } catch (error) {
+    console.warn('Firestore fetchUserCrossReferencesFromCloud notice:', error);
+  }
+  return null;
+}
+
+
