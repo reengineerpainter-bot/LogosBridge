@@ -1,0 +1,8 @@
+node_modules
+dist
+android
+.git
+.agents
+*.apk
+*.log
+scratch

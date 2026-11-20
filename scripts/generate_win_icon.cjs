@@ -1,6 +1,13 @@
 const fs = require('fs');
 const path = require('path');
-const sharp = require('sharp');
+
+let sharp;
+try {
+  sharp = require('sharp');
+} catch (e) {
+  console.log('[Icon Generator] sharp is not installed; skipping Windows .ico generation on cloud/Linux platform.');
+  process.exit(0);
+}
 
 async function generateWinIcon() {
   const sourcePath = path.join(__dirname, '..', 'src', 'assets', 'images', 'logo_logosbridge.png');
@@ -66,6 +73,6 @@ async function generateWinIcon() {
 }
 
 generateWinIcon().catch(err => {
-  console.error('[Icon Generator] Failed:', err);
-  process.exit(1);
+  console.warn('[Icon Generator] Non-fatal warning:', err.message);
+  process.exit(0);
 });
